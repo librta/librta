@@ -13,7 +13,7 @@
  * tables as if it were a data base table.  We describe each
  * table in general in an array of TBLDEF structures with one
  * structure per table, and each column of each table in an
- * array of COLDEF strustures with one COLDEF structure per
+ * array of COLDEF structures with one COLDEF structure per
  * column.
  **************************************************************/
 
@@ -88,7 +88,7 @@ COLDEF   rta_columnsCols[] = {
       "type is a string or a pointer to a string."},
   {
       "rta_columns",            /* table name */
-      "offset",                 /* column name */
+      "noff",                   /* column name */
       RTA_PTR,                  /* type of data */
       sizeof(void *),           /* #bytes in col data */
       offsetof(COLDEF, offset), /* offset 2 col strt */
@@ -99,7 +99,8 @@ COLDEF   rta_columnsCols[] = {
       "to the member element defined in this entry.  Be careful "
       "in setting the offset with non word-aligned elements like "
       "single characters.  If you do no use offsetof() consider "
-      "using -fpack-struct"},
+      "using -fpack-struct.  (By the way, the column name is "
+      "actually 'offset' but that conflicts with one of the SQL words"},
   {
       "rta_columns",            /* table name */
       "flags",                  /* column name */
@@ -321,7 +322,7 @@ TBLDEF   rta_tablesTable = {
  *
  * Input:        Pointer to current row
  *               Callback data (RTA_TABLES or RTA_COLUMNS)
- *               Current row number
+ *               Desired row number (ie current +1)
  * Output:       Pointer to next row or NULL if at end of list
  * Effects:      None
  **************************************************************/
@@ -337,10 +338,12 @@ get_next_sysrow(void *pui, void *it_info, int rowid)
      TBLDEF and COLDEF structures.  This saves memory and makes it easy 
      for a program to change parts of the table or column definition
      when needed.  So this routine just return the Tbl or Col value. */
-  if (((int) it_info == RTA_TABLES) && (rowid + 1 < Ntbl))
-    return ((void *) Tbl[rowid + 1]);
-  if (((int) it_info == RTA_COLUMNS) && (rowid + 1 < Ncol))
-    return ((void *) Col[rowid + 1]);
+  if (((int) it_info == RTA_TABLES) && (rowid < Ntbl)) {
+    return ((void *) Tbl[rowid]);
+  }
+  else if (((int) it_info == RTA_COLUMNS) && (rowid < Ncol)) {
+    return ((void *) Col[rowid]);
+  }
 
   /* Must be at end of list */
   return ((void *) NULL);
@@ -360,7 +363,7 @@ get_next_sysrow(void *pui, void *it_info, int rowid)
  **************************************************************/
 
 /* Allocate and initialize the table */
-struct EpgDbg rtadbg = {
+struct RtaDbg rtadbg = {
   1,                            /* log system errors */
   1,                            /* log rta errors */
   1,                            /* log SQL errors */
@@ -378,7 +381,7 @@ COLDEF   rta_dbgCols[] = {
       "syserr",                 /* column name */
       RTA_INT,                  /* type of data */
       sizeof(int),              /* #bytes in col data */
-      offsetof(struct EpgDbg, syserr), /* offset 2 col strt */
+      offsetof(struct RtaDbg, syserr), /* offset 2 col strt */
       0,               /* Flags for read-only/disksave */
       (void (*)()) 0,  /* called before read */
       (void (*)()) 0,  /* called after write */
@@ -389,7 +392,7 @@ COLDEF   rta_dbgCols[] = {
       "rtaerr",                 /* column name */
       RTA_INT,                  /* type of data */
       sizeof(int),              /* #bytes in col data */
-      offsetof(struct EpgDbg, rtaerr), /* offset 2 col strt */
+      offsetof(struct RtaDbg, rtaerr), /* offset 2 col strt */
       0,               /* Flags for read-only/disksave */
       (void (*)()) 0,  /* called before read */
       (void (*)()) 0,  /* called after write */
@@ -400,7 +403,7 @@ COLDEF   rta_dbgCols[] = {
       "sqlerr",                 /* column name */
       RTA_INT,                  /* type of data */
       sizeof(int),              /* #bytes in col data */
-      offsetof(struct EpgDbg, sqlerr), /* offset 2 col strt */
+      offsetof(struct RtaDbg, sqlerr), /* offset 2 col strt */
       0,               /* Flags for read-only/disksave */
       (void (*)()) 0,  /* called before read */
       (void (*)()) 0,  /* called after write */
@@ -412,7 +415,7 @@ COLDEF   rta_dbgCols[] = {
       "trace",                  /* column name */
       RTA_INT,                  /* type of data */
       sizeof(int),              /* #bytes in col data */
-      offsetof(struct EpgDbg, trace), /* offset 2 col strt */
+      offsetof(struct RtaDbg, trace), /* offset 2 col strt */
       0,               /* Flags for read-only/disksave */
       (void (*)()) 0,  /* called before read */
       (void (*)()) 0,  /* called after write */
@@ -424,7 +427,7 @@ COLDEF   rta_dbgCols[] = {
       "target",                 /* column name */
       RTA_INT,                  /* type of data */
       sizeof(int),              /* #bytes in col data */
-      offsetof(struct EpgDbg, target), /* offset 2 col strt */
+      offsetof(struct RtaDbg, target), /* offset 2 col strt */
       0,               /* Flags for read-only/disksave */
       (void (*)()) 0,  /* called before read */
       restart_syslog,  /* called after write */
@@ -437,7 +440,7 @@ COLDEF   rta_dbgCols[] = {
       "priority",               /* column name */
       RTA_INT,                  /* type of data */
       sizeof(int),              /* #bytes in col data */
-      offsetof(struct EpgDbg, priority), /* offset 2 col strt */
+      offsetof(struct RtaDbg, priority), /* offset 2 col strt */
       0,               /* Flags for read-only/disksave */
       (void (*)()) 0,  /* called before read */
       (void (*)()) 0,  /* called after write */
@@ -448,7 +451,7 @@ COLDEF   rta_dbgCols[] = {
       "facility",               /* column name */
       RTA_INT,                  /* type of data */
       sizeof(int),              /* #bytes in col data */
-      offsetof(struct EpgDbg, facility), /* offset 2 col strt */
+      offsetof(struct RtaDbg, facility), /* offset 2 col strt */
       0,               /* Flags for read-only/disksave */
       (void (*)()) 0,  /* called before read */
       (void (*)()) 0,  /* called after write */
@@ -459,7 +462,7 @@ COLDEF   rta_dbgCols[] = {
       "ident",                  /* column name */
       RTA_STR,                  /* type of data */
       MXDBGIDENT,               /* #bytes in col data */
-      offsetof(struct EpgDbg, ident), /* offset 2 col strt */
+      offsetof(struct RtaDbg, ident), /* offset 2 col strt */
       0,               /* Flags for read-only/disksave */
       (void (*)()) 0,  /* called before read */
       (void (*)()) 0,  /* called after write */
@@ -471,7 +474,7 @@ COLDEF   rta_dbgCols[] = {
 /***************************************************************
  * restart_syslog(): - Routine to restart or reconfigure the
  * logging facility.  Syslog is always closed and (if enabled)
- * reopened with the priority and facility sepcified in the
+ * reopened with the priority and facility specified in the
  * rtadbg structure.
  *
  * Input:        Name of the table 
@@ -487,7 +490,7 @@ void
 restart_syslog(char *tblname, char *colname, char *sqlcmd,
                void *prow, void *poldrow,  int rowid)
 {
-  extern struct EpgDbg rtadbg;
+  extern struct RtaDbg rtadbg;
 
   closelog();
 
@@ -502,7 +505,7 @@ restart_syslog(char *tblname, char *colname, char *sqlcmd,
 TBLDEF   rta_dbgTable = {
   "rta_dbg",                    /* table name */
   (void *) &rtadbg,             /* address of table */
-  sizeof(struct EpgDbg),        /* length of each row */
+  sizeof(struct RtaDbg),        /* length of each row */
   1,                            /* # rows in table */
   (void *) NULL,                /* iterator function */
   (void *) NULL,                /* iterator callback data */
@@ -525,7 +528,7 @@ TBLDEF   rta_dbgTable = {
  **************************************************************/
 
 /* Allocate and initialize the table */
-struct EpgStat rtastat = {
+struct RtaStat rtastat = {
   (long long) 0,                /* count of failed OS calls. */
   (long long) 0,                /* count of internal rta failures. */
   (long long) 0,                /* count of SQL failures. */
@@ -541,7 +544,7 @@ COLDEF   rta_statCols[] = {
       "nsyserr",                /* column name */
       RTA_LONG,                 /* type of data */
       sizeof(long long),        /* #bytes in col data */
-      offsetof(struct EpgStat, nsyserr), /* offset 2 col strt */
+      offsetof(struct RtaStat, nsyserr), /* offset 2 col strt */
       RTA_READONLY,    /* Flags for read-only/disksave */
       (void (*)()) 0,  /* called before read */
       (void (*)()) 0,  /* called after write */
@@ -551,7 +554,7 @@ COLDEF   rta_statCols[] = {
       "nrtaerr",                /* column name */
       RTA_LONG,                 /* type of data */
       sizeof(long long),        /* #bytes in col data */
-      offsetof(struct EpgStat, nrtaerr), /* offset 2 col strt */
+      offsetof(struct RtaStat, nrtaerr), /* offset 2 col strt */
       RTA_READONLY,    /* Flags for read-only/disksave */
       (void (*)()) 0,  /* called before read */
       (void (*)()) 0,  /* called after write */
@@ -561,7 +564,7 @@ COLDEF   rta_statCols[] = {
       "nsqlerr",                /* column name */
       RTA_LONG,                 /* type of data */
       sizeof(long long),        /* #bytes in col data */
-      offsetof(struct EpgStat, nsqlerr), /* offset 2 col strt */
+      offsetof(struct RtaStat, nsqlerr), /* offset 2 col strt */
       RTA_READONLY,    /* Flags for read-only/disksave */
       (void (*)()) 0,  /* called before read */
       (void (*)()) 0,  /* called after write */
@@ -571,7 +574,7 @@ COLDEF   rta_statCols[] = {
       "nauth",                  /* column name */
       RTA_LONG,                 /* type of data */
       sizeof(long long),        /* #bytes in col data */
-      offsetof(struct EpgStat, nauth), /* offset 2 col strt */
+      offsetof(struct RtaStat, nauth), /* offset 2 col strt */
       RTA_READONLY,    /* Flags for read-only/disksave */
       (void (*)()) 0,  /* called before read */
       (void (*)()) 0,  /* called after write */
@@ -582,7 +585,7 @@ COLDEF   rta_statCols[] = {
       "nselect",                /* column name */
       RTA_LONG,                 /* type of data */
       sizeof(long long),        /* #bytes in col data */
-      offsetof(struct EpgStat, nselect), /* offset 2 col strt */
+      offsetof(struct RtaStat, nselect), /* offset 2 col strt */
       RTA_READONLY,    /* Flags for read-only/disksave */
       (void (*)()) 0,  /* called before read */
       (void (*)()) 0,  /* called after write */
@@ -592,7 +595,7 @@ COLDEF   rta_statCols[] = {
       "nupdate",                /* column name */
       RTA_LONG,                 /* type of data */
       sizeof(long long),        /* #bytes in col data */
-      offsetof(struct EpgStat, nupdate), /* offset 2 col strt */
+      offsetof(struct RtaStat, nupdate), /* offset 2 col strt */
       RTA_READONLY,    /* Flags for read-only/disksave */
       (void (*)()) 0,  /* called before read */
       (void (*)()) 0,  /* called after write */
@@ -603,7 +606,7 @@ COLDEF   rta_statCols[] = {
 TBLDEF   rta_statTable = {
   "rta_stat",                   /* table name */
   (void *) &rtastat,            /* address of table */
-  sizeof(struct EpgStat),       /* length of each row */
+  sizeof(struct RtaStat),       /* length of each row */
   1,                            /* # rows in table */
   (void *) NULL,                /* iterator function */
   (void *) NULL,                /* iterator callback data */

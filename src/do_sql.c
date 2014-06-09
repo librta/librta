@@ -24,8 +24,8 @@ extern TBLDEF *Tbl[];
 extern int Ntbl;
 extern COLDEF *Col[];
 extern int Ncol;
-extern struct EpgStat rtastat;
-extern struct EpgDbg rtadbg;
+extern struct RtaStat rtastat;
+extern struct RtaDbg rtadbg;
 
 /***************************************************************
  * How this stuff works:
@@ -362,8 +362,7 @@ verify_update_list(char *buf, int *nbuf)
          a string, check the string length.  We do a '-1' to be sure
          there is room for a null at the end of the string.   */
       if ((coldefs[i].type == RTA_STR) || (coldefs[i].type == RTA_PSTR)) {
-if (strlen(cmd.updvals[j]) <= coldefs[i].length) {
-        // xxxxxxxx  if (strlen(cmd.updvals[j]) <= coldefs[i].length -1) {
+        if (strlen(cmd.updvals[j]) <= coldefs[i].length -1) {
           break;
         }
         send_error(LOC, E_BIGSTR, coldefs[i].name);
@@ -632,7 +631,7 @@ send_row_description(char *buf, int *nbuf)
 {
   char    *startbuf;   /* used to compute response length */
   int      i;          /* loop index */
-  int      size;       /* extimated/actual size of response */
+  int      size;       /* estimated/actual size of response */
 
   startbuf = buf;
 
@@ -1038,7 +1037,7 @@ rtalog(char *fname,    /* error detected in file... */
   int linen,           /* error detected at line # */
   char *format, ...)
 {                               /* printf format string */
-  extern struct EpgDbg rtadbg;
+  extern struct RtaDbg rtadbg;
   va_list  ap;
   char    *s1;         /* first optional argument */
   char    *s2;         /* second optional argument */
@@ -1054,7 +1053,6 @@ rtalog(char *fname,    /* error detected in file... */
     s1 = va_arg(ap, char *);
 
     sptr++;
-/* BOB: should the next line be 'if(*sptr)'?  */
     if (sptr)
       s2 = va_arg(ap, char *);
   }
@@ -1065,6 +1063,8 @@ rtalog(char *fname,    /* error detected in file... */
     syslog(rtadbg.priority, format, fname, linen, s1, s2);
 
   /* Send to stderr if so configured */
-  if (rtadbg.target == 2 || rtadbg.target == 3)
+  if (rtadbg.target == 2 || rtadbg.target == 3) {
     fprintf(stderr, format, fname, linen, s1, s2);
+    fprintf(stderr, "\n");
+  }
 }

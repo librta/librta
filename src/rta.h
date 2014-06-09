@@ -316,7 +316,8 @@ typedef struct
          * arrangement) instead of a linear array of struct.
          * Your iterator should return a pointer to the first
          * row when the input is NULL and should return a NULL
-         * when asked for the row after the last row. */
+         * when asked for the row after the last row.   The rowid
+         * is the number of the row desired.  */
   void    *(*iterator) (void *cur_row, void *it_info, int rowid);
 
         /** A pointer to any kind of information that the 
@@ -451,6 +452,26 @@ int      rta_add_table(TBLDEF *);
  * Return: 
  **************************************************************/
 void     SQL_string(char *, char *, int *);
+
+
+/** ************************************************************
+ * rta_config_dir():  - sets the default path to the savefiles.
+ *
+ * The string pointed to by configdir is saved and is prepended
+ * to the savefile names for tables with savefiles.  This call
+ * should be used before loading your application tables.  It
+ * is intended to make it simpler for applications which let
+ * the user specify an configuration directory on the command
+ * line.
+ *  If the savefile uses an absolute path (starting with '/')
+ * it is not prepended with the configuration directory.
+ *
+ * Return: RTA_SUCCESS   - config path set
+ *         RTA_ERROR     - error, (not a valid directory?)
+ **************************************************************/
+int rta_config_dir(char *configdir);
+
+
 
 /** ************************************************************
  * rta_save():  - Save table to file.   Saves all "savetodisk"
@@ -744,7 +765,7 @@ void     do_rtafs();
  *      This reply indicates that a table requested in a SELECT
  *      UPDATE, or where clause does not exist.  The %s is 
  *      replaced by the name of the requested table.
- * 2) "ERROR:  Attribute '%s' not found\n"
+ * 2) "ERROR:  Attribute '%s' not found"
  *      This reply indicates that a column requested in a SELECT
  *      UPDATE, or where clause does not exist.  The %s is 
  *      replaced by the name of the requested column.
@@ -786,30 +807,31 @@ void     do_rtafs();
  * where the error is detected.  */
 
         /** "System" errors */
-#define Er_No_Mem       "%s %d: Can not allocate memory\n"
-#define Er_No_Save      "%s %d: Table save failure.  Can not open %s\n"
-#define Er_No_Load      "%s %d: Table load failure.  Can not open %s\n"
+#define Er_No_Mem    "%s %d: Can not allocate memory"
+#define Er_No_Save   "%s %d: Table '%s' save failure.  Can not open %s"
+#define Er_No_Load   "%s %d: Table '%s' load failure.  Can not open %s"
 
         /** "RTA" errors */
-#define Er_Max_Tbls     "%s %d: Too many tables in DB\n"
-#define Er_Max_Cols     "%s %d: Too many columns in DB\n"
-#define Er_Tname_Big    "%s %d: Too many characters in table name: %s\n"
-#define Er_Cname_Big    "%s %d: Too many characters in column name: %s\n"
-#define Er_Hname_Big    "%s %d: Too many characters in help text: %s\n"
-#define Er_Tbl_Dup      "%s %d: DB already has table named: %s\n"
-#define Er_Col_Dup      "%s %d: Table already has column named: %s\n"
-#define Er_Col_Type     "%s %d: Column contains an unknown data type: %s\n"
-#define Er_Col_Flag     "%s %d: Column contains unknown flag data: %s\n"
-#define Er_Col_Name     "%s %d: Incorrect table in column definition: %s\n"
-#define Er_Cmd_Cols     "%s %d: Too many columns in table: %s\n"
-#define Er_No_Space     "%s %d: Not enough buffer space\n"
+#define Er_Max_Tbls  "%s %d: Too many tables in DB"
+#define Er_Max_Cols  "%s %d: Too many columns in DB"
+#define Er_Tname_Big "%s %d: Too many characters in table name: %s"
+#define Er_Cname_Big "%s %d: Too many characters in column name: %s"
+#define Er_Hname_Big "%s %d: Too many characters in help text: %s"
+#define Er_Tbl_Dup   "%s %d: DB already has table named: %s"
+#define Er_Col_Dup   "%s %d: Table '%s' already has column named: %s"
+#define Er_Col_Type  "%s %d: Column contains an unknown data type: %s"
+#define Er_Col_Flag  "%s %d: Column contains unknown flag data: %s"
+#define Er_Col_Name  "%s %d: Incorrect table in column definition: %s"
+#define Er_Cmd_Cols  "%s %d: Too many columns in table: %s"
+#define Er_No_Space  "%s %d: Not enough buffer space"
+#define Er_Reserved  "%s %d: Table or column is a reserved word: %s"
 
         /** "SQL" errors */
-#define Er_Bad_SQL      "%s %d: SQL parse error: %s\n"
-#define Er_Readonly     "%s %d: Attempt to update readonly column: %s\n"
+#define Er_Bad_SQL   "%s %d: SQL parse error: %s"
+#define Er_Readonly  "%s %d: Attempt to update readonly column: %s"
 
         /** "Trace" messages */
-#define Er_Trace_SQL    "%s %d: SQL command: %s  (%s)\n"
+#define Er_Trace_SQL "%s %d: SQL command: %s  (%s)"
 
 /*************************************************************/
 

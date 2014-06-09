@@ -26,8 +26,8 @@ extern TBLDEF *Tbl[];
 extern int Ntbl;
 extern COLDEF *Col[];
 extern int Ncol;
-extern struct EpgStat rtastat;
-extern struct EpgDbg rtadbg;
+extern struct RtaStat rtastat;
+extern struct RtaDbg rtadbg;
 
         /* maximum # bytes in UPDATE response */
 #define SQLRSPSIZE  (25)
@@ -45,7 +45,7 @@ static char save_mpt[PATH_MAX + 1]; /* mount point */
  * to hold all of its internal state.  */
 static struct fuse *fuse;
 
-/* The file descriptor for the mounted virtural file system. */
+/* The file descriptor for the mounted virtual file system. */
 static int fuse_fd;
 
 /* The structure RTAFILE contains the parse of the file system 
@@ -234,7 +234,7 @@ rta_getattr(const char *path, struct stat *stbuf)
  * "ROWS" or a column name, we return a list of the rows numbers
  * with the rows numbered "0000" up the then maximum row number
  * minus 1.
- *   A consisteny check verifies that any column specified is in
+ *   A consistency check verifies that any column specified is in
  * the right table.
  *
  * Input:        path   -- the path of the directory in question
@@ -1040,7 +1040,7 @@ prtsetrow(char **xbuf, RTAFILE * prf, char *buf, int size)
 
     /* detect error of no string */
     if (i >= size) {
-      /* BOB: log this */
+      /* BOB: log this? */
       free(pcb);
       return (-EIO);
     }

@@ -37,7 +37,7 @@
 #include <errno.h>
 #include "app.h"
 
-#define  DB_PORT    7778
+#define  DB_PORT    8888
 
 void     accept_ui_session(int srvfd);
 void     compute_cdur(char *tbl, char *col, char *sql, void *pr, int rowid);

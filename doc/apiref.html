@@ -4,10 +4,10 @@
 <head>
 <title>RTA: Embedded DB API</title>
 <style type="text/css">
-p {font-size: large;}
-th {font-size: large;}
-td {font-size: large;}
-pre {font-size: large;}
+p {font-size: medium;}
+th {font-size: medium;}
+td {font-size: medium;}
+pre {font-size: medium;}
 h1 {font-family: sans-serif}
 h2 {font-family: sans-serif}
 h3 {font-family: sans-serif}
@@ -280,14 +280,18 @@ iterator is defined for the table.</td></tr>
 
 <td valign="top">void&nbsp;*iterator</td>
 <td>A function which, given a pointer to one row, return a 
-pointer to the next row.  An input of NULL should return the
+pointer to the next row.  The iterator is called as 
+<tt>iterator(void *prow, void *it_info, int rowid);</tt><br>
+An prow of NULL should return the
 first row of the table.  The function should return NULL when
 asked for the row after the last row in the table.  As a 
-convenience, the row number is also passed.  You may use
-either the current row pointer or the current row number
-in determining the pointer to the next row.
+convenience, the row number being requested is also passed.
+That is, the first call will have rowid equal to zero.
+  You may use
+either the current row pointer or the requested row number
+in determining the pointer to the row.
 The iterator function also passes the <code>it_info</code>
-void pointer defined below.
+void pointer described below.<br>
 If an iterator is defined, the TBLDEF values for table address
 and number of rows are ignored.<br>
 The iterator function provides a way to make linked lists and
@@ -465,6 +469,26 @@ rta_load(TBLDEF *ptbl   - pointer to the table to be loaded,
          char *fname  - string with name of the load file);
 Return: RTA_SUCCESS   - table loaded
         RTA_ERROR     - could not open the file specified
+</pre>
+<br>
+<br>
+
+<p><b>rta_config_dir() - Set directory prefix for file save/load</b><br>
+The string pointed to by configdir is saved and is prepended
+to the savefile names for tables with savefiles.  This call
+should be used before loading your application tables.  It
+is intended to make it simpler for applications which let
+the user specify an configuration directory on the command
+line.</p>
+<p>If the savefile uses an absolute path (ie. one starting with '/')
+it is not prepended with the configuration directory.</p>
+<p>This call is optional.  If it is not used the current working
+directory is used instead.  </p>
+<pre>
+int
+rta_config_dir(char *configdir - path to the configuration files);
+Return: RTA_SUCCESS   - config path set
+        RTA_ERROR     - error, (not a valid directory?)
 </pre>
 <br>
 <br>

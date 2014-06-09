@@ -102,7 +102,7 @@ struct Sql_Cmd
 };
 
 /* Define the debug config structure */
-struct EpgDbg
+struct RtaDbg
 {
   int      syserr;     /* !=0 to log system errors */
   int      rtaerr;     /* !=0 to log rta errors */
@@ -115,7 +115,7 @@ struct EpgDbg
 };
 
 /* Define the stats structure */
-struct EpgStat
+struct RtaStat
 {
   long long nsyserr;   /* count of failed OS calls. */
   long long nrtaerr;   /* count of internal rta failures. */

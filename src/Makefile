@@ -75,6 +75,9 @@ standard: clean
 	 rm $$i~ ; \
 	done
 
+install:	
+	cp lib* /usr/local/lib
+	cp rta.h /usr/local/include
 
 clean: 
 	rm -rf *.o parse.tab.? token.c lib* parse.output parse.save

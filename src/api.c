@@ -1,4 +1,3 @@
-
 /***************************************************************
  * Run Time Access
  * Copyright (C) 2003-2004 Robert W Smith (bsmith@linuxtoys.org)
@@ -18,6 +17,9 @@
 #include <string.h>             /* for strlen() */
 #include <limits.h>             /* for PATH_MAX */
 #include <syslog.h>
+#include <sys/types.h>          /* for stat() */
+#include <sys/stat.h>           /* for stat() */
+#include <unistd.h>             /* for stat() */
 #include "rta.h"                /* for various constants */
 #include "do_sql.h"             /* for LOC */
 
@@ -33,7 +35,11 @@ int      Ntbl = -1;
 COLDEF  *Col[MX_COL];
 int      Ncol;
 
-extern struct EpgDbg rtadbg;
+extern struct RtaDbg rtadbg;
+static char  *ConfigDir = (char *) 0;
+
+int is_reserved(char *pword);
+
 
 /***************************************************************
  * rta_init(): - Initialize all internal system tables.
@@ -66,6 +72,40 @@ rta_init()
                  (void *) 0, 0);
 }
 
+
+
+/***************************************************************
+ * rta_config_dir(): - Set the default directory for all RTA
+ * savefiles.  The directory specified here is prepended to
+ * all file names before a load of the .sql file is attempted.
+ *
+ * Input:        char *  -- the config directory or path
+ * Output:       0 if the dir seems OK, -1 otherwise
+ **************************************************************/
+int
+rta_config_dir(char *configdir)
+{
+  struct stat statbuf;      // to verify input is a directory
+  int         len;          // length of the path
+
+  /* Initialize the RTA tables if this is the first call to add_table */
+  if (Ntbl == -1)
+    rta_init();
+
+  /* Perform some sanity checks */
+  if (!stat(configdir, &statbuf) && S_ISDIR(statbuf.st_mode) &&
+    (ConfigDir = strdup(configdir))) {
+    len = strlen(ConfigDir);
+    if (len != 1 && ConfigDir[len -1] == '/')
+      ConfigDir[len - 1] = (char) 0;
+
+    return(0);
+  }
+  else {
+    return(-1);
+  }
+}
+
 /***************************************************************
  * rta_add_table(): - Add one table to the list of
  * tables in the system.  If the table has an associated
@@ -85,9 +125,10 @@ rta_init()
 int
 rta_add_table(TBLDEF *ptbl)
 {
-  extern struct EpgStat rtastat;
+  extern struct RtaStat rtastat;
   extern TBLDEF rta_columnsTable;
   int      i, j;       /* a loop index */
+
 
   /* Initialize the RTA tables if this is the first call to add_table */
   if (Ntbl == -1)
@@ -113,11 +154,19 @@ rta_add_table(TBLDEF *ptbl)
     i++;
   }
 
-  /* verify lenght of table name */
+  /* verify length of table name */
   if (strlen(ptbl->name) > MXTBLNAME) {
     rtastat.nrtaerr++;
     if (rtadbg.rtaerr)
       rtalog(LOC, Er_Tname_Big, ptbl->name);
+    return (RTA_ERROR);
+  }
+
+  /* verify table name is not a reserved word */
+  if (is_reserved(ptbl->name)) {
+    rtastat.nrtaerr++;
+    if (rtadbg.rtaerr)
+      rtalog(LOC, Er_Reserved, ptbl->name);
     return (RTA_ERROR);
   }
 
@@ -143,7 +192,7 @@ rta_add_table(TBLDEF *ptbl)
       if (!strncmp(ptbl->cols[i].name, ptbl->cols[j].name, MXCOLNAME)) {
         rtastat.nrtaerr++;
         if (rtadbg.rtaerr)
-          rtalog(LOC, Er_Col_Dup, ptbl->cols[i].name);
+          rtalog(LOC, Er_Col_Dup, ptbl->name, ptbl->cols[i].name);
         return (RTA_ERROR);
       }
     }
@@ -156,6 +205,12 @@ rta_add_table(TBLDEF *ptbl)
       rtastat.nrtaerr++;
       if (rtadbg.rtaerr)
         rtalog(LOC, Er_Cname_Big, ptbl->cols[i].name);
+      return (RTA_ERROR);
+    }
+    if (is_reserved(ptbl->cols[i].name)) {
+      rtastat.nrtaerr++;
+      if (rtadbg.rtaerr)
+        rtalog(LOC, Er_Reserved, ptbl->cols[i].name);
       return (RTA_ERROR);
     }
     if (strlen(ptbl->cols[i].help) > MXHELPSTR) {
@@ -241,8 +296,8 @@ rta_add_table(TBLDEF *ptbl)
 int
 dbcommand(char *buf, int *nin, char *out, int *nout)
 {
-  extern struct EpgStat rtastat;
-  int      length;     /* lenght of the packet if old protocol */
+  extern struct RtaStat rtastat;
+  int      length;     /* length of the packet if old protocol */
 
   /* startup or cancel packet if first byte is zero */
   if ((int) buf[0] == 0) {
@@ -332,14 +387,14 @@ dbcommand(char *buf, int *nin, char *out, int *nout)
   }
   else if (buf[0] == 'Q') {     /* a query request */
     /* the Postgres 0300 protocol has a 32 bit length after the 1 byte
-       command.  Verify that we have enough bytes to get the lentgh */
+       command.  Verify that we have enough bytes to get the length */
 
     if (*nin < 5) {
       return (RTA_NOCMD);
     }
 
     /* Get length and verify that we have all the bytes. Note the quiet 
-       assummption that the length is 24 bits. */
+       assumption that the length is 24 bits. */
     length = (int) ((unsigned int) (0xff & buf[4]) +
       ((unsigned int) (0xff & buf[3]) << 8) +
       ((unsigned int) (0xff & buf[2]) << 16));
@@ -379,44 +434,58 @@ dbcommand(char *buf, int *nin, char *out, int *nout)
 int
 rta_save(TBLDEF *ptbl, char *fname)
 {
-  extern struct EpgStat rtastat;
+  extern struct RtaStat rtastat;
   int      sr;         /* the Size of each Row in the table */
   int      rx;         /* Row indeX */
   void    *pr;         /* Pointer to the row in the table/column */
   void    *pd;         /* Pointer to the Data in the table/column */
   int      cx;         /* Column index while building Data pkt */
   char     tfile[PATH_MAX];
-  char     path[PATH_MAX];
+  char     path[PATH_MAX];  /* full path/file name */
   int      fd;         /* file descriptor of temp file */
   FILE    *ftmp;       /* FILE handle to the temp file */
   int      did_header; /* == 1 if printed UPDATE part */
   int      did_1_col;  /* == 1 if at least one col printed */
 
+
+  /* Fill in the path with the full path to the config file */
+  path[0] = (char) 0;
+  if (fname[0] == '/') {
+    (void) strncpy(path, fname, PATH_MAX);
+    path[PATH_MAX-1] = (char) 0;
+  }
+  else {
+    if (ConfigDir) {
+      (void) strcpy(path, ConfigDir);
+      strcat(path, "/");
+    }
+    strcat(path, fname);
+  }
+
   /* Do a sanity check on the lengths of the paths involved */
-  if ((strlen(fname) > PATH_MAX -1) ||
-      (strlen(dirname(path)) + strlen("/tmpXXXXXX") > PATH_MAX -1)) {
+  if (strlen(path) + strlen("/tmpXXXXXX") > PATH_MAX -1) {
     rtastat.nsyserr++;
     if (rtadbg.syserr)
-      rtalog(LOC, Er_No_Save, tfile);
+      rtalog(LOC, Er_No_Save, ptbl->name, path);
     return (RTA_ERROR);
   }
 
   /* Open a temp file in the same directory as the users target file */
-  (void) strcpy(path, fname);
-  (void) strcpy(tfile, dirname(path));
+  (void) strcpy(tfile, path);
+  (void) dirname(tfile);
   (void) strcat(tfile, "/tmpXXXXXX");
   fd = mkstemp(tfile);
   if (fd < 0) {
     rtastat.nsyserr++;
     if (rtadbg.syserr)
-      rtalog(LOC, Er_No_Save, tfile);
+      rtalog(LOC, Er_No_Save, ptbl->name, tfile);
     return (RTA_ERROR);
   }
   ftmp = fdopen(fd, "w");
   if (ftmp == (FILE *) 0) {
     rtastat.nsyserr++;
     if (rtadbg.syserr)
-      rtalog(LOC, Er_No_Save, tfile);
+      rtalog(LOC, Er_No_Save, ptbl->name, tfile);
     return (RTA_ERROR);
   }
 
@@ -508,14 +577,16 @@ rta_save(TBLDEF *ptbl, char *fname)
      our effort to put the temp file in the same directory as the
      target file.) */
   (void) fclose(ftmp);
-  if (rename(tfile, fname) != 0) {
+  if (rename(tfile, path) != 0) {
     rtastat.nsyserr++;
     if (rtadbg.syserr)
-      rtalog(LOC, Er_No_Save, fname);
+      rtalog(LOC, Er_No_Save, ptbl->name, path);
     return (RTA_ERROR);
   }
   return (RTA_SUCCESS);
 }
+
+
 
 /***************************************************************
  * rta_load():  - Load a table from a file of UPDATE commands.
@@ -529,12 +600,13 @@ rta_save(TBLDEF *ptbl, char *fname)
 int
 rta_load(TBLDEF *ptbl, char *fname)
 {
-  extern struct EpgStat rtastat;
+  extern struct RtaStat rtastat;
   FILE    *fp;         /* FILE handle to the load file */
   char    *savefilename; /* table's savefile name */
   char     line[MX_LN_SZ]; /* input line from file */
   char     reply[MX_LN_SZ]; /* response from SQL process */
   int      nreply;     /* number of free bytes in reply */
+  char     path[PATH_MAX];  /* full path/file name */
 
   /* We open the load file and read it one line at a time, executing
      each line that contains "UPDATE" as the first word.  (Lines not
@@ -542,11 +614,28 @@ rta_load(TBLDEF *ptbl, char *fname)
      associated with the table will be invoked. We hide the table's
      save file name, if any, in order to prevent the system from trying 
      to save the table before we are done loading it. */
-  fp = fopen(fname, "r");
+
+
+  /* Fill in the path with the full path to the config file */
+  path[0] = (char) 0;
+  if (fname[0] == '/') {
+    (void) strncpy(path, fname, PATH_MAX);
+    path[PATH_MAX] = (char) 0;
+  }
+  else {
+    if (ConfigDir) {
+      (void) strcpy(path, ConfigDir);
+      strcat(path, "/");
+    }
+    strcat(path, fname);
+  }
+
+  /* Open a temp file in the same directory as the users target file */
+  fp = fopen(path, "r");
   if (fp == (FILE *) 0) {
     rtastat.nsyserr++;
     if (rtadbg.syserr)
-      rtalog(LOC, Er_No_Load, fname);
+      rtalog(LOC, Er_No_Load, ptbl->name, path);
     return (RTA_ERROR);
   }
 
@@ -566,7 +655,7 @@ rta_load(TBLDEF *ptbl, char *fname)
       /* SQL command failed! Report error */
       rtastat.nsyserr++;
       if (rtadbg.syserr)
-        rtalog(LOC, Er_No_Load, fname);
+        rtalog(LOC, Er_No_Load, ptbl->name, fname);
       return (RTA_ERROR);
     }
   }
@@ -575,3 +664,27 @@ rta_load(TBLDEF *ptbl, char *fname)
 
   return (RTA_SUCCESS);
 }
+
+
+
+/***************************************************************
+ * is_reserved():  - Check to see if a word is one of our SQL
+ * reserved words.
+ * 
+ * Input:  pword - pointer to the word to check
+ *
+ * Return: 0 if not a reserved word,  1 if it is.
+ **************************************************************/
+int
+is_reserved(char *pword)
+{
+  return (!strcasecmp(pword, "SELECT") ||
+          !strcasecmp(pword, "UPDATE") ||
+          !strcasecmp(pword, "FROM") ||
+          !strcasecmp(pword, "WHERE") ||
+          !strcasecmp(pword, "LIMIT") ||
+          !strcasecmp(pword, "OFFSET") ||
+          !strcasecmp(pword, "SET"));
+}
+
+
