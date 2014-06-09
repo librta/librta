@@ -20,13 +20,13 @@ This release is compatible with the PostgreSQL 7.4
 protocol.  It is *not* compatible with the earlier 7.3 and
 7.2 protocols.
 
-Please see http://www.linuxappliancedesign.com for more
+Please see http://www.runtimeaccess.com for more
 information and a working example.
 
 
 /***************************************************************
  * Run Time Access
- * Copyright (C) 2003 Robert W Smith (bsmith@linuxtoys.org)
+ * Copyright (C) 2003-2004  Robert W Smith (bsmith@linuxtoys.org)
  *
  *  This program is distributed under the terms of the GNU LGPL.
  *  See the file COPYING file.

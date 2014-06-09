@@ -1,7 +1,7 @@
 
 /***************************************************************
  * Run Time Access
- * Copyright (C) 2003 Robert W Smith (bsmith@linuxtoys.org)
+ * Copyright (C) 2003-2004 Robert W Smith (bsmith@linuxtoys.org)
  *
  *  This program is distributed under the terms of the GNU LGPL.
  *  See the file COPYING file.
@@ -298,7 +298,7 @@ dbcommand(char *buf, int *nin, char *out, int *nout)
          'Z', int32(length), 'I'   */
 
       char reply[164] = {
-        'R',0x00,0x00,0x00,0x08,0x00,0x00,0x00, 0x00,
+        'R',0x00,0x00,0x00,0x08,0x00,0x00,0x00,0x00,
         'S',0x00,0x00,0x00,0x1e,0x63,0x6c,0x69,0x65,0x6e,0x74,0x5f,0x65,
             0x6e,0x63,0x6f,0x64,0x69,0x6e,0x67,0x00,0x53,0x51,0x4c,0x5f,
             0x41,0x53,0x43,0x49,0x49,0x00,
@@ -398,7 +398,8 @@ rta_save(TBLDEF *ptbl, char *fname)
 {
   extern struct EpgStat rtastat;
   int      sr;         /* the Size of each Row in the table */
-  int      rx;         /* Row indeX in for() loop */
+  int      rx;         /* Row indeX */
+  void    *pr;         /* Pointer to the row in the table/column */
   void    *pd;         /* Pointer to the Data in the table/column */
   int      cx;         /* Column index while building Data pkt */
   char     tfile[PATH_MAX];
@@ -430,15 +431,23 @@ rta_save(TBLDEF *ptbl, char *fname)
   }
 
   /* OK, temp file is open and ready to receive table data */
+  /* Get row length and a pointer to the first row */
   sr = ptbl->rowlen;
+  rx = 0;
+  if (ptbl->iterator) 
+    pr = (ptbl->iterator) ((void *) NULL, ptbl->it_info, rx);
+  else
+    pr = ptbl->address;
 
-  for (rx = 0; rx < ptbl->nrows; rx++)
+  /* for each row ..... */
+  while (pr)
   {
     did_header = 0;
     did_1_col = 0;
     for (cx = 0; cx < ptbl->ncol; cx++)
     {
-      if (!ptbl->cols[cx].flags & RTA_DISKSAVE)
+      if ((!ptbl->cols[cx].flags & RTA_DISKSAVE) ||
+          (ptbl->cols[cx].flags & RTA_READONLY))
         continue;
       if (!did_header)
       {
@@ -451,7 +460,7 @@ rta_save(TBLDEF *ptbl, char *fname)
         fprintf(ftmp, ", %s ", ptbl->cols[cx].name);
 
       /* compute pointer to actual data */
-      pd = ptbl->address + (rx * sr) + ptbl->cols[cx].offset;
+      pd = pr + ptbl->cols[cx].offset;
       switch ((ptbl->cols[cx]).type)
       {
         case RTA_STR:
@@ -494,6 +503,15 @@ rta_save(TBLDEF *ptbl, char *fname)
     }
     if (did_header)
       fprintf(ftmp, " LIMIT 1 OFFSET %d\n", rx);
+    rx++;
+    if (ptbl->iterator) 
+      pr = (ptbl->iterator) (pr, ptbl->it_info, rx);
+    else {
+      if (rx >= ptbl->nrows)
+        pr = (void *) NULL;
+      else
+        pr = ptbl->address + (rx * sr);
+    }
   }
 
   /* Done saving the data.  Close the file and rename it to the

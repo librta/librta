@@ -1,6 +1,6 @@
 /***************************************************************
  * Run Time Access
- * Copyright (C) 2003 Robert W Smith (bsmith@linuxtoys.org)
+ * Copyright (C) 2003-2004 Robert W Smith (bsmith@linuxtoys.org)
  *
  *  This program is distributed under the terms of the GNU LGPL.
  *  See the file COPYING file.
@@ -37,21 +37,24 @@
 #include <errno.h>
 #include "app.h"
 
-#define  DB_PORT    9999
+#define  DB_PORT    7777
 
 void     accept_ui_session(int srvfd);
-void     compute_cdur(char *tbl, char *col, char *sql, int rowid);
-void     handle_ui_output(int indx);
-void     handle_ui_request(int indx);
+void     compute_cdur(char *tbl, char *col, char *sql, void *pr, int rowid);
+void     handle_ui_output(UI *pui);
+void     handle_ui_request(UI *pui);
 void     init_ui();
 int      listen_on_port(int port);
-void     reverse_str(char *tbl, char *col, char *sql, int rowid);
+void     reverse_str(char *tbl, char *col, char *sql, void *pr, int rowid);
+void    *get_next_conn(void *prow, void *it_data, int rowid);
 extern TBLDEF UITables[];
 extern int nuitables;
 
 /*  -allocate static, global storage for tables and variables */
-UI       ui[MX_UI];
+UI      *ConnHead;  /* head of linked list of UI conns */
+int      nui = 0;   /* number of open UI connections */
 struct MyData mydata[ROW_COUNT];
+
 
 /***************************************************************
  * How this program works:
@@ -68,9 +71,9 @@ main()
   int      newui_fd = -1; /* FD to TCP socket accept UI conns */
   int      rtafs_fd = -1; /* FD to fuse interface to file system */
   int      i;          /* generic loop counter */
+  UI      *pui;        /* pointer to a UI struct */
+  UI      *nextpui;    /* points to next UI in list */
 
-  setuid(48);
-  setgid(48);
 
 
   /* Init the DB interface */
@@ -79,13 +82,13 @@ main()
   /* Comment out the following if you are not using the fuse */
   /* package. */
   /* Init the file system interface */
-  //rtafs_fd = rtafs_init("/var/www/html/app");
+  rtafs_fd = rtafs_init("/tmp/app");
 
   for (i = 0; i < nuitables; i++)
   {
     rta_add_table(&UITables[i]);
   }
-  init_ui();
+  ConnHead = (UI *) NULL;
 
   while (1)
   {
@@ -113,20 +116,20 @@ main()
     mxfd = (newui_fd > mxfd) ? newui_fd : mxfd;
 
     /* for each UI conn .... */
-    for (i = 0; i < MX_UI; i++)
+    pui = ConnHead;
+    while (pui)
     {
-      if (ui[i].fd < 0)         /* Conn open? */
-        continue;
-      if (ui[i].rspfree < MXRSP) /* Data to send? */
+      if (pui->rspfree < MXRSP) /* Data to send? */
       {
-        FD_SET(ui[i].fd, &wfds);
-        mxfd = (ui[i].fd > mxfd) ? ui[i].fd : mxfd;
+        FD_SET(pui->fd, &wfds);
+        mxfd = (pui->fd > mxfd) ? pui->fd : mxfd;
       }
       else
       {
-        FD_SET(ui[i].fd, &rfds);
-        mxfd = (ui[i].fd > mxfd) ? ui[i].fd : mxfd;
+        FD_SET(pui->fd, &rfds);
+        mxfd = (pui->fd > mxfd) ? pui->fd : mxfd;
       }
+      pui = pui->nextconn;
     }
 
     /* Wait for some something to do */
@@ -141,7 +144,7 @@ main()
     /* Handle file-system requests */
     if ((rtafs_fd >= 0) && (FD_ISSET(rtafs_fd, &rfds)))
     {
-      //do_rtafs();
+      do_rtafs();
     }
 
     /* Handle new UI/DB/manager connection requests */
@@ -151,20 +154,20 @@ main()
     }
 
     /* process request from or data to one of the UI programs */
-    for (i = 0; i < MX_UI; i++)
+    pui = ConnHead;
+    while (pui)
     {
-      if (ui[i].fd < 0)
+      /* Get next UI now since pui struct may be freed in handle_ui.. */
+      nextpui = pui->nextconn;
+      if (FD_ISSET(pui->fd, &rfds))
       {
-        continue;
+        handle_ui_request(pui);
       }
-      if (FD_ISSET(ui[i].fd, &rfds))
+      else if (FD_ISSET(pui->fd, &wfds))
       {
-        handle_ui_request(i);
+        handle_ui_output(pui);
       }
-      else if (FD_ISSET(ui[i].fd, &wfds))
-      {
-        handle_ui_output(i);
-      }
+      pui = nextpui;
     }
   }
 }
@@ -185,66 +188,79 @@ main()
 void
 accept_ui_session(int srvfd)
 {
-  int      i;          /* generic loop counter */
+  int      newuifd;    /* New UI FD */
   int      adrlen;     /* length of an inet socket address */
   struct sockaddr_in cliskt; /* socket to the UI/DB client */
   int      flags;      /* helps set non-blocking IO */
-  int      oldtime, oldindx; /* helps find oldest conn */
+  UI      *pnew;       /* pointer to the new UI struct */
+  UI      *pui;        /* pointer to a UI struct */
 
-  /* We have a new UI/DB/manager connection request.  So find a free
-     slot and allocate it */
-  for (i = 0; i < MX_UI; i++)
-  {
-    if (ui[i].fd < 0)
-      break;
-  }
 
-  /* Probably a programming error if we don't have enough sessions.
-     For now, we force a drop on the oldest ui connection. */
-  if (i == MX_UI)
-  {
-    syslog(LOG_ERR, "no manager connections");
-
-    /* Use a linear search to find the oldest conn */
-    oldtime = ui[0].ctm;
-    oldindx = 0;
-    for (i = 1; i < MX_UI; i++)
-    {
-      if (ui[i].ctm < oldtime)
-      {
-        oldtime = ui[i].ctm;
-        oldindx = i;
-      }
-    }
-    i = oldindx;                /* next part expect free ui indx in 'i' 
-                                 */
-    close(ui[i].fd);
-    ui[i].fd = -1;
-  }
-
-  /* OK, we've got the ui slot, now accept the conn */
+  /* Accept the connection */
   adrlen = sizeof(struct sockaddr_in);
-  ui[i].fd = accept(srvfd, (struct sockaddr *) &cliskt, &adrlen);
+  newuifd = accept(srvfd, (struct sockaddr *) &cliskt, &adrlen); 
+  if (newuifd < 0) {
+    syslog(LOG_ERR, "Manager accept() error");
+    return;
+  }
 
-  if (ui[i].fd < 0)
+  /* We've accepted the connection.  Now get a UI structure.
+     Are we at our limit?  If so, drop the oldest conn. */
+  if (nui >= MX_UI)
   {
-    fprintf(stderr, "Manager accept() error (%d). \n", errno);
-    ui[i].fd = -1;
+    syslog(LOG_WARNING, "no manager connections");
+
+    /* oldest conn is one at head of linked list.  Close it and
+       promote next oldest to the top of the linked list.  */
+printf("At %d closing %d\n", __LINE__, pui->fd);
+    close(ConnHead->fd);
+    pui = ConnHead->nextconn;  
+    free(ConnHead);
+    nui--;
+    ConnHead = pui;
+    ConnHead->prevconn = (UI *) NULL;
+  }
+
+  pnew = malloc(sizeof (UI));
+  if (pnew == (UI *) NULL) 
+  {
+    /* Unable to allocate memory for new connection.  Log it,
+       then drop new connection.  Try to go on.... */
+    syslog(LOG_ERR, "Unable to allocate memory");
+    close(newuifd);
+    return;
+  }
+  nui++;       /* increment number of UI structs alloc'ed */
+
+  /* OK, we've got the UI struct, now add it to end of list */
+  if (ConnHead == (UI *) NULL) 
+  {
+    ConnHead = pnew;
+    pnew->prevconn = (UI *) NULL;
+    pnew->nextconn = (UI *) NULL;
   }
   else
   {
-    /* inc number ui, then init new ui */
-    flags = fcntl(ui[i].fd, F_GETFL, 0);
-    flags |= O_NONBLOCK;
-    (void) fcntl(ui[i].fd, F_SETFL, flags);
-    ui[i].o_ip = (int) cliskt.sin_addr.s_addr;
-    ui[i].o_port = (int) ntohs(cliskt.sin_port);
-    ui[i].cmdindx = 0;
-    ui[i].rspfree = MXRSP;
-    ui[i].ctm = (int) time((time_t *) 0);
-    ui[i].nbytin = 0;
-    ui[i].nbytout = 0;
+    pui = ConnHead;
+    while (pui->nextconn != (UI *) NULL)
+      pui = pui->nextconn;
+    pui->nextconn = pnew;
+    pnew->prevconn = pui;
+    pnew->nextconn = (UI *) NULL;
   }
+
+  /* UI struct is now at end of list.  Fill it in.  */
+  pnew->fd = newuifd;
+  flags = fcntl(pnew->fd, F_GETFL, 0);
+  flags |= O_NONBLOCK;
+  (void) fcntl(pnew->fd, F_SETFL, flags);
+  pnew->o_ip = (int) cliskt.sin_addr.s_addr;
+  pnew->o_port = (int) ntohs(cliskt.sin_port);
+  pnew->cmdindx = 0;
+  pnew->rspfree = MXRSP;
+  pnew->ctm = (int) time((time_t *) 0);
+  pnew->nbytin = 0;
+  pnew->nbytout = 0;
 }
 
 /***************************************************************
@@ -254,6 +270,7 @@ accept_ui_session(int srvfd)
  * Input:        char *tbl   -- the table read (UIConns)
  *               char *col   -- the column read (cdur)
  *               char *sql   -- actual SQL of the command
+ *               void *pr    -- points to row affected
  *               int  rowid  -- row number of row read 
  * Output:       none
  * Effects:      Computes the difference between the current
@@ -261,9 +278,12 @@ accept_ui_session(int srvfd)
  *               field 'ctm'.  The result is placed in 'cdur'.
  ***************************************************************/
 void
-compute_cdur(char *tbl, char *col, char *sql, int rowid)
+compute_cdur(char *tbl, char *col, char *sql, void *pr, int rowid)
 {
-  ui[rowid].cdur = ((int) time((time_t *) 0)) - ui[rowid].ctm;
+printf("prow=%08x, rowid=%d\n", (int)pr,rowid);
+fflush(0);
+if(pr)
+  ((UI *)pr)->cdur = ((int) time((time_t *) 0)) - ((UI *)pr)->ctm;
 }
 
 /***************************************************************
@@ -276,12 +296,12 @@ compute_cdur(char *tbl, char *col, char *sql, int rowid)
  * starts from this execution path.  The input is an index into
  * the ui table for the manager with data ready.
  *
- * Input:        index of the relevant entry in the ui table
+ * Input:        pointer to UI struct with data to read
  * Output:       none
  * Effects:      many, many side effects via table callbacks
  ***************************************************************/
 void
-handle_ui_request(int indx)
+handle_ui_request(UI *pui)
 {
   int      ret;        /* a return value */
   int      dbstat;     /* a return value */
@@ -290,37 +310,44 @@ handle_ui_request(int indx)
   /* We read data from the connection into the buffer in the ui struct. 
      Once we've read all of the data we can, we call the DB routine to
      parse out the SQL command and to execute it. */
-  ret = read(ui[indx].fd, &(ui[indx].cmd[ui[indx].cmdindx]),
-             (MXCMD - ui[indx].cmdindx));
+  ret = read(pui->fd, &(pui->cmd[pui->cmdindx]), (MXCMD - pui->cmdindx));
 
   /* shutdown manager conn on error or on zero bytes read */
   if (ret <= 0)
   {
     /* log this since a normal close is with an 'X' command from the
        client program? */
-    close(ui[indx].fd);
-    ui[indx].fd = -1;
+    close(pui->fd);
+    /* Free the UI struct */
+    if (pui->prevconn)
+      (pui->prevconn)->nextconn = pui->nextconn;
+    else
+      ConnHead = pui->nextconn;
+    if (pui->nextconn)
+      (pui->nextconn)->prevconn = pui->prevconn;
+    free(pui);
+    nui--;
     return;
   }
-  ui[indx].cmdindx += ret;
-  ui[indx].nbytin += ret;
+  pui->cmdindx += ret;
+  pui->nbytin += ret;
 
   /* The commands are in the buffer. Call the DB to parse and execute
      them */
   do
   {
-    t = ui[indx].cmdindx;                        /* packet in length */
-      dbstat = dbcommand(ui[indx].cmd,           /* packet in */
-      &ui[indx].cmdindx,                         /* packet in length */
-      &ui[indx].rsp[MXRSP - ui[indx].rspfree],   /* ptr to out buf */
-      &ui[indx].rspfree);                        /* N bytes at out */
-    t -= ui[indx].cmdindx;      /* t = # bytes consumed */
+    t = pui->cmdindx;                        /* packet in length */
+      dbstat = dbcommand(pui->cmd,           /* packet in */
+      &(pui->cmdindx),                       /* packet in length */
+      &(pui->rsp[MXRSP - pui->rspfree]),     /* ptr to out buf */
+      &(pui->rspfree));                      /* N bytes at out */
+    t -= pui->cmdindx;      /* t = # bytes consumed */
     /* move any trailing SQL cmd text up in the buffer */
-    (void) memmove(ui[indx].cmd, &ui[indx].cmd[t], t);
+    (void) memmove(pui->cmd, &(pui->cmd[t]), t);
   } while (dbstat == RTA_SUCCESS);
   /* the command is done (including side effects).  Send any reply back 
      to the UI.  You may want to check for RTA_CLOSE here. */
-  handle_ui_output(indx);
+  handle_ui_output(pui);
 }
 
 /***************************************************************
@@ -328,62 +355,52 @@ handle_ui_request(int indx)
  * to the TCP connection to the UI programs.  It is useful for
  * slow clients which can not accept the output in one big gulp.
  *
- * Input:        index of the relevant entry in the ui table
+ * Input:        pointer to UI structure ready for write
  * Output:       none
  * Effects:      none
  ***************************************************************/
 void
-handle_ui_output(int indx)
+handle_ui_output(UI *pui)
 {
   int      ret;        /* write() return value */
 
-  if (ui[indx].rspfree < MXRSP)
+  if (pui->rspfree < MXRSP)
   {
-    ret = write(ui[indx].fd, ui[indx].rsp, (MXRSP - ui[indx].rspfree));
+    ret = write(pui->fd, pui->rsp, (MXRSP - pui->rspfree));
     if (ret < 0)
     {
       /* log a failure to talk to a DB/UI connection */
       fprintf(stderr,
         "error #%d on ui write to port #%d on IP=%d\n",
-        errno, ui[indx].o_port, ui[indx].o_ip);
-      close(ui[indx].fd);
-      ui[indx].fd = -1;
+        errno, pui->o_port, pui->o_ip);
+      close(pui->fd);
+      /* Free the UI struct */
+      if (pui->prevconn)
+        (pui->prevconn)->nextconn = pui->nextconn;
+      else
+        ConnHead = pui->nextconn;
+      if (pui->nextconn)
+        (pui->nextconn)->prevconn = pui->prevconn;
+      free(pui);
+      nui--;
       return;
     }
-    else if (ret == (MXRSP - ui[indx].rspfree))
+    else if (ret == (MXRSP - pui->rspfree))
     {
-      ui[indx].rspfree = MXRSP;
-      ui[indx].nbytout += ret;
+      pui->rspfree = MXRSP;
+      pui->nbytout += ret;
     }
     else
     {
       /* we had a partial write.  Adjust the buffer */
-      (void) memmove(ui[indx].rsp, &ui[indx].rsp[ret],
-        (MXRSP - ui[indx].rspfree - ret));
-      ui[indx].rspfree += ret;
-      ui[indx].nbytout += ret;  /* # bytes sent on conn */
+      (void) memmove(pui->rsp, &(pui->rsp[ret]),
+        (MXRSP - pui->rspfree - ret));
+      pui->rspfree += ret;
+      pui->nbytout += ret;  /* # bytes sent on conn */
     }
   }
 }
 
-/***************************************************************
- * init_ui(): - Initializes the data structures for the DB
- * connections from the UIs.
- *
- * Input:        none
- * Output:       none
- * Effects:      manager connection table (ui)
- ***************************************************************/
-void
-init_ui()
-{
-  int      i;          /* generic loop counter */
-
-  for (i = 0; i < MX_UI; i++)
-  {
-    ui[i].fd = -1;
-  }
-}
 
 /***************************************************************
  * listen_on_port(int port): -  Open a socket to listen for
@@ -429,6 +446,7 @@ listen_on_port(int port)
   return (srvfd);
 }
 
+
 /***************************************************************
  * reverse_str(): - a write callback to replace '<' and '>' with
  * '.', and to store the reversed string of notes into seton.
@@ -436,12 +454,13 @@ listen_on_port(int port)
  * Input:        char *tbl   -- the table modified
  *               char *col   -- the column modified
  *               char *sql   -- actual SQL of the command
+ *               void *pr    -- points to row 
  *               int  rowid  -- row number of row modified
  * Output:       none
  * Effects:      Puts the reverse of 'notes' into 'seton'
  ***************************************************************/
 void
-reverse_str(char *tbl, char *col, char *sql, int rowid)
+reverse_str(char *tbl, char *col, char *sql, void *pr, int rowid)
 {
   int      i, j;       /* loop counters */
 
@@ -453,4 +472,24 @@ reverse_str(char *tbl, char *col, char *sql, int rowid)
     mydata[rowid].seton[j] = mydata[rowid].notes[i];
   }
   mydata[rowid].seton[j] = (char) 0;
+}
+
+
+/***************************************************************
+ * get_next_conn(): - an 'iterator' on the linked list of TCP
+ * connections.
+ *
+ * Input:        void *prow  -- pointer to current row
+ *               void *it_data -- callback data.  Unused.
+ *               int   rowid -- the row number.  Unused.
+ * Output:       pointer to next row.  NULL on last row
+ * Effects:      No side effects
+ ***************************************************************/
+void *
+get_next_conn(void *prow, void *it_data, int rowid)
+{
+  if (prow == (void *) NULL)
+    return((void *) ConnHead);
+
+  return((void *) ((UI *)prow)->nextconn);
 }

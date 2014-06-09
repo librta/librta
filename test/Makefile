@@ -1,6 +1,6 @@
 ################################################################
  # Run Time Access
- # Copyright (C) 2003 Robert W Smith (bsmith@linuxtoys.org)
+ # Copyright (C) 2003-2004 Robert W Smith (bsmith@linuxtoys.org)
  #
  #  This program is distributed under the terms of the GNU LGPL.
  #  See the file COPYING file.
@@ -18,15 +18,15 @@ CC = gcc
 OPT =  -fPIC -c -I.
 DEBUG = -g -DDEBUG -DYYDEBUG -ggdb -Wall
 CFLAGS = $(OPT) $(DEBUG)
-OBJS   = appmain.o apptables.o
+APPOBJS   = appmain.o apptables.o
 
 default: app
 
-app: $(OBJS) 
-	$(CC) $(OBJS) -o $@ -L../src -lrtadb -lrtafs
+app: $(APPOBJS) 
+	$(CC) $(APPOBJS) -o $@ -L../src -lrtadb -lrtafs
 
-app-static: $(OBJS) 
-	$(CC) $(OBJS) -o $@ ../src/librtadb.a ../src/librtafs.a \
+app-static: $(APPOBJS) 
+	$(CC) $(APPOBJS) -o $@ ../src/librtadb.a ../src/librtafs.a \
 			 /usr/local/lib/libfuse.a
 
 appmain.o: appmain.c app.h
@@ -34,6 +34,8 @@ appmain.o: appmain.c app.h
 
 apptables.o: apptables.c app.h
 	$(CC) $(CFLAGS) $< -o $@
+
+
 
 standard: clean
 	for i in *.h *.c ; \

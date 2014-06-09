@@ -38,6 +38,22 @@ you probably want rta-0.6.1.
 <p>
 <table cellpadding=5 cellspacing=1 width="75%" border=1> 
 <tr><th>Version</th><th>Change Log</th></tr>
+
+<tr valign="top"><td><a href=rta-0.7.0.tgz>rta-0.7.0.tgz</td>
+<td>2004-01-03<br>
+        Added a row 'iterator' to the table definition.  Prior
+        to this addition all tables had to be linear arrays
+        of structs.  The iterator function makes it possible
+        to have linked lists or other more complex data
+        sturctures appear as if they were in a Postgres data
+        base.  <br>
+          This change modifies the API slightly and this
+        version is not backward compatible with earlier
+        versions.  We've added two members to the TBLDEF
+        structure and the read and write callbacks now
+        have a pointer to the row as well as the row number. 
+</td></tr>
+
 <tr valign="top"><td><a href=rta-0.6.2.tgz>rta-0.6.2.tgz</td>
 <td>2003-12-16<br>
         Converted from PostgreSQL 7.3 protocol

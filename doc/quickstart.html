@@ -307,10 +307,10 @@ to download, build, and run the sample application.</p>
 given above.  Untar it.  Go to the src directory
 and do a make.  </p>
 <pre>
-    # tar -xzf rta-0.6.1.tgz
-    # cd rta-0.6.1
+    # tar -xzf rta-0.7.0.tgz
+    # cd rta-0.7.0
     # cd src
-    # make librtadb
+    # make librtadb.so.2
 </pre>
 <p>Download the myappdb.c file (available 
 <a href=myappdb.c>here</a>).  Place the file
@@ -326,7 +326,7 @@ directory.</p>
 it where to find the shared object library.  From
 the <tt>test</tt> directory enter:</p>
 <pre>
-    # export LD_LIBRARY_PATH=/home/rta-0.6.1/src
+    # export LD_LIBRARY_PATH=/home/rta-0.7.0/src
     # ./myappdb &amp;
 </pre>
 <p>That is all there is to it.  Please use the contact
@@ -544,10 +544,10 @@ built, install the kernel module, fuse.o, and test your installation by
 trying several of the programs in the <tt>example</tt> directory.</p>
 <p>Once FUSE is installed and verified, you can build the librtafs
 library.
-<pre>    # tar -xzf rta-0.6.1.tgz
-    # cd rta-0.6.1
+<pre>    # tar -xzf rta-0.7.0.tgz
+    # cd rta-0.7.0
     # cd src
-    # make librtafs
+    # make librtafs.so.2
 </pre></p>
 <p>Copy the myappfs.c program to the <tt>test</tt> directory and compile
 it with the command:
@@ -558,7 +558,7 @@ it with the command:
 in one of the system library directories or explicitly tell
 the system to look for the libraries in the <tt>src</tt> directory:
 <pre>
-    # export LD_LIBRARY_PATH=/home/rta-0.6.1/src
+    # export LD_LIBRARY_PATH=/home/rta-0.7.0/src
 </pre>
 <p>Make sure that <tt>/tmp/mydir</tt> exists and run the program.
 <pre>

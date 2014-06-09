@@ -1,3 +1,12 @@
+2004-01-03 Bob Smith
+        * Version 0.7.0.   Added a callback function, called an
+        'iterator', which advances a row pointer from one row to
+        the next.  This makes it possible to have linked-lists
+        appear as tables in Run Time Access.   Previous versions
+        required that all data be arranged as an array of struct.
+          Minor bug fix in the table save function.
+          Rolled shared object version to '.2'.
+
 2003-12-16 Bob Smith
         * Version 0.6.2.   Converted from PostgreSQL 7.3 protocol
         to PostgreSQL 7.4 protocol.  Version 0.6.2 is *not*

@@ -8,7 +8,7 @@
 #include "../src/rta.h"
 
 /* Forward references */
-void reverse_str(char *tbl, char *col, char *sql, int rowid);
+void reverse_str(char *tbl, char *col, char *sql, void *pr, int rowid);
 
 
 #define NOTE_LEN   30
@@ -76,6 +76,8 @@ TBLDEF mytbldef = {
     mydata,              /* address of table */
     sizeof(struct MyData), /* length of each row */
     ROW_COUNT,           /* number of rows */
+    (void *) NULL,       /* linear array; no need for an iterator */
+    (void *) NULL,       /* no iterator callback data either */
     mycolumns,           /* array of column defs */
     sizeof(mycolumns) / sizeof(COLDEF),
                          /* the number of columns */
@@ -123,7 +125,7 @@ int main()
 
 /* reverse_str(), a write callback to replace '<' and '>' with
  * '.', and to store the reversed string of notes into seton. */
-void reverse_str(char *tbl, char *col, char *sql, int rowid)
+void reverse_str(char *tbl, char *col, char *sql, void *pr, int rowid)
 {
     int   i,j;                 /* loop counters */
 

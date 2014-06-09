@@ -1,6 +1,6 @@
 /***************************************************************
  * Run Time Access
- * Copyright (C) 2003 Robert W Smith (bsmith@linuxtoys.org)
+ * Copyright (C) 2003-2004 Robert W Smith (bsmith@linuxtoys.org)
  *
  *  This program is distributed under the terms of the GNU LGPL.
  *  See the file COPYING file.
@@ -103,6 +103,8 @@ rta_getattr(const char *path, struct stat *stbuf)
   int      c;          /* column index in a loop */
   char    *tbuf;       /* malloc'ed print buffer */
   int      out;        /* cumulative #bytes output by sprint */
+  int      nr;         /* number of rows in table */
+  void    *pr;         /* points to a table row */
 
   if (rta_parse_path(&rf, path) != RTA_SUCCESS)
     return (-ENOENT);
@@ -123,7 +125,18 @@ rta_getattr(const char *path, struct stat *stbuf)
 
     case 2:                    /* /(table)/ROWS */
       stbuf->st_mode = S_IFDIR | 0555;
-      stbuf->st_nlink = 2 + Tbl[rf.t]->nrows;
+      /* If an iterator is defined we must 'hand count' the rows */
+      if (Tbl[rf.t]->iterator) {
+        nr = 0;
+        pr = (Tbl[rf.t]->iterator) ((void *) NULL, Tbl[rf.t]->it_info, nr);
+        while (pr) {
+          nr++;
+          pr = (Tbl[rf.t]->iterator) (pr, Tbl[rf.t]->it_info, nr);
+        }
+        stbuf->st_nlink = 2 + nr;
+      }
+      else
+        stbuf->st_nlink = 2 + Tbl[rf.t]->nrows;
       break;
 
     case 3:                    /* /(table)/ROWS/(row#) */
@@ -168,7 +181,17 @@ rta_getattr(const char *path, struct stat *stbuf)
 
     case 4:                    /* /(table)/(column) */
       stbuf->st_mode = S_IFDIR | 0555;
-      stbuf->st_nlink = 2 + Tbl[rf.t]->nrows;
+      if (Tbl[rf.t]->iterator) {
+        nr = 0;
+        pr = (Tbl[rf.t]->iterator) ((void *) NULL, Tbl[rf.t]->it_info, nr);
+        while (pr) {
+          nr++;
+          pr = (Tbl[rf.t]->iterator) (pr, Tbl[rf.t]->it_info, nr);
+        }
+        stbuf->st_nlink = 2 + nr;
+      }
+      else
+        stbuf->st_nlink = 2 + Tbl[rf.t]->nrows;
       break;
 
     case 5:                    /* /(table)/(column)/(row#) */
@@ -231,6 +254,8 @@ rta_getdir(const char *path, fuse_dirh_t h, fuse_dirfil_t filler)
   int      i;
   RTAFILE  rf;
   char     rowstr[15]; /* 15=safe value for #digits in row number */
+  int      nr;         /* number of rows in table */
+  void    *pr;         /* pointer to a row */
 
   if (rta_parse_path(&rf, path) != RTA_SUCCESS)
     return (-ENOENT);
@@ -259,7 +284,17 @@ rta_getdir(const char *path, fuse_dirh_t h, fuse_dirfil_t filler)
     case 2:                    /* /(table)/ROWS */
       filler(h, ".", 0);
       filler(h, "..", 0);
-      for (i = 0; i < Tbl[rf.t]->nrows; i++)
+      nr = Tbl[rf.t]->nrows;
+      /* Manually count rows if an iterator is defined */
+      if (Tbl[rf.t]->iterator) {
+        nr = 0;
+        pr = (Tbl[rf.t]->iterator) ((void *) NULL, Tbl[rf.t]->it_info, nr);
+        while (pr) {
+          nr++;
+          pr = (Tbl[rf.t]->iterator) (pr, Tbl[rf.t]->it_info, nr);
+        }
+      }
+      for (i = 0; i < nr; i++)
       {
         sprintf(rowstr, "%04d", i);
         filler(h, rowstr, 0);
@@ -273,7 +308,17 @@ rta_getdir(const char *path, fuse_dirh_t h, fuse_dirfil_t filler)
     case 4:                    /* /(table)/(column) */
       filler(h, ".", 0);
       filler(h, "..", 0);
-      for (i = 0; i < Tbl[rf.t]->nrows; i++)
+      nr = Tbl[rf.t]->nrows;
+      /* Manually count rows if an iterator is defined */
+      if (Tbl[rf.t]->iterator) {
+        nr = 0;
+        pr = (Tbl[rf.t]->iterator) ((void *) NULL, Tbl[rf.t]->it_info, nr);
+        while (pr) {
+          nr++;
+          pr = (Tbl[rf.t]->iterator) (pr, Tbl[rf.t]->it_info, nr);
+        }
+      }
+      for (i = 0; i < nr; i++)
       {
         sprintf(rowstr, "%04d", i);
         filler(h, rowstr, 0);
@@ -781,6 +826,8 @@ rta_parse_path(RTAFILE * pfs, const char *path)
 
   int      i;          /* We use i as the index into the path string */
   int      j;          /* loop counter */
+  int      nr;         /* number of rows in table */
+  void    *pr;         /* pointer to a row */
 
   /* Init the structure to "/" */
   pfs->tbl[0] = (char) NULL;
@@ -866,8 +913,17 @@ rta_parse_path(RTAFILE * pfs, const char *path)
 
     /* rest of path is row number */
     strncpy(pfs->leaf, &path[i], NAME_MAX);
-    if ((sscanf(pfs->leaf, "%d", &(pfs->r)) != 1)
-      || (pfs->r >= Tbl[pfs->t]->nrows))
+    nr = Tbl[pfs->t]->nrows;
+    /* Manually count rows if an iterator is defined */
+    if (Tbl[pfs->t]->iterator) {
+      nr = 0;
+      pr = (Tbl[pfs->t]->iterator) ((void *) NULL, Tbl[pfs->t]->it_info, nr);
+      while (pr) {
+        nr++;
+        pr = (Tbl[pfs->t]->iterator) (pr, Tbl[pfs->t]->it_info, nr);
+      }
+    }
+    if ((sscanf(pfs->leaf, "%d", &(pfs->r)) != 1) || (pfs->r >= nr))
       return (RTA_ERROR);
     else
     {
@@ -902,8 +958,18 @@ rta_parse_path(RTAFILE * pfs, const char *path)
 
   /* We have '/(table)/(column)/xxx'.  So we need a row #. */
   strncpy(pfs->leaf, &path[i], NAME_MAX);
-  if ((sscanf(pfs->leaf, "%d", &(pfs->r)) != 1)
-    || (pfs->r >= Tbl[pfs->t]->nrows))
+
+  nr = Tbl[pfs->t]->nrows;
+  /* Manually count rows if an iterator is defined */
+  if (Tbl[pfs->t]->iterator) {
+    nr = 0;
+    pr = (Tbl[pfs->t]->iterator) ((void *) NULL, Tbl[pfs->t]->it_info, nr);
+    while (pr) {
+      nr++;
+      pr = (Tbl[pfs->t]->iterator) (pr, Tbl[pfs->t]->it_info, nr);
+    }
+  }
+  if ((sscanf(pfs->leaf, "%d", &(pfs->r)) != 1) || (pfs->r >= nr))
     return (RTA_ERROR);
   else
   {
@@ -1143,22 +1209,31 @@ getcolsz(int c)
 static int
 sprtcol(int t, int r, COLDEF *pc, char *buf, int nbuf, int quot)
 {
+  void    *pr;         /* Pointer to the row in the column */
   void    *pd;         /* Pointer to the Data in the table/column */
   int      out;        /* number of bytes added to buf */
+  int      nr;         /* number of rows in table */
 
   /* compute pointer to actual data */
-  if (t > RTA_COLUMNS)
-    pd = Tbl[t]->address + (r * Tbl[t]->rowlen) + pc->offset;
-  else if (t == RTA_TABLES)
-    pd = (void *) Tbl[r] + pc->offset;
-  else
-    pd = (void *) Col[r] + pc->offset;
+  pr = Tbl[t]->address + (r * Tbl[t]->rowlen);
+
+  /* Iterate down to row if an iterator is defined */
+  if (Tbl[t]->iterator) {
+    nr = 0;
+    pr = (Tbl[t]->iterator) ((void *) NULL, Tbl[t]->it_info, nr);
+    while (pr && nr < r) {
+      nr++;
+      pr = (Tbl[t]->iterator) (pr, Tbl[t]->it_info, nr);
+    }
+  }
+
+  pd = pr + pc->offset;
 
   /* execute read callback (if defined) on row */
   /* the call back is expected to fill in the data */
   if (pc->readcb)
   {
-    (pc->readcb) (Tbl[t]->name, pc->name, "", r);
+    (pc->readcb) (Tbl[t]->name, pc->name, "", pr, r);
   }
 
   /* Print is based on data type.  */

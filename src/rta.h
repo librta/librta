@@ -1,6 +1,6 @@
 /***************************************************************
  * Run Time Access
- * Copyright (C) 2003 Robert W Smith (bsmith@linuxtoys.org)
+ * Copyright (C) 2003-2004 Robert W Smith (bsmith@linuxtoys.org)
  *
  *  This program is distributed under the terms of the GNU LGPL.
  *  See the file COPYING file.
@@ -200,19 +200,21 @@ typedef struct
 
           /** Read callback.  This routine is called before the
            * column value is used.  Input values include the
-           * table name, the column name, the input SQL
-           * command, and the (zero indexed) row number for the
-           * row that is being read.
+           * table name, the column name, the input SQL command,
+           * a pointer to the row affected, and the (zero indexed)
+           * row number for the row that is being read.
            * This routine is called *each* time the column is
            * read so the following would produce two calls:
            * SELECT intime FROM inns WHERE intime >= 100;   */
-  void     (*readcb) (char *tbl, char *column, char *SQL, int row_num);
+  void     (*readcb) (char *tbl, char *column, char *SQL, void *pr,
+                      int row_num);
 
           /** Write callback.  This routine is called after an
            * UPDATE in which the column is written. Input values
            * include the table name, the column name, the SQL
-           * command, and the (zero indexed) row number of the
-           * modified row.  See the callback section below.
+           * command, a pointer to the row affected, and the (zero
+           * indexed) row number of the modified row.  See the
+           * callback section below.
            * This routine is called only once after all column
            * updates have occurred.  For example, if there were
            * a write callback attached to the addr column, the
@@ -222,7 +224,8 @@ typedef struct
            * UPDATE ethers SET mask="255.255.255.0", addr = \
            *     "192.168.1.10" WHERE name = "eth1";
            * The callback is called for each row modified. */
-  void     (*writecb) (char *tbl, char *column, char *SQL, int row_num);
+  void     (*writecb) (char *tbl, char *column, char *SQL, void *pr,
+                       int row_num);
 
           /** A brief description of the column.  This should
            * include the meaning of the data in the column, the
@@ -287,7 +290,6 @@ COLDEF;
          * rta_add_table() subroutine.  */
 typedef struct
 {
-
         /** The name of the table.  Must be less than than
          * MXTLBNAME characters in length.  Must be unique
          * within the DB.  */
@@ -306,6 +308,22 @@ typedef struct
 
         /** Number of rows in the table.   */
   int      nrows;
+
+        /** An 'iterator' on the rows of the data.  This is
+         * useful if you want to have a linked list (or other
+         * arrangement) instead of a linear array of struct.
+         * Your iterator should return a pointer to the first
+         * row when the input is NULL and should return a NULL
+         * when asked for the row after the last row. */
+  void *   (*iterator) (void *cur_row, void *it_info, int rowid);
+
+        /** A pointer to any kind of information that the 
+         * caller wants returned with each iterator call.  
+         * For example, you may wish to have one iterator 
+         * for all of your linked lists.  You could pass in
+         * a unique identifier for each table so the function
+         * can handle each one as appropriate. */
+  void    *it_info;
 
         /** An array of COLDEF structures which describe each
          * column in the table.  These must be in statically
@@ -812,6 +830,7 @@ void     do_rtafs();
  *   - char *tblname:  the name of the table referenced
  *   - char *colname:  the name of the column referenced
  *   - char *sqlcmd:   the text of the SQL command 
+ *   - void *pr;       points to affected row in table
  *   - int   rowid:    the zero-indexed row number of the row
  *                     being read or written
  *
@@ -839,6 +858,7 @@ void     do_rtafs();
  * - model output buffer mgmt on zlib to allow output streams
  * - add a column data type of "table" to allow nested tables
  * - add internationalization support
+ * - make it thread safe
  **************************************************************/
 
 #endif

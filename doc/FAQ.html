@@ -70,12 +70,15 @@ pointers?</a></li>
 <li><a href="#p24">Why use native data type instead of INT4 and
 INT8?</a></li>
 <li><a href="#p25">Why do I get: "error while loading shared libraries:
-librtadb.so.1:"</a></li>
+librtadb.so.2:"</a></li>
 <li><a href="#p26">How big should I make the output buffer for
 dbcommand()?</a></li>
 <li><a href="#p27">Why must a write() have all data in a single
 buffer?</a></li>
 <li><a href="#p28">Can I export a simple variable?</a></li>
+<li><a href="#p29">Which is better, the file system or the database interface?</a></li>
+<li><a href="#p30">Is RTA thread safe?</a></li>
+<li><a href="#p31">What is in the To-Do list?</a></li>
 </ul>
 <hr>
 <h3>General questions</h3>
@@ -139,9 +142,9 @@ It is also best for single process applications where the data is
 in one memory space. For instance, it might not be a good fit for
 Apache which forks several equal, independent processes.</p>
 <p><b><a name="q10">How big is it?</a></b><br> The stripped
-shared-object SQL interface library (librtadb.so.1) is 52KB and
-the static (.a) library is 43KB.  The stripped virtual file system interface
-(librtafs.so.1) is 27KB and the static library is 9KB.  Note that
+shared-object SQL interface library (librtadb.so.2) is 45KB and
+the static (.a) library is 44KB.  The stripped virtual file system interface
+(librtafs.so.2) is 13KB and the static library is 11KB.  Note that
 to use the virtual file system interface you need to load the SQL
 interface as well.</p>
 <p><b><a name="q11">Do I need to know SQL to use RTA?</a></b><br> Not
@@ -241,7 +244,7 @@ The idea is to give easy access to *your* data structures. Since
 most programmers use the native int, long long, and float, we do
 too.</p>
 <p><b><a name="p25">Why do I get "error while loading shared libraries:
-librtadb.so.1"?</a></b><br>
+librtadb.so.2"?</a></b><br>
 You need to put the librtadb.so and librtafs.so files into one of
 the system library directories or you need to something like "export
 LD_LIBRARY_PATH=../src" in order to let the application find the
@@ -273,5 +276,43 @@ could conflict and leave the table an inconsistent state.</p>
 Sure.  Just define a single column for your variable and a table
 with a single row.  You can make visible simple variables, 
 single structures, or arrays of structures.</p>
+
+<p><b><a name="p29">Which is better, the file system or the database
+interface?</a></b><br>
+The database interface is better in most applications.  It is
+faster and it is atomic.  That is, a single statement can do an
+update based on the results of WHERE clause.  Our use of the
+file system interface has shown it to be a little fragile.  You
+need to be careful to not leave a mounted file system when your
+program exits abnormally.  This means you need some supervisory
+program to unmount the file system and possibly remove and
+re-install the fuse kernel module.  </p>
+
+<p><b><a name="p30">Is RTA thread safe?</a></b><br>
+RTA is not currently thread safe.  Please contact the authors
+if this is very high on your wish list.  </p>
+
+<p><b><a name="p31">What is in the To-Do list?</a></b><br>
+Please let the authors know what features you would like added
+or removed from Run Time Access.  No additional changes are
+anticipated at this time, but the list of possible changes
+includes:
+<ul>
+ <li> UTF-8 support</li>
+ <li> printf format string in the column definition</li>
+ <li> ability to register more than one trigger per column</li>
+ <li> secure login maintaining Postgres compatibility</li>
+ <li> IPC and support for shared tables in shared memory</li>
+ <li> specify pre or post for the write callback</li>
+ <li> table save callback (to save file to flash?)</li>
+ <li> execution times for table access, update</li>
+ <li> count(*) function</li>
+ <li> model output buffer mgmt on zlib to allow output streams</li>
+ <li> add a column data type of "table" to allow nested tables</li>
+ <li> make it thread safe</li>
+</ul>
+</p>
+
 </body>
 </html>
+

@@ -1,6 +1,6 @@
 /***************************************************************
  * Run Time Access
- * Copyright (C) 2003 Robert W Smith (bsmith@linuxtoys.org)
+ * Copyright (C) 2003-2004 Robert W Smith (bsmith@linuxtoys.org)
  *
  *  This program is distributed under the terms of the GNU LGPL.
  *  See the file COPYING file.
@@ -23,8 +23,9 @@
 #include "app.h"                /* for table definitions and sizes */
 extern UI ui[];
 extern struct MyData mydata[];
-extern void compute_cdur(char *tbl, char *col, char *sql, int rowid);
-extern void reverse_str(char *tbl, char *col, char *sql, int rowid);
+extern void compute_cdur(char *tbl, char *col, char *sql, void *pr, int rowid);
+extern void reverse_str(char *tbl, char *col, char *sql, void *pr, int rowid);
+extern void *get_next_conn(void *prow, void *it_info, int rowid);
 
 /***************************************************************
  *   Here is the sample application column definitions.
@@ -36,7 +37,7 @@ COLDEF   mycolumns[] = {
       RTA_INT,                  /* it is an integer */
       sizeof(int),              /* number of bytes */
       offsetof(struct MyData, myint), /* location in struct */
-      0,               /* no flags */
+      RTA_DISKSAVE,               /* no flags */
       (void (*)()) 0,  /* called before read */
       (void (*)()) 0,  /* called after write */
     "A sample integer in a table"},
@@ -46,24 +47,24 @@ COLDEF   mycolumns[] = {
       RTA_FLOAT,                /* it is a float */
       sizeof(float),            /* number of bytes */
       offsetof(struct MyData, myfloat), /* location in struct */
-      0,               /* no flags */
+      RTA_DISKSAVE,               /* no flags */
       (void (*)()) 0,  /* called before read */
       (void (*)()) 0,  /* called after write */
     "A sample float in a table"},
   {
       "mytable",                /* the table name */
       "notes",                  /* the column name */
-      RTA_STR,                  /* it is an integer */
+      RTA_STR,                  /* it is a string */
       NOTE_LEN,                 /* number of bytes */
       offsetof(struct MyData, notes), /* location in struct */
-      0,               /* no flags */
+      RTA_DISKSAVE,               /* no flags */
       (void (*)()) 0,  /* called before read */
       reverse_str,     /* called after write */
     "A sample note string in a table"},
   {
       "mytable",                /* the table name */
       "seton",                  /* the column name */
-      RTA_STR,                  /* it is an integer */
+      RTA_STR,                  /* it is a string */
       NOTE_LEN,                 /* number of bytes */
       offsetof(struct MyData, seton), /* location in struct */
       RTA_READONLY,    /* a read-only column */
@@ -225,16 +226,20 @@ TBLDEF   UITables[] = {
       mydata,                   /* address of table */
       sizeof(struct MyData),    /* length of each row */
       ROW_COUNT,                /* number of rows */
+      (void *) NULL,            /* iterator function */
+      (void *) NULL,            /* iterator callback data */
       mycolumns,                /* array of column defs */
       sizeof(mycolumns) / sizeof(COLDEF),
       /* the number of columns */
-      "",                       /* no save file */
+      "/tmp/mysavefile",        /* save file name */
     "A sample application table"},
   {
       "UIConns",                /* table name */
-      (void *) ui,              /* address of table */
+      (void *) 0,               /* address of table */
       sizeof(UI),               /* length of each row */
-      MX_UI,                    /* # rows in table */
+      0,                        /* # rows in table */
+      get_next_conn,            /* iterator function */
+      (void *) NULL,            /* iterator callback data */
       ConnCols,                 /* Column definitions */
       sizeof(ConnCols) / sizeof(COLDEF), /* # columns */
       "",                       /* save file name */

@@ -1,6 +1,6 @@
 ################################################################
  # Run Time Access
- # Copyright (C) 2003 Robert W Smith (bsmith@linuxtoys.org)
+ # Copyright (C) 2003-2004 Robert W Smith (bsmith@linuxtoys.org)
  #
  #  This program is distributed under the terms of the GNU LGPL.
  #  See the file COPYING file.
@@ -23,37 +23,38 @@ LIBS   =
 FSOBJS   = rtafs.o
 FSLIBS   = /usr/local/lib/libfuse.a
 
+
 default:
 	@echo
 	@echo To make the database RTA interface enter.... 
-	@echo "   make librtadb.so.1 "
+	@echo "   make librtadb.so.2 "
 	@echo
 	@echo To make the virtual file system interface enter....
-	@echo "   make librtafs.so.1 "
+	@echo "   make librtafs.so.2 "
 	@echo Be sure the FUSE package by  Miklos Szeredi is 
-	@echo installed before you build librtafs.so.1
+	@echo installed before you build librtafs.so.2
 	@echo
 	@echo To make both libraries enter....
 	@echo "   make all"
 	@echo
 
-all: librtadb.so.1 librtafs.so.1
+all: librtadb.so.2 librtafs.so.2
 
-librtadb.so.1: $(OBJS)
-	gcc -ggdb -Wall -shared -Wl,-soname,librtadb.so.1 \
-		-o librtadb.so.1.0  $(OBJS) $(LIBS) -lc
-	ln -sf librtadb.so.1.0 librtadb.so.1
-	ln -sf librtadb.so.1.0 librtadb.so
+librtadb.so.2: $(OBJS)
+	gcc -ggdb -Wall -shared -Wl,-soname,librtadb.so.2 \
+		-o librtadb.so.2.0  $(OBJS) $(LIBS) -lc
+	ln -sf librtadb.so.2.0 librtadb.so.2
+	ln -sf librtadb.so.2.0 librtadb.so
 	ar -rcs librtadb.a $(OBJS)
 
-librtafs.so.1: $(FSOBJS) librtadb.so.1
-	gcc -ggdb -Wall -shared -Wl,-soname,librtafs.so.1 \
-		-o librtafs.so.1.0  $(FSOBJS) $(FSLIBS) -lc
-	ln -sf librtafs.so.1.0 librtafs.so.1
-	ln -sf librtafs.so.1.0 librtafs.so
+librtafs.so.2: $(FSOBJS) librtadb.so.2
+	gcc -ggdb -Wall -shared -Wl,-soname,librtafs.so.2 \
+		-o librtafs.so.2.0  $(FSOBJS) $(FSLIBS) -lc
+	ln -sf librtafs.so.2.0 librtafs.so.2
+	ln -sf librtafs.so.2.0 librtafs.so
 	ar -rcs librtafs.a $(FSOBJS)
 
-install: librtadb.so.1
+install: librtadb.so.2
 	mv -f librta* /usr/lib
 
 token.o: parse.tab.c do_sql.h

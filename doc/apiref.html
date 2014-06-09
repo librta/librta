@@ -175,7 +175,8 @@ cause a table save. (See table savefile described below.)</td></tr>
 <td valign="top">void&nbsp;(*readcb)&nbsp;()</td>
 <td>Read callback. This routine is called before the column value
 is used. Input values include the table name, the column name, the
-input SQL command, and the (zero indexed) row number for the row
+input SQL command, a pointer to the row, and the (zero indexed) row
+number for the row
 that is being read. This routine is called *each* time the column
 is read so the following would produce two calls:<br>
  SELECT intime FROM inns WHERE intime &gt;= 100;</td></tr>
@@ -183,13 +184,14 @@ is read so the following would produce two calls:<br>
 <td valign="top">void&nbsp;(*writecb)&nbsp;()</td>
 <td>Write callback. This routine is called after an UPDATE in which
 the column is written. Input values include the table name, the
-column name, the SQL command, and the (zero indexed) row number of
+column name, the SQL command, a pointer to the row, and
+the (zero indexed) row number of
 the the row that changed. See the callback section below. This
 routine is called only once after all column updates have occurred.
 For example, if there were a write callback attached to the addr
 column, the following SQL statement would cause the execution of
 the write callback once after both mask and addr have been written:
-UPDATE ethers SET mask="255.255.255.0", addr = \ "192.168.1.10"
+UPDATE ethers SET mask="255.255.255.0", addr = "192.168.1.10"
 WHERE name = "eth1"; The callback is called for each row
 modified.</td></tr>
 <tr>
@@ -263,7 +265,8 @@ characters in length. Must be unique within the DB.</td></tr>
 <tr>
 <td valign="top">void&nbsp;*address</td>
 <td>Address of the first element of the first row of the array of
-struct that make up the table.</td></tr>
+struct that make up the table.  This may be set to zero if an 
+iterator is defined for the table.</td></tr>
 <tr>
 <td valign="top">int&nbsp;rowlen</td>
 <td>The number of bytes in each row of the table. This is usually a
@@ -272,7 +275,35 @@ that we can get to data element E in row R with ... data =
 *(address + (R * rowlen) + offset(E))</td></tr>
 <tr>
 <td valign="top">int&nbsp;nrows</td>
-<td>Number of rows in the table.</td></tr>
+<td>Number of rows in the table.  This may be set to zero if an
+iterator is defined for the table.</td></tr>
+
+<td valign="top">void&nbsp;*iterator</td>
+<td>A function which, given a pointer to one row, return a 
+pointer to the next row.  An input of NULL should return the
+first row of the table.  The function should return NULL when
+asked for the row after the last row in the table.  As a 
+convenience, the row number is also passed.  You may use
+either the current row pointer or the current row number
+in determining the pointer to the next row.
+The iterator function also passes the <code>it_info</code>
+void pointer defined below.
+If an iterator is defined, the TBLDEF values for table address
+and number of rows are ignored.<br>
+The iterator function provides a way to make linked lists and
+other data arrangements appear as database tables.  See the
+sample application for an example.  You might also look at
+the implementation of rta_tables and rta_columns, since they
+use an iterator as well.
+</td></tr>
+<td valign="top">void&nbsp;*it_info</td>
+<td>The value of it_info defined in the TBLDEF is passed
+each time the iterator is called on this table.  This lets
+you define, for example, one iterator function for all of
+your linked lists.  Inside your iterator function you can
+use it_info to determine which table the
+iterator should use.
+</td></tr>
 <tr>
 <td valign="top">COLDEF&nbsp;*cols</td>
 <td>An array of COLDEF structures which describe the columns in the
@@ -586,7 +617,7 @@ used for the generic table editor application. The columns of
 rta_tables are:</p>
 <table summary="">
 <tr>
-<td rowspan="8">&nbsp;&nbsp;&nbsp;</td>
+<td rowspan="10">&nbsp;&nbsp;&nbsp;</td>
 <td>name</td>
 <td>- the name of the table</td></tr>
 <tr>
@@ -598,6 +629,12 @@ rta_tables are:</p>
 <tr>
 <td>nrows</td>
 <td>- number of rows in the table</td></tr>
+<tr>
+<td>iterator</td>
+<td>- callback function to get a pointer to the next row</td></tr>
+<tr>
+<td>it_info</td>
+<td>- transparently passed in each call to the iterator</td></tr>
 <tr>
 <td>cols</td>
 <td>- pointer to array of column definitions</td></tr>
@@ -858,7 +895,10 @@ type void) and have the same calling parameters:</p>
 <td valign="top">char *sqlcmd</td>
 <td>&nbsp;&nbsp;the text of the SQL command</td></tr>
 <tr>
-<td valign="top">int rowid</td>
+<td valign="top">void *pr</td>
+<td>&nbsp;&nbsp;pointer to the row being read or written</td></tr>
+<tr>
+<td valign="top">int&nbsp;&nbsp;&nbsp;&nbsp; rowid</td>
 <td>&nbsp;&nbsp;the zero-indexed row number of the row being read
 or written</td></tr></table>
 <br>

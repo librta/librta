@@ -1,6 +1,6 @@
 /***************************************************************
  * Run Time Access
- * Copyright (C) 2003 Robert W Smith (bsmith@linuxtoys.org)
+ * Copyright (C) 2003-2004 Robert W Smith (bsmith@linuxtoys.org)
  *
  *  This program is distributed under the terms of the GNU LGPL.
  *  See the file COPYING file.
@@ -442,10 +442,10 @@ verify_update_list(char *buf, int *nbuf)
 void
 do_select(char *buf, int *nbuf)
 {
-  int      nr;         /* the Number of Rows in the table */
   int      sr;         /* the Size of each Row in the table */
   int      rx;         /* Row indeX in for() loop */
   int      wx;         /* Where clause indeX in for loop */
+  void    *pr;         /* Pointer to the row in the table/column */
   void    *pd;         /* Pointer to the Data in the table/column */
   long long cmp;       /* has actual relation of col and val */
   int      dor;        /* DO Row == 1 if we should print row */
@@ -461,9 +461,15 @@ do_select(char *buf, int *nbuf)
   /* We loop through all rows in the table in question applying the
      WHERE condition.  If a row matches we perform read callbacks on
      the selected columns and build a reply with the requested data */
-  nr = cmd.ptbl->nrows;
   sr = cmd.ptbl->rowlen;
-  for (rx = 0; rx < nr; rx++)
+  rx = 0;
+  if (cmd.ptbl->iterator) 
+    pr = (cmd.ptbl->iterator) ((void *) NULL, cmd.ptbl->it_info, rx);
+  else
+    pr = cmd.ptbl->address;
+
+  /* for each row ..... */
+  while (pr)
   {
     dor = 1;
     for (wx = 0; wx < cmd.nwhrcols; wx++)
@@ -473,16 +479,11 @@ do_select(char *buf, int *nbuf)
       if (cmd.pwhr[wx]->readcb)
       {
         (cmd.pwhr[wx]->readcb) (cmd.tbl, cmd.whrcols[wx],
-          cmd.sqlcmd, rx);
+          cmd.sqlcmd, pr, rx);
       }
 
       /* compute pointer to actual data */
-      if (cmd.itbl > RTA_COLUMNS)
-        pd = cmd.ptbl->address + (rx * sr) + cmd.pwhr[wx]->offset;
-      else if (cmd.itbl == RTA_TABLES)
-        pd = (void *) Tbl[rx] + cmd.pwhr[wx]->offset;
-      else
-        pd = (void *) Col[rx] + cmd.pwhr[wx]->offset;
+      pd = pr + cmd.pwhr[wx]->offset;
 
       /* do comparison based on column data type */
       switch (cmd.pwhr[wx]->type)
@@ -533,15 +534,12 @@ do_select(char *buf, int *nbuf)
         break;
       }
     }
-    if (dor)
-    {
-      /* if we get here, we've passed the WHERE clause. Check for LIMIT 
-         and OFFSET filtering */
-      if (cmd.offset)
-      {
+    if (dor && cmd.offset)
         cmd.offset--;
-        continue;
-      }
+    else if (dor)
+    {
+      /* if we get here, we've passed the WHERE clause and OFFSET 
+         filtering.  Check the LIMIT filter */
       if (npr >= cmd.limit)
       {
         break;
@@ -568,16 +566,11 @@ do_select(char *buf, int *nbuf)
         if (cmd.pcol[cx]->readcb)
         {
           (cmd.pcol[cx]->readcb) (cmd.tbl,
-            cmd.pcol[cx]->name, cmd.sqlcmd, rx);
+            cmd.pcol[cx]->name, cmd.sqlcmd, pr, rx);
         }
 
         /* compute pointer to actual data */
-        if (cmd.itbl > RTA_COLUMNS)
-          pd = cmd.ptbl->address + (rx * sr) + cmd.pcol[cx]->offset;
-        else if (cmd.itbl == RTA_TABLES)
-          pd = (void *) Tbl[rx] + cmd.pcol[cx]->offset;
-        else
-          pd = (void *) Col[rx] + cmd.pcol[cx]->offset;
+        pd = pr + cmd.pcol[cx]->offset;
         switch ((cmd.pcol[cx])->type)
         {
           case RTA_STR:
@@ -630,6 +623,15 @@ do_select(char *buf, int *nbuf)
       /* now fill in 'D' response length */
       ad_int4(&lenloc, (int)(buf - lenloc));
       npr++;
+    }
+    rx++;
+    if (cmd.ptbl->iterator) 
+      pr = (cmd.ptbl->iterator) (pr, cmd.ptbl->it_info, rx);
+    else {
+      if (rx >= cmd.ptbl->nrows)
+        pr = (void *) NULL;
+      else
+        pr = cmd.ptbl->address + (rx * sr);
     }
   }
   /* Add 'C', length(11), 'SELECT', NULL to output */
@@ -811,10 +813,10 @@ send_error(char *filename, int lineno, char *fmt, char *arg)
 void
 do_update(char *buf, int *nbuf)
 {
-  int      nr;         /* the Number of Rows in the table */
   int      sr;         /* the Size of each Row in the table */
   int      rx;         /* Row indeX in for() loop */
   int      wx;         /* Where clause indeX in for loop */
+  void    *pr;         /* Pointer to the row in the table/column */
   void    *pd;         /* Pointer to the Data in the table/column */
   long long cmp;       /* has actual relation of col and val */
   int      dor;        /* DO Row == 1 if we should update row */
@@ -830,9 +832,15 @@ do_update(char *buf, int *nbuf)
   /* We loop through all rows in the table in question applying the
      WHERE condition.  If a row matches we update the appropriate
      columns and call any write callbacks */
-  nr = cmd.ptbl->nrows;
   sr = cmd.ptbl->rowlen;
-  for (rx = 0; rx < nr; rx++)
+  rx = 0;
+  if (cmd.ptbl->iterator) 
+    pr = (cmd.ptbl->iterator) ((void *) NULL, cmd.ptbl->it_info, rx);
+  else
+    pr = cmd.ptbl->address;
+
+  /* for each row ..... */
+  while (pr)
   {
     dor = 1;
     for (wx = 0; wx < cmd.nwhrcols; wx++)
@@ -842,16 +850,11 @@ do_update(char *buf, int *nbuf)
       if (cmd.pwhr[wx]->readcb)
       {
         (cmd.pwhr[wx]->readcb) (cmd.tbl, cmd.whrcols[wx],
-          cmd.sqlcmd, rx);
+          cmd.sqlcmd, pr, rx);
       }
 
       /* compute pointer to actual data */
-      if (cmd.itbl > RTA_COLUMNS)
-        pd = cmd.ptbl->address + (rx * sr) + cmd.pwhr[wx]->offset;
-      else if (cmd.itbl == RTA_TABLES)
-        pd = (void *) Tbl[rx] + cmd.pwhr[wx]->offset;
-      else
-        pd = (void *) Col[rx] + cmd.pwhr[wx]->offset;
+      pd = pr + cmd.pwhr[wx]->offset;
 
       /* do comparison based on column data type */
       switch (cmd.pwhr[wx]->type)
@@ -901,15 +904,12 @@ do_update(char *buf, int *nbuf)
         break;
       }
     }
-    if (dor)
-    {                           /* DO Row */
-      /* if we get here, we've passed the WHERE clause Check for LIMIT
-         and OFFSET filtering */
-      if (cmd.offset)
-      {
+    if (dor && cmd.offset)
         cmd.offset--;
-        continue;
-      }
+    else if (dor)
+    {                           /* DO Row */
+      /* if we get here, we've passed the WHERE clause and the OFFSET.
+         Check for LIMIT filtering */
       if (cmd.limit <= 0)
       {
         break;
@@ -920,12 +920,8 @@ do_update(char *buf, int *nbuf)
       for (cx = 0; cx < cmd.ncols; cx++)
       {
         /* compute pointer to actual data */
-        if (cmd.itbl > RTA_COLUMNS)
-          pd = cmd.ptbl->address + (rx * sr) + cmd.pcol[cx]->offset;
-        else if (cmd.itbl == RTA_TABLES)
-          pd = (void *) Tbl[rx] + cmd.pcol[cx]->offset;
-        else
-          pd = (void *) Col[rx] + cmd.pcol[cx]->offset;
+        pd = pr + cmd.pcol[cx]->offset;
+
         switch ((cmd.pcol[cx])->type)
         {
           case RTA_STR:
@@ -971,11 +967,20 @@ do_update(char *buf, int *nbuf)
         if (cmd.pcol[cx]->writecb)
         {
           (cmd.pcol[cx]->writecb) (cmd.tbl,
-            cmd.whrcols[wx], cmd.sqlcmd, rx);
+            cmd.whrcols[wx], cmd.sqlcmd, pr, rx);
         }
       }
       cmd.limit--;
       nru++;
+    }
+    rx++;
+    if (cmd.ptbl->iterator) 
+      pr = (cmd.ptbl->iterator) (pr, cmd.ptbl->it_info, rx);
+    else {
+      if (rx >= cmd.ptbl->nrows)
+        pr = (void *) NULL;
+      else
+        pr = cmd.ptbl->address + (rx * sr);
     }
   }
 

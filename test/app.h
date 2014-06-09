@@ -1,6 +1,6 @@
 /***************************************************************
  * Run Time Access
- * Copyright (C) 2003 Robert W Smith (bsmith@linuxtoys.org)
+ * Copyright (C) 2003-2004 Robert W Smith (bsmith@linuxtoys.org)
  *
  *  This program is distributed under the terms of the GNU LGPL.
  *  See the file COPYING file.
@@ -22,7 +22,7 @@
 #define MXCMD      (1000)
 #define MXRSP     (50000)
 
-    /* Note lenght and number of rows in the "mydata" table. */
+    /* Note length and number of rows in the "mydata" table. */
 #define NOTE_LEN   30
 #define ROW_COUNT  20
 
@@ -42,8 +42,10 @@ struct MyData
 /***************************************************************
  * the information kept for TCP connections to UI programs
  **************************************************************/
-typedef struct
+typedef struct ui
 {
+  struct ui  *prevconn;   /* Points to previous conn in linked list */
+  struct ui  *nextconn;   /* Points to next conn in linked list */
   int      fd;         /* FD of TCP conn (=-1 if not in use) */
   int      cmdindx;    /* Index of next location in cmd buffer */
   char     cmd[MXCMD]; /* SQL command from UI program */
