@@ -447,9 +447,13 @@ do_select(char *buf, int *nbuf)
     for (wx = 0; wx < cmd.nwhrcols; wx++) {
       /* execute read callback (if defined) on row */
       /* the call back is expected to fill in the data */
+      /* and return zero on success. */
       if (cmd.pwhr[wx]->readcb) {
-        (cmd.pwhr[wx]->readcb) (cmd.tbl, cmd.whrcols[wx],
-          cmd.sqlcmd, pr, rx);
+        if ((cmd.pwhr[wx]->readcb) (cmd.tbl, cmd.whrcols[wx],
+            cmd.sqlcmd, pr, rx) != 0) {
+          send_error(LOC, E_BADTRIG, cmd.whrcols[wx]);
+          return;
+        }
       }
 
       /* compute pointer to actual data */
@@ -530,10 +534,13 @@ do_select(char *buf, int *nbuf)
 
       for (cx = 0; cx < cmd.ncols; cx++) {
         /* execute column read callback (if defined). callback will
-           fill in the data if needed */
+           fill in the data if needed, and return 0 on success */
         if (cmd.pcol[cx]->readcb) {
-          (cmd.pcol[cx]->readcb) (cmd.tbl,
-            cmd.pcol[cx]->name, cmd.sqlcmd, pr, rx);
+          if ((cmd.pcol[cx]->readcb) (cmd.tbl,
+            cmd.pcol[cx]->name, cmd.sqlcmd, pr, rx) != 0) {
+            send_error(LOC, E_BADTRIG, cmd.pcol[cx]->name);
+            return;
+          }
         }
 
         /* compute pointer to actual data */
@@ -809,8 +816,11 @@ do_update(char *buf, int *nbuf)
       /* The WHERE clause ...... execute read callback (if defined) on
          row * the call back is expected to fill in the data */
       if (cmd.pwhr[wx]->readcb) {
-        (cmd.pwhr[wx]->readcb) (cmd.tbl, cmd.whrcols[wx],
-          cmd.sqlcmd, pr, rx);
+        if ((cmd.pwhr[wx]->readcb) (cmd.tbl, cmd.whrcols[wx],
+            cmd.sqlcmd, pr, rx) != 0) {
+          send_error(LOC, E_BADTRIG, cmd.whrcols[wx]);
+          return;
+        }
       }
 
       /* compute pointer to actual data */
@@ -923,14 +933,20 @@ do_update(char *buf, int *nbuf)
           svt = 1;
       }
 
-      /* We call the write callbacks after all of the * columns have
+      /* We call the write callbacks after all of the columns have
          been updated.  */
       for (cx = 0; cx < cmd.ncols; cx++) {
         /* execute write callback (if defined) on row. callback will
-           fill in the data if needed */
+           perform post processing on row and return zero on success */
         if (cmd.pcol[cx]->writecb) {
-          (cmd.pcol[cx]->writecb) (cmd.tbl, cmd.pcol[cx]->name,
-           cmd.sqlcmd, pr, rx, poldrow);
+          if ((cmd.pcol[cx]->writecb) (cmd.tbl, cmd.pcol[cx]->name,
+              cmd.sqlcmd, pr, rx, poldrow) != 0) {
+            /* restore row from saved image of it */
+            memcpy(pr, poldrow, cmd.ptbl->rowlen);
+            free(poldrow);
+            send_error(LOC, E_BADTRIG, cmd.pcol[cx]->name);
+            return;
+          }
         }
       }
       if (poldrow)       /* free the image of the last row */

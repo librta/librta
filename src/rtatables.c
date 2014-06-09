@@ -25,7 +25,7 @@
 #include "do_sql.h"             /* for struct Sql_Cmd */
 
 /* Forward reference for read callbacks and iterators */
-void     restart_syslog();
+int      restart_syslog();
 void    *get_next_sysrow(void *, void *, int);
 
 /***************************************************************
@@ -47,9 +47,9 @@ COLDEF   rta_columnsCols[] = {
       MXTBLNAME,                /* #bytes in col data */
       offsetof(COLDEF, table), /* offset 2 col strt */
       RTA_READONLY,    /* Flags for read-only/disksave */
-      (void (*)()) 0,  /* called before read */
-      (void (*)()) 0,  /* called after write */
-    "The name of the table that this column belongs to."},
+      (int (*)()) 0,  /* called before read */
+      (int (*)()) 0,  /* called after write */
+      "The name of the table that this column belongs to."},
   {
       "rta_columns",            /* table name */
       "name",                   /* column name */
@@ -57,9 +57,9 @@ COLDEF   rta_columnsCols[] = {
       MXCOLNAME,                /* #bytes in col data */
       offsetof(COLDEF, name), /* offset 2 col strt */
       RTA_READONLY,    /* Flags for read-only/disksave */
-      (void (*)()) 0,  /* called before read */
-      (void (*)()) 0,  /* called after write */
-    "The name of the column.  Must be unique within a table "
+      (int (*)()) 0,  /* called before read */
+      (int (*)()) 0,  /* called after write */
+      "The name of the column.  Must be unique within a table "
       "definition but may be replicated in other tables.  The "
       "maximum string length of the column name is set by "
       "MXCOLNAME defined in the rta.h file."},
@@ -70,9 +70,9 @@ COLDEF   rta_columnsCols[] = {
       sizeof(int),              /* #bytes in col data */
       offsetof(COLDEF, type), /* offset 2 col strt */
       RTA_READONLY,    /* Flags for read-only/disksave */
-      (void (*)()) 0,  /* called before read */
-      (void (*)()) 0,  /* called after write */
-    "The data type of the column.  Types include string, "
+      (int (*)()) 0,  /* called before read */
+      (int (*)()) 0,  /* called after write */
+      "The data type of the column.  Types include string, "
       "integer, long, pointer, pointer to string, pointer to "
       "integer, and pointer to long.  See rta.h for more details."},
   {
@@ -82,9 +82,9 @@ COLDEF   rta_columnsCols[] = {
       sizeof(int),              /* #bytes in col data */
       offsetof(COLDEF, length), /* offset 2 col strt */
       RTA_READONLY,    /* Flags for read-only/disksave */
-      (void (*)()) 0,  /* called before read */
-      (void (*)()) 0,  /* called after write */
-    "The length of the string in bytes if the column data "
+      (int (*)()) 0,  /* called before read */
+      (int (*)()) 0,  /* called after write */
+      "The length of the string in bytes if the column data "
       "type is a string or a pointer to a string."},
   {
       "rta_columns",            /* table name */
@@ -93,9 +93,9 @@ COLDEF   rta_columnsCols[] = {
       sizeof(void *),           /* #bytes in col data */
       offsetof(COLDEF, offset), /* offset 2 col strt */
       RTA_READONLY,    /* Flags for read-only/disksave */
-      (void (*)()) 0,  /* called before read */
-      (void (*)()) 0,  /* called after write */
-    "The number of bytes from the start of the structure "
+      (int (*)()) 0,  /* called before read */
+      (int (*)()) 0,  /* called after write */
+      "The number of bytes from the start of the structure "
       "to the member element defined in this entry.  Be careful "
       "in setting the offset with non word-aligned elements like "
       "single characters.  If you do no use offsetof() consider "
@@ -108,9 +108,9 @@ COLDEF   rta_columnsCols[] = {
       sizeof(int),              /* #bytes in col data */
       offsetof(COLDEF, flags), /* offset 2 col strt */
       RTA_READONLY,    /* Flags for read-only/disksave */
-      (void (*)()) 0,  /* called before read */
-      (void (*)()) 0,  /* called after write */
-    "Flags associated with the column include flags to indicate "
+      (int (*)()) 0,  /* called before read */
+      (int (*)()) 0,  /* called after write */
+      "Flags associated with the column include flags to indicate "
       "read-only status and whether or not the data should be "
       "included in the save file.  See rta.h for the associated "
       "defines and details."},
@@ -121,12 +121,13 @@ COLDEF   rta_columnsCols[] = {
       sizeof(void *),           /* #bytes in col data */
       offsetof(COLDEF, readcb), /* offset 2 col strt */
       RTA_READONLY,    /* Flags for read-only/disksave */
-      (void (*)()) 0,  /* called before read */
-      (void (*)()) 0,  /* called after write */
-    "A pointer to a function that returns an integer.  If "
+      (int (*)()) 0,  /* called before read */
+      (int (*)()) 0,  /* called after write */
+      "A pointer to a function that returns an integer.  If "
       "defined, the function is called before the column is "
       "read.  This function is useful to compute values only "
-      "when needed."},
+      "when needed.  A zero is returned by the callback if the "
+      "callback succeeds."},
   {
       "rta_columns",            /* table name */
       "writecb",                /* column name */
@@ -134,14 +135,16 @@ COLDEF   rta_columnsCols[] = {
       sizeof(void *),           /* #bytes in col data */
       offsetof(COLDEF, writecb), /* offset 2 col strt */
       RTA_READONLY,    /* Flags for read-only/disksave */
-      (void (*)()) 0,  /* called before read */
-      (void (*)()) 0,  /* called after write */
-    "A pointer to a function that returns and integer.  If "
+      (int (*)()) 0,  /* called before read */
+      (int (*)()) 0,  /* called after write */
+      "A pointer to a function that returns and integer.  If "
       "defined, the function is called after an UPDATE command "
       "modifies the column.  All columns in an UPDATE are "
       "modified before any write callbacks are executed.  This "
       "function is useful to effect changes requested or implied "
-      "by the column definition."},
+      "by the column definition. The function return a zero on "
+      "success.  If a non-zero value is returned, the SQL client "
+      "receives an TRIGGERED ACTION EXCEPTION error."},
   {
       "rta_columns",            /* table name */
       "help",                   /* column name */
@@ -149,9 +152,9 @@ COLDEF   rta_columnsCols[] = {
       MXHELPSTR,                /* #bytes in col data */
       offsetof(COLDEF, help), /* offset 2 col strt */
       RTA_READONLY,    /* Flags for read-only/disksave */
-      (void (*)()) 0,  /* called before read */
-      (void (*)()) 0,  /* called after write */
-    "A brief description of the column.  Should include "
+      (int (*)()) 0,  /* called before read */
+      (int (*)()) 0,  /* called after write */
+      "A brief description of the column.  Should include "
       "limits, default value, and a description of how to set "
       "it.  Can contain at most MXHELPSTR characters."},
 };
@@ -187,9 +190,9 @@ COLDEF   rta_tablesCols[] = {
       MXTBLNAME,                /* #bytes in col data */
       offsetof(TBLDEF, name), /* offset 2 col strt */
       RTA_READONLY,    /* Flags for read-only/disksave */
-      (void (*)()) 0,  /* called before read */
-      (void (*)()) 0,  /* called after write */
-    "The name of the table.  This must be unique in the system. "
+      (int (*)()) 0,  /* called before read */
+      (int (*)()) 0,  /* called after write */
+      "The name of the table.  This must be unique in the system. "
       " Table names can be at most MXTBLNAME characters in length."
       "  See rta.h for details.  Note that some table names are "
       "reserved for internal use."},
@@ -200,9 +203,9 @@ COLDEF   rta_tablesCols[] = {
       sizeof(void *),           /* #bytes in col data */
       offsetof(TBLDEF, address), /* offset 2 col strt */
       RTA_READONLY,    /* Flags for read-only/disksave */
-      (void (*)()) 0,  /* called before read */
-      (void (*)()) 0,  /* called after write */
-    "The start address of the array of structs that makes up "
+      (int (*)()) 0,  /* called before read */
+      (int (*)()) 0,  /* called after write */
+      "The start address of the array of structs that makes up "
       "the table."},
   {
       "rta_tables",             /* table name */
@@ -211,9 +214,9 @@ COLDEF   rta_tablesCols[] = {
       sizeof(int),              /* #bytes in col data */
       offsetof(TBLDEF, rowlen), /* offset 2 col strt */
       RTA_READONLY,    /* Flags for read-only/disksave */
-      (void (*)()) 0,  /* called before read */
-      (void (*)()) 0,  /* called after write */
-    "The length of each struct in the array of structs that "
+      (int (*)()) 0,  /* called before read */
+      (int (*)()) 0,  /* called after write */
+      "The length of each struct in the array of structs that "
       "makes up the table."},
   {
       "rta_tables",             /* table name */
@@ -222,9 +225,9 @@ COLDEF   rta_tablesCols[] = {
       sizeof(int),              /* #bytes in col data */
       offsetof(TBLDEF, nrows), /* offset 2 col strt */
       RTA_READONLY,    /* Flags for read-only/disksave */
-      (void (*)()) 0,  /* called before read */
-      (void (*)()) 0,  /* called after write */
-    "The number of rows in the table."},
+      (int (*)()) 0,  /* called before read */
+      (int (*)()) 0,  /* called after write */
+      "The number of rows in the table."},
   {
       "rta_tables",             /* table name */
       "iterator",               /* column name */
@@ -232,9 +235,9 @@ COLDEF   rta_tablesCols[] = {
       sizeof(void *),           /* #bytes in col data */
       offsetof(TBLDEF, iterator), /* offset 2 col strt */
       RTA_READONLY,    /* Flags for read-only/disksave */
-      (void (*)()) 0,  /* called before read */
-      (void (*)()) 0,  /* called after write */
-    "The iterator is a function that, given a pointer to a "
+      (int (*)()) 0,  /* called before read */
+      (int (*)()) 0,  /* called after write */
+      "The iterator is a function that, given a pointer to a "
       "row, returns a pointer to the next row.  When passed "
       "a NULL as input, the function returns a pointer to the "
       "first row of the table.  The function return a NULL when "
@@ -247,9 +250,9 @@ COLDEF   rta_tablesCols[] = {
       sizeof(void *),           /* #bytes in col data */
       offsetof(TBLDEF, it_info), /* offset 2 col strt */
       RTA_READONLY,    /* Flags for read-only/disksave */
-      (void (*)()) 0,  /* called before read */
-      (void (*)()) 0,  /* called after write */
-    "This is a pointer to any kind of information that the "
+      (int (*)()) 0,  /* called before read */
+      (int (*)()) 0,  /* called after write */
+      "This is a pointer to any kind of information that the "
       "caller wants returned with each iterator call.  For "
       "example, you may wish to have one iterator function "
       "for all of your linked lists.  You could pass in "
@@ -262,9 +265,9 @@ COLDEF   rta_tablesCols[] = {
       sizeof(void *),           /* #bytes in col data */
       offsetof(TBLDEF, cols), /* offset 2 col strt */
       RTA_READONLY,    /* Flags for read-only/disksave */
-      (void (*)()) 0,  /* called before read */
-      (void (*)()) 0,  /* called after write */
-    "A pointer to an array of COLDEF structures.  There is one "
+      (int (*)()) 0,  /* called before read */
+      (int (*)()) 0,  /* called after write */
+      "A pointer to an array of COLDEF structures.  There is one "
       "COLDEF for each column in the table."},
   {
       "rta_tables",             /* table name */
@@ -273,9 +276,9 @@ COLDEF   rta_tablesCols[] = {
       sizeof(int),              /* #bytes in col data */
       offsetof(TBLDEF, ncol), /* offset 2 col strt */
       RTA_READONLY,    /* Flags for read-only/disksave */
-      (void (*)()) 0,  /* called before read */
-      (void (*)()) 0,  /* called after write */
-    "The number of columns in the table."},
+      (int (*)()) 0,  /* called before read */
+      (int (*)()) 0,  /* called after write */
+      "The number of columns in the table."},
   {
       "rta_tables",             /* table name */
       "savefile",               /* column name */
@@ -283,9 +286,9 @@ COLDEF   rta_tablesCols[] = {
       MXFILENAME,               /* #bytes in col data */
       offsetof(TBLDEF, savefile), /* offset 2 col strt */
       RTA_READONLY,    /* Flags for read-only/disksave */
-      (void (*)()) 0,  /* called before read */
-      (void (*)()) 0,  /* called after write */
-    "The name of the file with the non-volatile contents of "
+      (int (*)()) 0,  /* called before read */
+      (int (*)()) 0,  /* called after write */
+      "The name of the file with the non-volatile contents of "
       "the table.  This file is read when the table is "
       "initialized and is written any time a column with the "
       "non-volatile flag set is modified."},
@@ -296,9 +299,9 @@ COLDEF   rta_tablesCols[] = {
       MXHELPSTR,                /* #bytes in col data */
       offsetof(TBLDEF, help), /* offset 2 col strt */
       RTA_READONLY,    /* Flags for read-only/disksave */
-      (void (*)()) 0,  /* called before read */
-      (void (*)()) 0,  /* called after write */
-    "A description of the table."},
+      (int (*)()) 0,  /* called before read */
+      (int (*)()) 0,  /* called after write */
+      "A description of the table."},
 };
 
 /* Define the table */
@@ -383,9 +386,9 @@ COLDEF   rta_dbgCols[] = {
       sizeof(int),              /* #bytes in col data */
       offsetof(struct RtaDbg, syserr), /* offset 2 col strt */
       0,               /* Flags for read-only/disksave */
-      (void (*)()) 0,  /* called before read */
-      (void (*)()) 0,  /* called after write */
-    "A non-zero value causes a call to syslog() for all system "
+      (int (*)()) 0,  /* called before read */
+      (int (*)()) 0,  /* called after write */
+      "A non-zero value causes a call to syslog() for all system "
       "errors such as failed malloc() or save file read failures."},
   {
       "rta_dbg",                /* table name */
@@ -394,9 +397,9 @@ COLDEF   rta_dbgCols[] = {
       sizeof(int),              /* #bytes in col data */
       offsetof(struct RtaDbg, rtaerr), /* offset 2 col strt */
       0,               /* Flags for read-only/disksave */
-      (void (*)()) 0,  /* called before read */
-      (void (*)()) 0,  /* called after write */
-    "A non-zero value causes a call to syslog() for all errors "
+      (int (*)()) 0,  /* called before read */
+      (int (*)()) 0,  /* called after write */
+      "A non-zero value causes a call to syslog() for all errors "
       "internal to the rta package."},
   {
       "rta_dbg",                /* table name */
@@ -405,9 +408,9 @@ COLDEF   rta_dbgCols[] = {
       sizeof(int),              /* #bytes in col data */
       offsetof(struct RtaDbg, sqlerr), /* offset 2 col strt */
       0,               /* Flags for read-only/disksave */
-      (void (*)()) 0,  /* called before read */
-      (void (*)()) 0,  /* called after write */
-    "A non-zero value causes a call to syslog() for all SQL "
+      (int (*)()) 0,  /* called before read */
+      (int (*)()) 0,  /* called after write */
+      "A non-zero value causes a call to syslog() for all SQL "
       "errors.  Such errors usually indicate a programming error "
       "in one of the user interface programs."},
   {
@@ -417,9 +420,9 @@ COLDEF   rta_dbgCols[] = {
       sizeof(int),              /* #bytes in col data */
       offsetof(struct RtaDbg, trace), /* offset 2 col strt */
       0,               /* Flags for read-only/disksave */
-      (void (*)()) 0,  /* called before read */
-      (void (*)()) 0,  /* called after write */
-    "A non-zero value causes all SQL commands to be logged.  "
+      (int (*)()) 0,  /* called before read */
+      (int (*)()) 0,  /* called after write */
+      "A non-zero value causes all SQL commands to be logged.  "
       "If the command is UPDATE, the number of rows affected is "
       "also logged."},
   {
@@ -429,9 +432,9 @@ COLDEF   rta_dbgCols[] = {
       sizeof(int),              /* #bytes in col data */
       offsetof(struct RtaDbg, target), /* offset 2 col strt */
       0,               /* Flags for read-only/disksave */
-      (void (*)()) 0,  /* called before read */
+      (int (*)()) 0,  /* called before read */
       restart_syslog,  /* called after write */
-    "Sets destination of log messages.  Zero turns off all "
+      "Sets destination of log messages.  Zero turns off all "
       "logging of errors.  One sends log messages to syslog()."
       "  Two sends log messages to stderr.  Three sends error "
       "messages to both syslog() and to stderr.  Default is one."},
@@ -442,9 +445,9 @@ COLDEF   rta_dbgCols[] = {
       sizeof(int),              /* #bytes in col data */
       offsetof(struct RtaDbg, priority), /* offset 2 col strt */
       0,               /* Flags for read-only/disksave */
-      (void (*)()) 0,  /* called before read */
-      (void (*)()) 0,  /* called after write */
-    "The syslog() priority.  Please see .../sys/syslog.h for "
+      (int (*)()) 0,  /* called before read */
+      (int (*)()) 0,  /* called after write */
+      "The syslog() priority.  Please see .../sys/syslog.h for "
       "the possible values.  Default is LOG_ERR."},
   {
       "rta_dbg",                /* table name */
@@ -453,9 +456,9 @@ COLDEF   rta_dbgCols[] = {
       sizeof(int),              /* #bytes in col data */
       offsetof(struct RtaDbg, facility), /* offset 2 col strt */
       0,               /* Flags for read-only/disksave */
-      (void (*)()) 0,  /* called before read */
-      (void (*)()) 0,  /* called after write */
-    "The syslog() facility.  Please see .../sys/syslog.h for "
+      (int (*)()) 0,  /* called before read */
+      (int (*)()) 0,  /* called after write */
+      "The syslog() facility.  Please see .../sys/syslog.h for "
       "the possible values.  Default is LOG_USER."},
   {
       "rta_dbg",                /* table name */
@@ -464,9 +467,9 @@ COLDEF   rta_dbgCols[] = {
       MXDBGIDENT,               /* #bytes in col data */
       offsetof(struct RtaDbg, ident), /* offset 2 col strt */
       0,               /* Flags for read-only/disksave */
-      (void (*)()) 0,  /* called before read */
-      (void (*)()) 0,  /* called after write */
-    "The syslog() 'ident'.  Please see 'man openlog' for "
+      (int (*)()) 0,  /* called before read */
+      (int (*)()) 0,  /* called after write */
+      "The syslog() 'ident'.  Please see 'man openlog' for "
       "details.  Default is 'rta'.  An update of the target "
       "field is required for this to take effect."},
 };
@@ -483,10 +486,10 @@ COLDEF   rta_dbgCols[] = {
  *               Pointer to row of data
  *               Pointer to copy of old row
  *               Index of row used (zero indexed)
- * Output:       
+ * Output:       Success (a zero)
  * Effects:      No side effects.
  **************************************************************/
-void
+int
 restart_syslog(char *tblname, char *colname, char *sqlcmd,
                void *prow, void *poldrow,  int rowid)
 {
@@ -498,7 +501,7 @@ restart_syslog(char *tblname, char *colname, char *sqlcmd,
     openlog(rtadbg.ident, LOG_ODELAY | LOG_PID, rtadbg.facility);
   }
 
-  return;
+  return(0);
 }
 
 /* Define the table */
@@ -546,9 +549,9 @@ COLDEF   rta_statCols[] = {
       sizeof(llong),            /* #bytes in col data */
       offsetof(struct RtaStat, nsyserr), /* offset 2 col strt */
       RTA_READONLY,    /* Flags for read-only/disksave */
-      (void (*)()) 0,  /* called before read */
-      (void (*)()) 0,  /* called after write */
-    "Count of failed OS calls."},
+      (int (*)()) 0,  /* called before read */
+      (int (*)()) 0,  /* called after write */
+      "Count of failed OS calls."},
   {
       "rta_stat",               /* table name */
       "nrtaerr",                /* column name */
@@ -556,9 +559,9 @@ COLDEF   rta_statCols[] = {
       sizeof(llong),            /* #bytes in col data */
       offsetof(struct RtaStat, nrtaerr), /* offset 2 col strt */
       RTA_READONLY,    /* Flags for read-only/disksave */
-      (void (*)()) 0,  /* called before read */
-      (void (*)()) 0,  /* called after write */
-    "Count of internal rta failures."},
+      (int (*)()) 0,  /* called before read */
+      (int (*)()) 0,  /* called after write */
+      "Count of internal rta failures."},
   {
       "rta_stat",               /* table name */
       "nsqlerr",                /* column name */
@@ -566,9 +569,9 @@ COLDEF   rta_statCols[] = {
       sizeof(llong),            /* #bytes in col data */
       offsetof(struct RtaStat, nsqlerr), /* offset 2 col strt */
       RTA_READONLY,    /* Flags for read-only/disksave */
-      (void (*)()) 0,  /* called before read */
-      (void (*)()) 0,  /* called after write */
-    "Count of SQL failures."},
+      (int (*)()) 0,  /* called before read */
+      (int (*)()) 0,  /* called after write */
+      "Count of SQL failures."},
   {
       "rta_stat",               /* table name */
       "nauth",                  /* column name */
@@ -576,9 +579,9 @@ COLDEF   rta_statCols[] = {
       sizeof(llong),            /* #bytes in col data */
       offsetof(struct RtaStat, nauth), /* offset 2 col strt */
       RTA_READONLY,    /* Flags for read-only/disksave */
-      (void (*)()) 0,  /* called before read */
-      (void (*)()) 0,  /* called after write */
-    "Count of DB authorizations.  This is a good estimate "
+      (int (*)()) 0,  /* called before read */
+      (int (*)()) 0,  /* called after write */
+      "Count of DB authorizations.  This is a good estimate "
       "to the total number of connections."},
   {
       "rta_stat",               /* table name */
@@ -587,9 +590,9 @@ COLDEF   rta_statCols[] = {
       sizeof(llong),            /* #bytes in col data */
       offsetof(struct RtaStat, nselect), /* offset 2 col strt */
       RTA_READONLY,    /* Flags for read-only/disksave */
-      (void (*)()) 0,  /* called before read */
-      (void (*)()) 0,  /* called after write */
-    "Count of SELECT commands."},
+      (int (*)()) 0,  /* called before read */
+      (int (*)()) 0,  /* called after write */
+      "Count of SELECT commands."},
   {
       "rta_stat",               /* table name */
       "nupdate",                /* column name */
@@ -597,9 +600,9 @@ COLDEF   rta_statCols[] = {
       sizeof(llong),            /* #bytes in col data */
       offsetof(struct RtaStat, nupdate), /* offset 2 col strt */
       RTA_READONLY,    /* Flags for read-only/disksave */
-      (void (*)()) 0,  /* called before read */
-      (void (*)()) 0,  /* called after write */
-    "Count of UPDATE commands."},
+      (int (*)()) 0,  /* called before read */
+      (int (*)()) 0,  /* called after write */
+      "Count of UPDATE commands."},
 };
 
 /* Define the table */

@@ -1,4 +1,7 @@
 /* A trivial application to demonstrate the RTA-DB package */
+/* Build with something like 'gcc -o myappdb myappdb.c -lrtadb' */
+
+
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,7 +13,8 @@
 #include "../src/rta.h"
 
 /* Forward references */
-void reverse_str(char *tbl, char *col, char *sql, void *pr, int rowid);
+int reverse_str(char *tbl, char *col, char *sql, void *pr,
+                int rowid, void *poldrow);
 
 #define INSZ       500
 #define OUTSZ    50000
@@ -35,8 +39,8 @@ COLDEF mycolumns[] = {
     sizeof(int),        /* number of bytes */
     offsetof(struct MyData, myint), /* location in struct */
     0,                  /* no flags */
-    (void (*)()) 0,     /* called before read */
-    (void (*)()) 0,     /* called after write */
+    (int (*)()) 0,      /* called before read */
+    (int (*)()) 0,      /* called after write */
     "A sample integer in a table"
   },
   {
@@ -46,8 +50,8 @@ COLDEF mycolumns[] = {
     sizeof(float),      /* number of bytes */
     offsetof(struct MyData, myfloat), /* location in struct */
     0,                  /* no flags */
-    (void (*)()) 0,     /* called before read */
-    (void (*)()) 0,     /* called after write */
+    (int (*)()) 0,      /* called before read */
+    (int (*)()) 0,      /* called after write */
     "A sample float in a table"
   },
   {
@@ -57,7 +61,7 @@ COLDEF mycolumns[] = {
     NOTE_LEN,           /* number of bytes */
     offsetof(struct MyData, notes), /* location in struct */
     0,                  /* no flags */
-    (void (*)()) 0,     /* called before read */
+    (int (*)()) 0,      /* called before read */
     reverse_str,        /* called after write */
     "A sample note string in a table"
   },
@@ -68,8 +72,8 @@ COLDEF mycolumns[] = {
     NOTE_LEN,           /* number of bytes */
     offsetof(struct MyData, seton), /* location in struct */
     RTA_READONLY,       /* a read-only column */
-    (void (*)()) 0,     /* called before read */
-    (void (*)()) 0,     /* called after write */
+    (int (*)()) 0,      /* called before read */
+    (int (*)()) 0,      /* called after write */
     "Another sample note string in a table"
   },
 };
@@ -112,7 +116,6 @@ int main()
     }
 
     /* init the rta package and tell it about mydata */
-    rta_init();
     if (rta_add_table(&mytbldef) != RTA_SUCCESS) {
         fprintf(stderr, "Table definition error!\n");
         exit(1);
@@ -170,7 +173,8 @@ int main()
 
 /* reverse_str(), a write callback to replace '<' and '>' with
  * '.', and to store the reversed string of notes into seton. */
-void reverse_str(char *tbl, char *col, char *sql, void *pr, int rowid)
+int reverse_str(char *tbl, char *col, char *sql, void *pr,
+                int rowid, void *poldrow)
 {
     int   i,j;                 /* loop counters */
 
@@ -182,5 +186,6 @@ void reverse_str(char *tbl, char *col, char *sql, void *pr, int rowid)
         mydata[rowid].seton[j] = mydata[rowid].notes[i];
     }
     mydata[rowid].seton[j] = (char) 0;
+    return(0);
 }
 

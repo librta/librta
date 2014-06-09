@@ -173,28 +173,32 @@ flags are defined after this structure and include a "read-only"
 flag and a flag to indicate that updates to this column should
 cause a table save. (See table savefile described below.)</td></tr>
 <tr>
-<td valign="top">void&nbsp;(*readcb)&nbsp;()</td>
+<td valign="top">int&nbsp;(*readcb)&nbsp;()</td>
 <td>Read callback. This routine is called before the column value
 is used. Input values include the table name, the column name, the
 input SQL command, a pointer to the row, and the (zero indexed) row
-number for the row
-that is being read. This routine is called *each* time the column
-is read so the following would produce two calls:<br>
+number for the row that is being read. On success, a zero should be
+returned.  This routine is called *each* time the column is read so
+the following would produce two calls:<br>
  SELECT intime FROM inns WHERE intime &gt;= 100;</td></tr>
 <tr>
-<td valign="top">void&nbsp;(*writecb)&nbsp;()</td>
+<td valign="top">int&nbsp;(*writecb)&nbsp;()</td>
 <td>Write callback. This routine is called after an UPDATE in which
 the column is written. Input values include the table name, the
-column name, the SQL command, a pointer to the row, and
-the (zero indexed) row number of
-the the row that changed. See the callback section below. This
-routine is called only once after all column updates have occurred.
-For example, if there were a write callback attached to the addr
-column, the following SQL statement would cause the execution of
-the write callback once after both mask and addr have been written:
+column name, the SQL command, a pointer to the row, the (zero
+indexed) row number of the the row that changed, and a pointer to
+the row before any changes were made.  See the callback section
+below. This routine is called only once after all column updates
+have occurred.  For example, if there were a write callback
+attached to the addr column, the following SQL statement would
+cause the execution of the write callback once after both mask
+and addr have been written:
 UPDATE ethers SET mask="255.255.255.0", addr = "192.168.1.10"
 WHERE name = "eth1"; The callback is called for each row
-modified.</td></tr>
+modified.
+<p>If an error is detected during the callback, a non-zero
+value can be returned.  This returns an error to the client and
+restores the table row to its original value.</td></tr>
 <tr>
 <td valign="top">char&nbsp;*help</td>
 <td>A brief description of the column. This should include the
@@ -846,7 +850,15 @@ The %s is replaced by the column name.</td></tr>
 <tr>
 <td>This reply indicates that an attempt to UPDATE a column marked
 as read-only. The %s is replaced by the column
-name.</td></tr></table>
+name.</td></tr>
+<tr>
+<td valign="top" rowspan="2">7)</td>
+<td><tt>"ERROR: Failed callback on column '%s'"</tt></td></tr>
+<tr>
+<td>This indicates that a read or write callback (trigger) has
+has failed.  If a write update failed, the table remain
+unmodified. </td></tr>
+</table>
 <p>The other type of error messages are internal debug messages.
 Debug messages are logged using the standard syslog() facility
 available on all Linux systems. The default syslog "facility" used
@@ -882,7 +894,6 @@ detected.</p>
 "%s %d: Too many columns in table: %s\n"
 "%s %d: Not enough buffer space\n"
 
-
          "SQL" errors 
 "%s %d: SQL parse error: %s\n"
 "%s %d: Attempt to update readonly column: %s\n"
@@ -897,8 +908,9 @@ detected.</p>
 <h3><a name="Callbacks">- How to write callback routines</a></h3>
 <p>As mentioned above, read callbacks are executed before a column
 value is used and write callbacks are called after all columns have
-been updated. Both read and write callbacks return nothing (are of
-type void). Read callbacks have the following calling parameters:</p>
+been updated. Both read and write callbacks return an integer which
+is zero on success and non-zero on failure.  Read callbacks have 
+the following calling parameters:</p>
 
 <table summary="" align="center" width="90%" cellspacing="1">
 <tr>
@@ -923,7 +935,8 @@ or written</td></tr></table>
 <p>Read callbacks are particularly useful to compute things like
 sums and averages; things that aren't worth the effort to compute
 continuously if it's possible to compute it just when it is
-used.</p>
+used.  A returned value of zero indicates that the read callback
+was successful.</p>
 <br>
 <p>Write callbacks can form the real engine driving the
 application. These are most applicable when tied to configuration
@@ -935,6 +948,11 @@ the addition of a pointer to a copy of the row before it was
 modified.  Access to a copy of the unmodified row is useful
 to detect actual changes and not just updates with the same
 value.  </p>
+Your write callback can also perform sanity checking on the
+values about to be entered in the table.  If the values are
+in error, the callback can return a non-zero value.  This
+error is propagated back to the client, and the table row
+is restored to its original value.
 <p>
 Write callbacks are passed the following parameters:</p>
 

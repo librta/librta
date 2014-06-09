@@ -28,14 +28,6 @@
 #define RTA_GE        4
 #define RTA_LE        5
 
-    /* SQL errors to the front ends */
-#define E_NOTABLE  "Relation '%s' does not exist"
-#define E_NOCOLUMN  "Attribute '%s' not found"
-#define E_BADPARSE  "SQL parse error",""
-#define E_BIGSTR    "String too long for '%s'"
-#define E_NOWRITE   "Can not update read-only column '%s'"
-#define E_FULLBUF   "Output buffer full",""
-
     /* Defines for the meta tables.  The table of tables must always be 
        table #0, and the table of columns must always be table #1. */
 #define RTA_TABLES    0

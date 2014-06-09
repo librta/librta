@@ -40,12 +40,12 @@
 #define  DB_PORT    8888
 
 void     accept_ui_session(int srvfd);
-void     compute_cdur(char *tbl, char *col, char *sql, void *pr, int rowid);
+int      compute_cdur(char *tbl, char *col, char *sql, void *pr, int rowid);
 void     handle_ui_output(UI *pui);
 void     handle_ui_request(UI *pui);
 void     init_ui();
 int      listen_on_port(int port);
-void     reverse_str(char *tbl, char *col, char *sql, void *pr, int rowid,
+int      reverse_str(char *tbl, char *col, char *sql, void *pr, int rowid,
                      void *por);
 void    *get_next_conn(void *prow, void *it_data, int rowid);
 extern TBLDEF UITables[];
@@ -269,16 +269,18 @@ accept_ui_session(int srvfd)
  *               char *sql   -- actual SQL of the command
  *               void *pr    -- points to row affected
  *               int  rowid  -- row number of row read 
- * Output:       none
+ * Output:       0 (success)
  * Effects:      Computes the difference between the current
  *               value of time() and the value stored in the
  *               field 'ctm'.  The result is placed in 'cdur'.
  ***************************************************************/
-void
+int
 compute_cdur(char *tbl, char *col, char *sql, void *pr, int rowid)
 {
   if(pr)
     ((UI *)pr)->cdur = ((int) time((time_t *) 0)) - ((UI *)pr)->ctm;
+
+  return(0);
 }
 
 /***************************************************************
@@ -452,10 +454,10 @@ listen_on_port(int port)
  *               void *pr    -- points to row 
  *               void *por   -- points to copy of row before update
  *               int  rowid  -- row number of row modified
- * Output:       none
+ * Output:       0 (success)
  * Effects:      Puts the reverse of 'notes' into 'seton'
  ***************************************************************/
-void
+int
 reverse_str(char *tbl, char *col, char *sql, void *pr, int rowid, void *por)
 {
   int      i, j;       /* loop counters */
@@ -468,6 +470,10 @@ reverse_str(char *tbl, char *col, char *sql, void *pr, int rowid, void *por)
     mydata[rowid].seton[j] = mydata[rowid].notes[i];
   }
   mydata[rowid].seton[j] = (char) 0;
+
+  if (mydata[rowid].myint == 999)
+    return(1);
+  return(0);
 }
 
 

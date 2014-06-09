@@ -16,7 +16,7 @@
 
 CC = gcc
 OPT =  -fPIC -c -I.
-DEBUG = -g -DDEBUG -DYYDEBUG -ggdb -Wall
+DEBUG = -g -ggdb -DDEBUG -DYYDEBUG -ggdb -Wall
 CFLAGS = $(OPT) $(DEBUG)
 OBJS   = api.o token.o parse.tab.o do_sql.o rtatables.o
 LIBS   = 
@@ -42,8 +42,11 @@ all: librtadb.so.2 librtafs.so.2
 
 librtadb.so.2: $(OBJS)
 	gcc -ggdb -Wall -shared -Wl,-soname,librtadb.so.2 \
-		-o librtadb.so.2.0  $(OBJS) $(LIBS) -lc
+		-o librtadb.so.2.0  $(OBJS) $(LIBS) -lc -lefence
+	ln -sf librtadb.so.2.0 librtadb.so.2
+	ln -sf librtadb.so.2.0 librtadb.so
 	ar -rcs librtadb.a $(OBJS)
+
 
 librtafs.so.2: $(FSOBJS) librtadb.so.2
 	gcc -ggdb -Wall -shared -Wl,-soname,librtafs.so.2 \
@@ -80,5 +83,5 @@ install:
 	ln -sf /usr/local/lib/librtadb.so.2.0 /usr/local/lib/librtadb.so
 
 clean: 
-	rm -rf *.o parse.tab.? token.c lib* parse.output parse.save
+	rm -rf *.o parse.tab.? token.c lib* parse.output parse.save *~
 

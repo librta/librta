@@ -20,14 +20,17 @@ DEBUG = -g -DDEBUG -DYYDEBUG -ggdb -Wall
 CFLAGS = $(OPT) $(DEBUG)
 APPOBJS   = appmain.o apptables.o
 
+
 default: app
 
 app: $(APPOBJS) 
-	$(CC) $(APPOBJS) -o $@ -L../src -lrtadb -lrtafs -lfuse
+	$(CC) $(APPOBJS) -o $@ -L../src -lrtadb -lrtafs
 
 app-static: $(APPOBJS) 
-	$(CC) $(APPOBJS) -o $@ ../src/librtadb.a ../src/librtafs.a \
-			 /usr/local/lib/libfuse.a
+	$(CC) $(APPOBJS) -o $@ ../src/librtadb.a ../src/librtafs.a
+
+rta_client: rta_client.o
+	$(CC) rta_client.c -o $@ -lpq
 
 appmain.o: appmain.c app.h
 	$(CC) $(CFLAGS) $< -o $@
@@ -48,5 +51,5 @@ standard: clean
 	done
 
 clean: 
-	rm -rf *.o app app-static
+	rm -rf *.o app app-static rta_client
 

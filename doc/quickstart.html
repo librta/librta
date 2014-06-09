@@ -66,7 +66,7 @@ array of data structures as both a database and as a file system.
 The array has twenty structures and each structure has a
 writeable integer, a writeable float, a writeable string, and a
 read-only string. Both strings are thirty characters in length. A
-call back on the writeable string does two things: it replaces any
+callback on the writeable string does two things: it replaces any
 '&lt;' and '&gt;' characters with a '.', and it copies the reversed
 string into the the read-only string.</p>
 <p>The structure would be defined as:</p>
@@ -103,8 +103,8 @@ COLDEF mycolumns[] = {
     sizeof(int),        /* number of bytes */
     offsetof(struct MyData, myint), /* location in struct */
     0,                  /* no flags */
-    (void (*)()) 0,     /* called before read */
-    (void (*)()) 0,     /* called after write */
+    (int (*)()) 0,      /* called before read */
+    (int (*)()) 0,      /* called after write */
     "A sample integer in a table"
   },
   {
@@ -114,8 +114,8 @@ COLDEF mycolumns[] = {
     sizeof(float),      /* number of bytes */
     offsetof(struct MyData, myfloat), /* location in struct */
     0,                  /* no flags */
-    (void (*)()) 0,     /* called before read */
-    (void (*)()) 0,     /* called after write */
+    (int (*)()) 0,      /* called before read */
+    (int (*)()) 0,      /* called after write */
     "A sample float in a table"
   },
   {
@@ -125,7 +125,7 @@ COLDEF mycolumns[] = {
     NOTE_LEN,           /* number of bytes */
     offsetof(struct MyData, notes), /* location in struct */
     0,                  /* no flags */
-    (void (*)()) 0,     /* called before read */
+    (int (*)()) 0,      /* called before read */
     reverse_str,        /* called after write */
     "A sample note string in a table"
   },
@@ -136,8 +136,8 @@ COLDEF mycolumns[] = {
     NOTE_LEN,           /* number of bytes */
     offsetof(struct MyData, seton), /* location in struct */
     RTA_READONLY,       /* a read-only column */
-    (void (*)()) 0,     /* called before read */
-    (void (*)()) 0,     /* called after write */
+    (int (*)()) 0,      /* called before read */
+    (int (*)()) 0,      /* called after write */
     "Another sample note string in a table"
   },
 };
@@ -290,7 +290,8 @@ is called after the data has been written. It loops through the
 string replacing greater-than and less-than symbols with a period,
 and copying a reverse of the string into the 'seton' field.</p>
 <pre>
-void reverse_str(char *tbl, char *col, char *sql, int rowid)
+int reverse_str(char *tbl, char *col, char *sql, void *pr,
+                int rowid, void *poldrow)
 {
     int   i,j;                 /* loop counters */
 
@@ -302,6 +303,8 @@ void reverse_str(char *tbl, char *col, char *sql, int rowid)
         mydata[rowid].seton[j] = mydata[rowid].notes[i];
     }
     mydata[rowid].seton[j] = (char) 0;
+
+    return(0);   /* no errors */
 }
 </pre>
 <br>
@@ -313,8 +316,8 @@ to download, build, and run the sample application.</p>
 given above.  Untar it.  Go to the src directory
 and do a make.  </p>
 <pre>
-    # tar -xzf rta-0.7.0.tgz
-    # cd rta-0.7.0
+    # tar -xzf rta-0.7.4.tgz
+    # cd rta-0.7.4
     # cd src
     # make librtadb.so.2
 </pre>
@@ -333,7 +336,7 @@ directory.</p>
 it where to find the shared object library.  From
 the <tt>test</tt> directory enter:</p>
 <pre>
-    # export LD_LIBRARY_PATH=/home/rta-0.7.0/src
+    # export LD_LIBRARY_PATH=/home/rta-0.7.4/src
     # ./myappdb &amp;
 </pre>
 <p>That is all there is to it.  Please use the contact
@@ -487,7 +490,7 @@ included in this listing.  The file system package is built on top
 of the database package and we still use the calls to rta_init()
 and rta_add_table().  The two new calls are to rtafs_init() and
 do_rtafs().</p>
-<code>
+<code><pre>
 int main()
 {
     fd_set   rfds;       /* read bit masks for select statement */
@@ -524,7 +527,7 @@ int main()
         }
     }
 }
-</code>
+</pre></code>
 <p>We use a select() to detect arrival of a file system command
 and use do_rtafs() to do the read and execution of the command.
 You can use routines in the FUSE package directly if you want

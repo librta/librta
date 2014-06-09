@@ -23,8 +23,8 @@
 #include "app.h"                /* for table definitions and sizes */
 extern UI ui[];
 extern struct MyData mydata[];
-extern void compute_cdur(char *tbl, char *col, char *sql, void *pr, int rowid);
-extern void reverse_str();
+extern int  compute_cdur(char *tbl, char *col, char *sql, void *pr, int rowid);
+extern int  reverse_str();
 extern void *get_next_conn(void *prow, void *it_info, int rowid);
 
 /***************************************************************
@@ -38,8 +38,8 @@ COLDEF   mycolumns[] = {
       sizeof(int),              /* number of bytes */
       offsetof(struct MyData, myint), /* location in struct */
       RTA_DISKSAVE,             /* save to disk */
-      (void (*)()) 0,           /* called before read */
-      (void (*)()) 0,           /* called after write */
+      (int (*)()) 0,            /* called before read */
+      (int (*)()) 0,            /* called after write */
     "A sample integer in a table"},
   {
       "mytable",                /* the table name */
@@ -48,8 +48,8 @@ COLDEF   mycolumns[] = {
       sizeof(float),            /* number of bytes */
       offsetof(struct MyData, myfloat), /* location in struct */
       0,                        /* no flags */
-      (void (*)()) 0,           /* called before read */
-      (void (*)()) 0,           /* called after write */
+      (int (*)()) 0,            /* called before read */
+      (int (*)()) 0,            /* called after write */
     "A sample float in a table"},
   {
       "mytable",                /* the table name */
@@ -58,7 +58,7 @@ COLDEF   mycolumns[] = {
       NOTE_LEN,                 /* number of bytes */
       offsetof(struct MyData, notes), /* location in struct */
       RTA_DISKSAVE,             /* save to disk */
-      (void (*)()) 0,           /* called before read */
+      (int (*)()) 0,            /* called before read */
       reverse_str,              /* called after write */
     "A sample note string in a table"},
   {
@@ -68,8 +68,8 @@ COLDEF   mycolumns[] = {
       NOTE_LEN,                 /* number of bytes */
       offsetof(struct MyData, seton), /* location in struct */
       RTA_READONLY,             /* a read-only column */
-      (void (*)()) 0,           /* called before read */
-      (void (*)()) 0,           /* called after write */
+      (int (*)()) 0,            /* called before read */
+      (int (*)()) 0,            /* called after write */
     "Sample of a field computed by a write callback.  Seton"
       " is the reverse of the 'notes' field."},
 };
@@ -101,8 +101,8 @@ COLDEF   ConnCols[] = {
       sizeof(int),              /* #bytes in col data */
       offsetof(UI, fd),         /* offset from col start */
       RTA_READONLY,             /* Flags for read-only/disksave */
-      (void (*)()) 0,           /* called before read */
-      (void (*)()) 0,           /* called after write */
+      (int (*)()) 0,            /* called before read */
+      (int (*)()) 0,            /* called after write */
     "File descriptor for TCP socket to UI program"},
   {
       "UIConns",                /* table name */
@@ -111,8 +111,8 @@ COLDEF   ConnCols[] = {
       sizeof(int),              /* #bytes in col data */
       offsetof(UI, cmdindx),    /* offset from col start */
       RTA_READONLY,             /* Flags for read-only/disksave */
-      (void (*)()) 0,           /* called before read */
-      (void (*)()) 0,           /* called after write */
+      (int (*)()) 0,            /* called before read */
+      (int (*)()) 0,            /* called after write */
     "Index of the next free byte in the input string, cmd"},
   {
       "UIConns",                /* table name */
@@ -121,8 +121,8 @@ COLDEF   ConnCols[] = {
       MXCMD,                    /* #bytes in col data */
       offsetof(UI, cmd),        /* offset from col start */
       RTA_READONLY,             /* Flags for read-only/disksave */
-      (void (*)()) 0,           /* called before read */
-      (void (*)()) 0,           /* called after write */
+      (int (*)()) 0,            /* called before read */
+      (int (*)()) 0,            /* called after write */
     "Input command from the user interface program.  This"
       " is an SQL command which is executed against the data"
       " in the application."},
@@ -133,8 +133,8 @@ COLDEF   ConnCols[] = {
       sizeof(int),              /* #bytes in col data */
       offsetof(UI, rspfree),    /* offset from col start */
       RTA_READONLY,             /* Flags for read-only/disksave */
-      (void (*)()) 0,           /* called before read */
-      (void (*)()) 0,           /* called after write */
+      (int (*)()) 0,            /* called before read */
+      (int (*)()) 0,            /* called after write */
     "Index of the next free byte in the response string, rsp"},
   {
       "UIConns",                /* table name */
@@ -143,8 +143,8 @@ COLDEF   ConnCols[] = {
       50,                       /* first 50 bytes of response field */
       offsetof(UI, rsp),        /* offset from col start */
       RTA_READONLY,             /* Flags for read-only/disksave */
-      (void (*)()) 0,           /* called before read */
-      (void (*)()) 0,           /* called after write */
+      (int (*)()) 0,            /* called before read */
+      (int (*)()) 0,            /* called after write */
     "Response back to the calling program.  This is used to"
       " store the result so that the write() does not need to"
       " block"},
@@ -155,8 +155,8 @@ COLDEF   ConnCols[] = {
       sizeof(int),              /* #bytes in col data */
       offsetof(UI, o_port),     /* offset from col start */
       RTA_READONLY,             /* Flags for read-only/disksave */
-      (void (*)()) 0,           /* called before read */
-      (void (*)()) 0,           /* called after write */
+      (int (*)()) 0,            /* called before read */
+      (int (*)()) 0,            /* called after write */
     "The IP port of the other end of the connection"},
   {
       "UIConns",                /* table name */
@@ -165,8 +165,8 @@ COLDEF   ConnCols[] = {
       sizeof(int),              /* #bytes in col data */
       offsetof(UI, o_ip),       /* offset from col start */
       RTA_READONLY,             /* Flags for read-only/disksave */
-      (void (*)()) 0,           /* called before read */
-      (void (*)()) 0,           /* called after write */
+      (int (*)()) 0,            /* called before read */
+      (int (*)()) 0,            /* called after write */
     "The IP address of the other end of the connection"
       " cast to an int."},
   {
@@ -176,8 +176,8 @@ COLDEF   ConnCols[] = {
       sizeof(long long),        /* #bytes in col data */
       offsetof(UI, nbytin),     /* offset from col start */
       RTA_READONLY,             /* Flags for read-only/disksave */
-      (void (*)()) 0,           /* called before read */
-      (void (*)()) 0,           /* called after write */
+      (int (*)()) 0,            /* called before read */
+      (int (*)()) 0,            /* called after write */
     "Number of bytes received on this connection"},
   {
       "UIConns",                /* table name */
@@ -186,8 +186,8 @@ COLDEF   ConnCols[] = {
       sizeof(long long),        /* #bytes in col data */
       offsetof(UI, nbytout),    /* offset from col start */
       RTA_READONLY,             /* Flags for read-only/disksave */
-      (void (*)()) 0,           /* called before read */
-      (void (*)()) 0,           /* called after write */
+      (int (*)()) 0,            /* called before read */
+      (int (*)()) 0,            /* called after write */
     "Number of bytes sent out on this connection"},
   {
       "UIConns",                /* table name */
@@ -196,8 +196,8 @@ COLDEF   ConnCols[] = {
       sizeof(int),              /* #bytes in col data */
       offsetof(UI, ctm),        /* offset from col start */
       RTA_READONLY,             /* Flags for read-only/disksave */
-      (void (*)()) 0,           /* called before read */
-      (void (*)()) 0,           /* called after write */
+      (int (*)()) 0,            /* called before read */
+      (int (*)()) 0,            /* called after write */
     "Connect TiMe.  The unix style time() when the connection"
       " was established.  This is used to decide which connection"
       " to drop when the connection table is full and a new UI"
@@ -210,7 +210,7 @@ COLDEF   ConnCols[] = {
       offsetof(UI, cdur),       /* offset from col start */
       RTA_READONLY,             /* Flags for read-only/disksave */
       compute_cdur,             /* called before read */
-      (void (*)()) 0,           /* called after write */
+      (int (*)()) 0,            /* called after write */
     "Connect DURation.  The number of seconds the connection"
       " has been open.  A read callback computes this each time"
       " the value is used."},

@@ -1,3 +1,14 @@
+2004-11-14  Bob Smith                 Version 0.7.4
+    - Read and write callbacks now return a zero on success 
+      and a non-zero on failure.  A failed write callback
+      restores the table row to its initial values.  No attempt
+      is made to undo other side effects of callbacks so some
+      care should be taken.
+    - Minor web site documentation clean up.  Got fuse to run
+      on the demo web server so a link to the fuse-mapped app
+      directory is back in the "livedemo" page.
+
+
 2004-07-26  Bob Smith                 Version 1.0.1/0.7.3
     - Added support for the new psql client protocol in which
       the very first packet from the client is a request for an

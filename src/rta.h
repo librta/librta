@@ -96,7 +96,7 @@
  * tell rta about the tables and columns in the data base. 
  * Table information includes things like the name, start
  * address, number of rows and the length of each row.  Column
- * information includes things like the associate table name,
+ * information includes things like the associated table name,
  * the column name, the column's data type, and whether we want
  * any special functions called when the column is read or
  * written (callbacks).
@@ -203,11 +203,12 @@ typedef struct
            * column value is used.  Input values include the
            * table name, the column name, the input SQL command,
            * a pointer to the row affected, and the (zero indexed)
-           * row number for the row that is being read.
+           * row number for the row that is being read.  It
+           * returns a 0 on success and non-zero on failure.
            * This routine is called *each* time the column is
            * read so the following would produce two calls:
            * SELECT intime FROM inns WHERE intime >= 100;   */
-  void     (*readcb) (char *tbl, char *column, char *SQL, void *pr,
+  int      (*readcb) (char *tbl, char *column, char *SQL, void *pr,
     int row_num);
 
           /** Write callback.  This routine is called after an
@@ -225,8 +226,12 @@ typedef struct
            * have been written:
            * UPDATE ethers SET mask="255.255.255.0", addr = \
            *     "192.168.1.10" WHERE name = "eth1";
-           * The callback is called for each row modified. */
-  void     (*writecb) (char *tbl, char *column, char *SQL, void *pr,
+           * The callback is called for each row modified. 
+           * A callback returns zero on success and non-zero on
+           * failure.  On failure, the table's row is restored
+           * to it's initial values and an SQL error is returned
+           * to the client.  The error is TRIGGERED ACTION EXCEPTION */
+  int      (*writecb) (char *tbl, char *column, char *SQL, void *pr,
                        int row_num,  void *poldrow);
 
           /** A brief description of the column.  This should
@@ -790,6 +795,9 @@ void     do_rtafs();
  *      This reply indicates that an attempt to update a column
  *      marked as read-only.  The %s is replaced by the column
  *      name.
+ * 7) "ERROR:  Trigger failure on column '%s'
+ *      This reply indicates that a read or write callback 
+ *      failed.
  *
  *     The other type of error messages are internal debug
  * messages.  Debug messages are logged using the standard
@@ -832,18 +840,27 @@ void     do_rtafs();
 #define Er_Bad_SQL   "%s %d: SQL parse error: %s"
 #define Er_Readonly  "%s %d: Attempt to update readonly column: %s"
 
+        /* SQL errors to the front ends */
+#define E_NOTABLE    "Relation '%s' does not exist"
+#define E_NOCOLUMN   "Attribute '%s' not found"
+#define E_BADPARSE   "SQL parse error",""
+#define E_BIGSTR     "String too long for '%s'"
+#define E_NOWRITE    "Can not update read-only column '%s'"
+#define E_FULLBUF    "Output buffer full",""
+#define E_BADTRIG    "Failed callback on column '%s'"
+
         /** "Trace" messages */
 #define Er_Trace_SQL "%s %d: SQL command: %s  (%s)"
-
 /*************************************************************/
+
 
 /** ************************************************************
  * - How to write callback routines
  *     As mentioned above, read callbacks are executed before a
  * column value is used and write callbacks are called after all
  * columns have been updated.  Both read and write callbacks
- * return nothing (are of type void).  Read callbacks  have the
- * following calling parameters:
+ * return a zero on success and non-zero on failure.  Read
+ * callbacks  have the following calling parameters:
  *   - char *tblname:  the name of the table referenced
  *   - char *colname:  the name of the column referenced
  *   - char *sqlcmd:   the text of the SQL command 
@@ -854,7 +871,10 @@ void     do_rtafs();
  *     Read callbacks are particularly useful to compute things
  * like sums and averages; things that aren't worth the effort
  * compute continuously if it's possible to compute it just 
- * when it is used.
+ * when it is used.  The callback should return zero on success.
+ * If a non-zero value is returned, the client gets an error
+ * message, TRIGGERED ACTION EXCEPTION.
+ *
  *     Write callbacks can form the real engine driving the
  * application.  These are most applicable when tied to 
  * configuration changes.   Write callbacks are also a useful 
@@ -873,6 +893,10 @@ void     do_rtafs();
  *   - void *poldrow;  pointer to a copy of the row before any
  *                     changes were made.
  *
+ * A return value of zero indicates success.  A non-zero value
+ * indicates an error.  On error, RTA will restore the table row
+ * using the copy of the unmodified row and returns an SQL error,
+ * TRIGGERED ACTION EXCEPTION, to the user.
  **************************************************************/
 
 /***************************************************************
