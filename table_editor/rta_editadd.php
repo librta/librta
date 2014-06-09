@@ -2,13 +2,13 @@
 <html>
 <!-- ----------------------------------------------------------------- -->
 <!--  Run Time Access                                                  -->
-<!--  Copyright (C) 2003-2006 Robert W Smith (bsmith@linuxtoys.org)    -->
+<!--  Copyright (C) 2003-2008 Robert W Smith (bsmith@linuxtoys.org)    -->
 <!--                                                                   -->
 <!--   This program is distributed under the terms of the GNU          -->
 <!--   LGPL.  See the file COPYING file.                               -->
 <!-- ----------------------------------------------------------------- -->
 <head>
-<title>Edit Row</title>
+<title>Edit or Add Row</title>
 </head>
 <body>
 <?php
@@ -22,7 +22,10 @@
     $port = htmlentities($_GET[port]);
 
     // Say where we are.
-    print("<center><h3>Edit $tbl, row $row</h3></center>\n");
+    if ($row >= 0)
+        print("<center><h3>Edit $tbl, row $row</h3></center>\n");
+    else
+        print("<center><h3>Insert New Row</h3></center>\n");
 
     // Suppress Postgres error messages
     error_reporting(error_reporting() & 0xFFFD);
@@ -36,8 +39,11 @@
         exit();
     }
 
-    // Give URL for form processing
-    print("<form method=\"post\" action=rta_update.php>\n");
+    // Give URL for form processing (insert if row ==-1)
+    if ($row >= 0)
+        print("<form method=\"post\" action=rta_update.php>\n");
+    else
+        print("<form method=\"post\" action=rta_insert.php>\n");
     print("<td><input type=\"hidden\" name=\"__table\" value=\"$tbl\">\n");
     print("<td><input type=\"hidden\" name=\"__row\" value=\"$row\">\n");
     print("<td><input type=\"hidden\" name=\"__port\" value=\"$port\">\n");
@@ -63,20 +69,25 @@
         $colhelp   = pg_result($r1, $col, 2);
         $collength = pg_result($r1, $col, 3);
         $coltype   = pg_result($r1, $col, 4);
+        $colvalue = "";
         if (($coltype != 0) &&  // "0" is the type for strings,  See rta.h
-            ($coltype != 4))    // "4" is the type for pointer to string.
+            ($coltype != 4)) {  // "4" is the type for pointer to string.
             $collength = 20;
-
-        // Get column value from table
-        $command = "SELECT \"$colname\" FROM \"$tbl\" LIMIT 1 OFFSET $row";
-        $r2 = pg_exec($c1, $command);
-        if ($r2 == "") { 
-            print("<p><font color=\"red\" size=+1>SQL Command failed!</p>");
-            print("<p>Command: $command</p>\n");
-            exit();
+            $colvalue = 0;
         }
-        $colvalue  = pg_result($r2, 0, 0);
-        pg_freeresult($r2);
+
+        // Get column value from table if an edit
+        if ($row >= 0 ) {
+            $command = "SELECT \"$colname\" FROM \"$tbl\" LIMIT 1 OFFSET $row";
+            $r2 = pg_exec($c1, $command);
+            if ($r2 == "") { 
+                print("<p><font color=\"red\" size=+1>SQL Command failed!</p>");
+                print("<p>Command: $command</p>\n");
+                exit();
+            }
+            $colvalue  = pg_result($r2, 0, 0);
+            pg_freeresult($r2);
+        }
 
         // Display the column
         print("<tr><td><b>$colname</b><br>$colhelp</td>");

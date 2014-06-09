@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta http-equiv="content-type" content="text/html; charset=UTF-8">
-<title>RTA: Embedded DB API</title>
+<title>RTA: DB-like API for Daemons</title>
 <style type="text/css">
 p {font-size: medium;}
 th {font-size: medium;}
@@ -45,7 +45,7 @@ taken from the rta.h file in the RTA package. The rta.h file is the
 authoritative reference to the API.</p>
 <table summary="">
 <tr>
-<td valign="top" colspan="2" rowspan="10">INDEX:</td></tr>
+<td valign="top" colspan="2" rowspan="11">INDEX:</td></tr>
 <tr>
 <td></td></tr>
 <tr>
@@ -62,7 +62,10 @@ authoritative reference to the API.</p>
 <td><a href="#Subroutines">- Subroutines</a></td></tr>
 <tr>
 <td></td>
-<td><a href="#Syntax">- RTA UPDATE and SELECT syntax</a></td></tr>
+<td><a href="#SyntaxUS">- RTA UPDATE and SELECT syntax</a></td></tr>
+<tr>
+<td></td>
+<td><a href="#SyntaxID">- RTA INSERT and DELETE syntax</a></td></tr>
 <tr>
 <td></td>
 <td><a href="#Internal">- Internal DB tables</a></td></tr>
@@ -84,43 +87,43 @@ to recompile the RTA package using your new settings.</p>
 <th>Value</th>
 <th>Description</th></tr>
 <tr>
-<td valign="top">MX_TBL</td>
+<td valign="top">RTA_MX_TBL</td>
 <td valign="top">500</td>
 <td>Maximum number of tables allowed in the system. Your database
 may not contain more than this number of tables.</td></tr>
 <tr>
-<td valign="top">MX_COL</td>
+<td valign="top">RTA_MX_COL</td>
 <td valign="top">2500</td>
 <td>Maximum number of columns allowed in the system. Your database
 may not contain more than this number of columns.</td></tr>
 <tr>
-<td valign="top">MXCOLNAME</td>
+<td valign="top">RTA_MXCOLNAME</td>
 <td valign="top">30</td>
 <td rowspan="4">Maximum number of characters in a column name,
-table name, help text, and path to the save file. See TBLDEF and
-COLDEF below.</td></tr>
+table name, help text, and path to the save file. See RTA_TBLDEF and
+RTA_COLDEF below.</td></tr>
 <tr>
-<td valign="top">MXTBLNAME</td>
+<td valign="top">RTA_MXTBLNAME</td>
 <td valign="top">30</td></tr>
 <tr>
-<td valign="top">MXHELPSTR</td>
+<td valign="top">RTA_MXHELPSTR</td>
 <td valign="top">1000</td></tr>
 <tr>
-<td valign="top">MXFILENAME</td>
+<td valign="top">RTA_MXFILENAME</td>
 <td valign="top">PATH_MAX</td></tr>
 <tr>
-<td valign="top">MXDBGIDENT</td>
+<td valign="top">RTA_MXDBGIDENT</td>
 <td valign="top">20</td>
 <td>Maximum number of characters in the 'ident' field of the
 openlog() call. See the rta_dbg table below.</td></tr>
 <tr>
-<td valign="top">MX_LN_SZ</td>
+<td valign="top">RTA_MX_LN_SZ</td>
 <td valign="top">1500</td>
 <td>Maximum line size. SQL commands in save files may contain no
-more than MX_LN_SZ characters. Lines with more than MX_LN_SZ
-characters are silently truncated to MX_LN_SZ characters.</td></tr>
+more than RTA_MX_LN_SZ characters. Lines with more than RTA_MX_LN_SZ
+characters are silently truncated to RTA_MX_LN_SZ characters.</td></tr>
 <tr>
-<td valign="top">NCMDCOLS</td>
+<td valign="top">RTA_NCMDCOLS</td>
 <td valign="top">40</td>
 <td>Maximum number of columns allowed in a table.</td></tr>
 <tr>
@@ -132,11 +135,11 @@ characters are silently truncated to MX_LN_SZ characters.</td></tr>
 <p>Each column and table in the database must be described in a data
 structure. Here are the data structures and associated defines to
 describe tables and columns.</p>
-<p>The column definition (COLDEF) structure describes one column of
-a table. A table description has an array of COLDEFs to describe
+<p>The column definition (RTA_COLDEF) structure describes one column of
+a table. A table description has an array of RTA_COLDEFs to describe
 the columns in the table.</p>
-<table summary="the COLDEF structure" width="95%">
-<caption>The COLDEF Structure</caption>
+<table summary="the RTA_COLDEF structure" width="95%">
+<caption>The RTA_COLDEF Structure</caption>
 <tr>
 <th>Type/Name</th>
 <th>Description</th></tr>
@@ -145,7 +148,7 @@ the columns in the table.</p>
 <td>The name of the table that has this column.</td></tr>
 <tr>
 <td valign="top">char&nbsp;*name</td>
-<td>The name of the column. Must be at most MXCOLNAME characters in
+<td>The name of the column. Must be at most RTA_MXCOLNAME characters in
 length and must be unique within a table. The same column name may
 be used in more than one table.</td></tr>
 <tr>
@@ -207,8 +210,8 @@ default values. Include a brief description of the side effects of
 changes. This field is particularly important for tables which are
 part of the "boundary" between the UI developers and the
 application programmers.</td></tr></table>
-<table summary="COLDEF flags and data types" width="95%">
-<caption>COLDEF Types and Flags</caption>
+<table summary="RTA_COLDEF flags and data types" width="95%">
+<caption>RTA_COLDEF Types and Flags</caption>
 <tr>
 <td valign="top">RTA_STR</td>
 <td>String refers to an array of char. The 'length' of column must
@@ -246,7 +249,7 @@ float.</td></tr>
 <td valign="top">RTA_DISKSAVE</td>
 <td>Flag: If the disksave bit is set any writes to the column
 causes the table to be saved to the "savefile". See savefile
-described in the TBLDEF section below.</td></tr>
+described in the RTA_TBLDEF section below.</td></tr>
 <tr>
 <td valign="top">RTA_READONLY</td>
 <td>Flag: If the readonly flag is set, any writes to the column
@@ -256,16 +259,16 @@ coverage of the corner cases.)</td></tr></table>
 <br>
 <br>
  
-<p>The table definition (TBLDEF) structure describes a table and is
+<p>The table definition (RTA_TBLDEF) structure describes a table and is
 passed into the DB system by the rta_add_table() subroutine.</p>
-<table summary="the TBLDEF structure" width="95%">
-<caption>The TBLDEF Structure</caption>
+<table summary="the RTA_TBLDEF structure" width="95%">
+<caption>The RTA_TBLDEF Structure</caption>
 <tr>
 <th>Type/Name</th>
 <th>Description</th></tr>
 <tr>
 <td valign="top">char&nbsp;*name</td>
-<td>The name of the table. Must be less than than MXTLBNAME
+<td>The name of the table. Must be less than than RTA_MXTLBNAME
 characters in length. Must be unique within the DB.</td></tr>
 <tr>
 <td valign="top">void&nbsp;*address</td>
@@ -297,7 +300,7 @@ either the current row pointer or the requested row number
 in determining the pointer to the row.
 The iterator function also passes the <code>it_info</code>
 void pointer described below.<br>
-If an iterator is defined, the TBLDEF values for table address
+If an iterator is defined, the RTA_TBLDEF values for table address
 and number of rows are ignored.<br>
 The iterator function provides a way to make linked lists and
 other data arrangements appear as database tables.  See the
@@ -307,7 +310,7 @@ use an iterator as well.
 </td></tr>
 <tr>
 <td valign="top">void&nbsp;*it_info</td>
-<td>The value of it_info defined in the TBLDEF is passed
+<td>The value of it_info defined in the RTA_TBLDEF is passed
 each time the iterator is called on this table.  This lets
 you define, for example, one iterator function for all of
 your linked lists.  Inside your iterator function you can
@@ -315,14 +318,38 @@ use it_info to determine which table the
 iterator should use.
 </td></tr>
 <tr>
-<td valign="top">COLDEF&nbsp;*cols</td>
-<td>An array of COLDEF structures which describe the columns in the
+<td valign="top">int&nbsp;insertcb()</td>
+<td>
+INSERT callback.  This routine is called to insert a
+a new row into a table.  This routine should only be
+used for tables in which the rows are malloc'ed one at
+a time.  The insert callback is given the name of the
+table, the SQL of the original INSERT command, and a
+pointer to a newly allocated row for that table.  The
+callback needs to attach the row to the table using
+the technique (linked list, b-tree) suitable for that
+table.  On success, the callback should return the
+zero-indexed row number for the new row or, on failure,
+the callback should return -1.
+</td></tr>
+<tr>
+<td valign="top">void&nbsp;deletecb()</td>
+<td>
+DELETE callback.  This routine is called to delete a
+row from a table.  This routine is appropriate for
+tables that have rows that are malloc'ed.  It is up to
+the delete callback to unlink the row from the table
+and to FREE ALL MEMORY MALLOC'ED for the row. This
+callback has no return value and always succeeds. */
+</td></tr>
+<td valign="top">RTA_COLDEF&nbsp;*cols</td>
+<td>An array of RTA_COLDEF structures which describe the columns in the
 table. These must be in statically allocated memory since the RTA
 system references them while running.</td></tr>
 <tr>
 <td valign="top">int&nbsp;ncol</td>
 <td>The number of columns in the table. That is, the number of
-COLDEFs defined by 'cols'.</td></tr>
+RTA_COLDEFs defined by 'cols'.</td></tr>
 <tr>
 <td valign="top">char&nbsp;*savefile</td>
 <td>Save file. Path and name of a file which stores the
@@ -341,13 +368,13 @@ thing to include here.</td></tr></table>
  <p>Here is a summary of the few routines in the RTA API:</p>
 <table summary="list of API subroutines">
 <tr>
-<td>dbcommand()</td>
+<td>rta_dbcommand()</td>
 <td>process data stream from Postgres clients</td></tr>
 <tr>
 <td>rta_add_table()</td>
 <td>add a table and its columns to the DB</td></tr>
 <tr>
-<td>SQL_string()</td>
+<td>rta_SQL_string()</td>
 <td>execute an SQL statement in the DB</td></tr>
 <tr>
 <td>rta_save()</td>
@@ -365,7 +392,7 @@ thing to include here.</td></tr></table>
 <br>
 <br>
  
-<p><b>dbcommand() - Depacketize and execute Postgres
+<p><b>rta_dbcommand() - Depacketize and execute Postgres
 commands</b><br>
  The main application accepts TCP connections from Postgres clients
 and passes the stream of bytes (encoded SQL requests) from the
@@ -383,12 +410,12 @@ generated if the number of available bytes in the output buffer is
 too small to hold the response from the SQL command.</p>
 <pre>
 int
-dbcommand(char *cmd - the buffer with the Postgres packet
-          int  *nin - on entry, the number of bytes in 'cmd',
-                      on exit, the number of bytes remaining in cmd
-          char *out - the buffer to hold responses back to client
-          int  *nout - on entry, the number of free bytes in 'out'
-                       on exit, the number of remaining free bytes)
+rta_dbcommand(char *cmd  - the buffer with the Postgres packet
+              int  *nin  - on entry, the number of bytes in 'cmd',
+                           on exit, the number of bytes remaining in cmd
+              char *out  - the buffer to hold responses back to client
+              int  *nout - on entry, the number of free bytes in 'out'
+                           on exit, the number of remaining free bytes)
 Return: RTA_SUCCESS   - executed one command
         RTA_NOCMD     - input did not have a full cmd
         RTA_CLOSE     - client requests a orderly close
@@ -399,10 +426,10 @@ Return: RTA_SUCCESS   - executed one command
 <p><b>rta_add_table() - Add table to DB</b><br>
 Registers a table for inclusion in the DB interface. Adding a table
 allows external Postgres clients access to the table's content.
-Note that the TBLDEF structure must be statically allocated. The DB
+Note that the RTA_TBLDEF structure must be statically allocated. The DB
 system keeps just the pointer to the table and does not copy the
 information. This means that you can change the contents of the
-table definition by changing the contents of the TBLDEF structure.
+table definition by changing the contents of the RTA_TBLDEF structure.
 This might be useful if you need to allocate more memory for the
 table and change its row count and address. An error is returned if
 another table by the same name already exists in the DB or if the
@@ -411,13 +438,13 @@ it is loaded. (See the rta_load() command below for more
 details.)</p>
 <pre>
 int
-rta_add_table(TBLDEF *ptbl  -pointer to the TBLDEF to add);
+rta_add_table(RTA_TBLDEF *ptbl - pointer to the RTA_TBLDEF to add);
 Return: RTA_SUCCESS   - table added
         RTA_ERROR     - error
 </pre>
 <br>
 <br>
-<p><b>SQL_string()- Execute single SQL command</b><br>
+<p><b>rta_SQL_string()- Execute single SQL command</b><br>
  Executes the SQL command placed in the null-terminated string,
 cmd. The results are encoded into the Postgres protocol and placed
 in the output buffer. When the routine is called the input
@@ -433,10 +460,10 @@ results encoded in the Postgres protocol and might not be too
 useful directly.)</p>
 <pre>
 void
-SQL_string(char *cmd - the buffer with the SQL command
-           char *out - the buffer to hold responses back to client,
-           int *nout - on entry, the number of free bytes in 'out'
-                       on exit, the number of remaining free bytes);
+rta_SQL_string(char *cmd - the buffer with the SQL command
+               char *out - the buffer to hold responses back to client,
+               int *nout - on entry, the number of free bytes in 'out'
+                           on exit, the number of remaining free bytes);
 </pre>
 <br>
 <br>
@@ -456,10 +483,10 @@ to block briefly and so saving and loading tables might cause your
 program to block.</p>
 <pre>
 int
-rta_save(TBLDEF *ptbl - pointer to the TBLDEF structure for the
-                        table to save,
-         char *fname  - null terminated string with the path and
-                        file name for the stored data);
+rta_save(RTA_TBLDEF *ptbl - pointer to the RTA_TBLDEF structure for the
+                            table to save,
+             char *fname  - null terminated string with the path and
+                            file name for the stored data);
 Return: RTA_SUCCESS   - table saved
         RTA_ERROR     - some kind of error
 </pre>
@@ -471,8 +498,8 @@ series of UPDATE commands with one command per line. Any write
 callbacks are executed as the update occurs.</p>
 <pre>
 int
-rta_load(TBLDEF *ptbl   - pointer to the table to be loaded,
-         char *fname  - string with name of the load file);
+rta_load(RTA_TBLDEF *ptbl   - pointer to the table to be loaded,
+         char *fname        - string with name of the load file);
 Return: RTA_SUCCESS   - table loaded
         RTA_ERROR     - could not open the file specified
 </pre>
@@ -500,7 +527,7 @@ Return: RTA_SUCCESS   - config path set
 <br>
 
 <hr width="70%">
-<h3><a name="Syntax">- RTA UPDATE and SELECT syntax</a></h3>
+<h3><a name="SyntaxUS">- RTA UPDATE and SELECT syntax</a></h3>
 <p>RTA IS AN API, *NOT* A DATABASE!</p>
 <p>Neither the RTA UPDATE nor the RTA SELECT adhere to the Postgres
 equivalents. Joins are not allowed, and the WHERE clause supports
@@ -511,7 +538,7 @@ only the AND relation. There are no locks or transactions.</p>
 </b>
 </pre>
 <p>SELECT supports multiple columns, '*', LIMIT, and OFFSET. At
-most MXCMDCOLS columns can be specified in the select list or in
+most RTA_MXCMDCOLS columns can be specified in the select list or in
 the WHERE clause. LIMIT restricts the number of rows returned to
 the number specified. OFFSET skips the number of rows specified and
 begins output with the next row. 'column_list' is a '*' or
@@ -519,7 +546,7 @@ begins output with the next row. 'column_list' is a '*' or
 value [AND col_name = value ..]' in which all col=val pairs must
 match for a row to match.</p>
 <p>LIMIT and OFFSET are very useful to prevent a buffer overflow on
-the output buffer of dbcommand(). They are also very useful for web
+the output buffer of rta_dbcommand(). They are also very useful for web
 based user interfaces in which viewing the data a page-at-a-time is
 desirable.</p>
 <p>Column and table names are case sensitive. If a column or table
@@ -580,6 +607,62 @@ like 'LIMIT 1 OFFSET n' (n is zero-indexed).</p>
 </pre>
 
 <hr width="70%">
+<h3><a name="SyntaxID">- RTA INSERT and DELETE syntax</a></h3>
+<p>RTA IS AN API, *NOT* A DATABASE!</p>
+<p> Neither the rta INSERT nor the rta DELETE adhere to the
+ Postgres equivalents.  An insert requires both the column list
+ and the values section and does not support "default" specified
+ in the command.  The rta DELETE does not support "ONLY" or "USING"
+ clauses, and the WHERE clause supports only the AND relation.
+ There are no locks or transactions.  </p>
+<pre>
+<b>INSERT:
+    INSERT INTO table ( column_list ) VALUES ( value_list )
+</b>
+</pre>
+<p> INSERT is used to allocate and add a new row into a table.
+ Only the syntax given above is supported, and an error is
+ returned if the number or type of columns in the column_list do
+ not match the number and types of value in the value_list.
+</p>
+<p>  INSERT and DELETE require callback routines.  The syntax for
+ the callbacks and some general guidelines for callback routines
+ is given later in this document.
+</p>
+<p>INSERT Examples:</p>
+<pre>
+ // Insert a new row letting the insert callback set the values
+ INSERT INTO demotbl ( ) VALUES ( )
+ 
+ // Insert a new row setting the dlplong column to 5.
+ INSERT INTO demotbl ( dlplong ) VALUES ( 5 )
+ 
+ // As above but also set dlstr to "hello, world"
+ INSERT INTO demotbl ( dlstr, dlplong ) VALUES ( "hello,world", 5 )
+</pre>
+
+<pre>
+<b>DELETE:
+    DELETE FROM table [where_clause] [limit_clause]
+</b>
+</pre>
+<p> DELETE removes rows from a table and frees any memory
+ allocated for the rows.  The WHERE and LIMIT clauses are as
+ described in the select section above.
+</p>
+<p>DELETE Examples:</p>
+<pre>
+// Delete all rows in the demotbl table.
+DELETE FROM demotbl
+
+// Delete all rows where the dlplong is equal to 5
+DELETE FROM demotbl WHERE dlplong = 5
+
+// Delete the fourth and fifth rows.  (Table are zero indexed.)
+DELETE FROM demotbl LIMIT 2 OFFSET 3
+</pre>
+
+<hr width="70%">
 <h3><a name="Internal">- Internal DB tables</a></h3>
 <p>The RTA API has five tables visible to the application:</p>
 <table summary="">
@@ -598,12 +681,12 @@ like 'LIMIT 1 OFFSET n' (n is zero-indexed).</p>
 <td>- simple usage and error statistics</td></tr></table>
 <p>The rta_tables table gives SQL access to all internal and
 registered tables. The data in the table is exactly that of the
-TBLDEF structures registered with rta_add_table(). This table is
+RTA_TBLDEF structures registered with rta_add_table(). This table is
 used for the generic table editor application. The columns of
 rta_tables are:</p>
 <table summary="">
 <tr>
-<td rowspan="10">&nbsp;&nbsp;&nbsp;</td>
+<td rowspan="12">&nbsp;&nbsp;&nbsp;</td>
 <td>name</td>
 <td>- the name of the table</td></tr>
 <tr>
@@ -622,6 +705,12 @@ rta_tables are:</p>
 <td>it_info</td>
 <td>- transparently passed in each call to the iterator</td></tr>
 <tr>
+<td>insertcb</td>
+<td>- callback used to insert a row in the table</td></tr>
+<tr>
+<td>deletecb</td>
+<td>- callback used to delete a row from a table</td></tr>
+<tr>
 <td>cols</td>
 <td>- pointer to array of column definitions</td></tr>
 <tr>
@@ -637,7 +726,7 @@ rta_tables are:</p>
 <br>
  
 <p>The rta_columns table has the column definitions of all columns
-in the DB. The data in the table is exactly that of the COLDEF
+in the DB. The data in the table is exactly that of the RTA_COLDEF
 structures registered with rta_add_table(). This table is used for
 the generic table editor. The columns of rta_columns are:</p>
 <table summary="">
@@ -677,7 +766,7 @@ messages. See the logging section below for the exact mapping. The
 RTA package generates no user level log messages, only debug
 messages. All of the fields in this table are volatile. You will
 need to set the values in your main program to make them seem
-persistent. (Try something like "SQL_string("UPDATE rta_dbgconfig
+persistent. (Try something like "rta_SQL_string("UPDATE rta_dbgconfig
 SET dbg ....").) The columns of rta_dbgconfig are:</p>
 <table summary="">
 <tr>
@@ -736,7 +825,7 @@ until dbg_target is updated.</td></tr>
 log messages. This specifies the ident string to use when sending
 RTA debug messages. This is normally set to the process or command
 name. The default is "rta". Changes to this do not take effect
-until dbg_target is updated. This can be at most MXDBGIDENT
+until dbg_target is updated. This can be at most RTA_MXDBGIDENT
 characters in length.</td></tr></table>
 <br>
 <br>
@@ -748,7 +837,7 @@ added with rta_add_table().  The columns of
 rta_stats are:</p>
 <table summary="">
 <tr>
-<td rowspan="8">&nbsp;&nbsp;&nbsp;</td>
+<td rowspan="10">&nbsp;&nbsp;&nbsp;</td>
 <td>nsyserr</td>
 <td>- count of failed OS calls.</td></tr>
 <tr>
@@ -766,6 +855,12 @@ rta_stats are:</p>
 <tr>
 <td>nselect</td>
 <td>- count of SELECT requests</td></tr></table>
+<tr>
+<td>ninsert</td>
+<td>- count of INSERT requests</td></tr>
+<tr>
+<td>ndelete</td>
+<td>- count of DELETE requests</td></tr></table>
 <br>
 <br>
  
@@ -800,7 +895,7 @@ the types of data in a WHERE clause or in an UPDATE list.</td></tr>
 <td><tt>"ERROR: Output buffer full"</tt></td></tr>
 <tr>
 <td>This reply indicates that the size of the response to a request
-exceeds the size of the output buffer. See dbcommand() and the
+exceeds the size of the output buffer. See rta_dbcommand() and the
 'out' and 'nout' parameters. This error can be avoided with a large
 enough output buffer or, preferably, with the use of LIMIT and
 OFFSET.</td></tr>
@@ -826,6 +921,29 @@ name.</td></tr>
 <td>This indicates that a read or write callback (trigger) has
 has failed.  If a write update failed, the table remain
 unmodified. </td></tr>
+<tr>
+<td valign="top" rowspan="2">8)</td>
+<td><tt>"ERROR: DELETE not available on relation '%s'"</tt></td></tr>
+<tr>
+<td>This indicates that an attempt was made to delete a row on
+a table that does not have a delete callback.
+</td></tr>
+<tr>
+<td valign="top" rowspan="2">9)</td>
+<td><tt>"ERROR: INSERT not available on relation '%s'"</tt></td></tr>
+<tr>
+<td>This indicates that an attempt was made to add a row to a
+table that does not have an insert callback.
+</td></tr>
+<tr>
+<td valign="top" rowspan="2">10)</td>
+<td><tt>"ERROR: Failed INSERT on relation '%s'"</tt></td></tr>
+<tr>
+<td>The insert of a row has failed.  Syntax errors are usually
+ captured by other error messages leaving this message to
+ imply that the application itself found something wrong
+ with the values in the INSERT request.
+</td></tr>
 </table>
 <p>The other type of error messages are internal debug messages.
 Debug messages are logged using the standard syslog() facility
@@ -874,7 +992,10 @@ detected.</p>
 
 <hr width="70%">
 <h3><a name="Callbacks">- How to write callback routines</a></h3>
-<p>As mentioned above, read callbacks are executed before a column
+<p> Callback (or "trigger") routines are available for read,
+write, insert, and delete.
+</p>
+<p>As mentioned above, <b>read</b> callbacks are executed before a column
 value is used and write callbacks are called after all columns have
 been updated. Both read and write callbacks return an integer which
 is zero on success and non-zero on failure.  Read callbacks have 
@@ -906,7 +1027,7 @@ continuously if it's possible to compute it just when it is
 used.  A returned value of zero indicates that the read callback
 was successful.</p>
 <br>
-<p>Write callbacks can form the real engine driving the
+<p><b>Write</b> callbacks can form the real engine driving the
 application. These are most applicable when tied to configuration
 changes. Write callbacks are also a useful place to log
 configuration changes.</p>
@@ -924,7 +1045,7 @@ is restored to its original value.
 <p>
 Write callbacks are passed the following parameters:</p>
 
-<table summary="" align="center" width="90%" cellspacing="1">
+<table summary="Write callback paramaters" align="center" width="90%" cellspacing="1">
 <tr>
 <td valign="top">char *tblname</td>
 <td>&nbsp;&nbsp;the name of the table referenced</td></tr>
@@ -947,11 +1068,76 @@ or written</td></tr>
 </table>
 <br>
 <br>
- 
+ <p>Insert and delete callbacks are invoked to add or remove
+ a row from a table. These routines are used (along with an
+ iterator) to manage tables in which the rows are allocated
+ dynamically and appear in a linked list or B-tree.
+</p>
 <p>
-      <a href="http://validator.w3.org/check/referer"><img border="0"
-          src="http://www.w3.org/Icons/valid-html401"
-          alt="Valid HTML 4.01!" height="31" width="88"></a>
+ The RTA processing of <b>INSERT</b> allocates memory for the
+ row itself as well as memory for any RTA pointer types in
+ the row.  Thus a row with a single integer pointer (RTA_PINT)
+ would have two memory allocations -- one for the PINT and one
+ for the row.
+</p>
+<p>
+ Use an insert callback to attach the new row into the table
+ and to do application specific initialization of the row.
+ Write callbacks are called for the row after the insert callback
+ returns so you don't need to replicate that code in the insert
+ callback.
+</p>
+<p>
+ If your insert callback detects a problem that values passed in
+ with the INSERT, have it return a negative value and RTA will
+ free the memory allocated for the new row and will return an
+ error to the user.  The text of the error is defined above as
+ the E_BADINSERT error.  If your insert callback succeeds, have
+ it return the zero-indexed row number of the new row in your
+ table.  This value is returned to the user as the OID.  That
+ is, the PostgreSQL response to an insert looks like:<br>
+ &nbsp;&nbsp;INSERT &lt;OID&gt; &lt;ROWS&gt;<br>
+ The number of rows inserted is alway one and the OID, while
+ normally the index of the new row, can actually be any non-negative
+ value you want.
+</p>
+<p>
+ The parameters to a insert callback are:<br>
+<table summary="INSERT callback parameters" align="center" width="90%" cellspacing="1">
+<tr>
+<td valign="top">char *tblname</td>
+<td>&nbsp;&nbsp;the name of the table referenced</td></tr>
+<tr>
+<td valign="top">char *sqlcmd</td>
+<td>&nbsp;&nbsp;the text of the SQL command</td></tr>
+<tr>
+<td valign="top">void *pr</td>
+<td>&nbsp;&nbsp;pointer to the row being read or written</td></tr>
+</table>
+</p>
+<br>
+<p>
+ The <b>delete</b> callback is used to remove a row from a table.
+ This usually involves unlinking the row from a linked list and
+ freeing any memory allocated for the row.  If you are using
+ insert and delete be sure to <b> FREE THE MEMORY </b> of the
+ row.  Be sure to free all of the memory allocated for the
+ pointer types which were also allocated.
+</p>
+<p>
+ The delete callback does not have a return value and its calling
+ parameters are the same as the insert callback:<br>
+<table summary="INSERT callback parameters" align="center" width="90%" cellspacing="1">
+<tr>
+<td valign="top">char *tblname</td>
+<td>&nbsp;&nbsp;the name of the table referenced</td></tr>
+<tr>
+<td valign="top">char *sqlcmd</td>
+<td>&nbsp;&nbsp;the text of the SQL command</td></tr>
+<tr>
+<td valign="top">void *pr</td>
+<td>&nbsp;&nbsp;pointer to the row being read or written</td></tr>
+</table>
 </p>
 
 </body>

@@ -16,27 +16,35 @@
 
 CC = gcc
 OPT =  -fPIC -c -I.
-DEBUG = -g -ggdb -DDEBUG -DYYDEBUG -ggdb -Wall
-CFLAGS = $(OPT) $(DEBUG)
+DEBUG = -g -O -ggdb -DDEBUG -DYYDEBUG -ggdb -Wall
+CFLAGS = $(OPT) $(DEBUG) -D_GNU_SOURCE
 OBJS   = api.o token.o parse.tab.o do_sql.o rtatables.o
 LIBS   = 
 
+INSTDIR ?= /usr/local
+INSTLIBDIR ?= $(INSTDIR)/lib
+INSTINCDIR ?= $(INSTDIR)/include
 
 
-default: librtadb.so.2
+default: librtadb.so.3 librtadb.a
 
-librtadb.so.2: $(OBJS)
-	gcc -ggdb -Wall -shared -Wl,-soname,librtadb.so.2 \
-		-o librtadb.so.2.0  $(OBJS) $(LIBS) -lc
-	ln -sf librtadb.so.2.0 librtadb.so.2
-	ln -sf librtadb.so.2.0 librtadb.so
+librtadb.so.3: $(OBJS)
+	gcc -ggdb -Wall -shared -Wl,-soname,librtadb.so.3 \
+		-o librtadb.so.3.0  $(OBJS) $(LIBS) -lc
+	ln -sf librtadb.so.3.0 librtadb.so.3
+	ln -sf librtadb.so.3.0 librtadb.so
 	ar -rcs librtadb.a $(OBJS)
 
+librtadb.a: $(OBJS)
+	ar -rcs librtadb.a $(OBJS)
 
 token.o: parse.tab.c do_sql.h
 
 parse.tab.c: parse.y do_sql.h
-	yacc -dv -bparse parse.y
+	yacc -dv -bparse -prta_yy parse.y
+
+token.c: token.l
+	lex -Prta_yy -t token.l > token.c
 
 api.o: api.c rta.h do_sql.h
 
@@ -50,19 +58,25 @@ standard: clean
 	 indent  -bad -bap -nbbb -br -cdw -cli2 -cbi0 -saf -nut \
 		-sai -saw -di9 -nbc -bfda -bls -lp -ci2 -i2 -nbbo -l72 \
 		-fca -nbfda -nbfde -nlp -bbo -sob -cd24 -ts0 -npcs -nut \
-		-T TBLDEF -T COLDEF $$i ; \
+		-T RTA_TBLDEF -T RTA_COLDEF $$i ; \
 	 rm $$i~ ; \
 	done
 
-install:	
-	/usr/bin/install -m 644 librta* /usr/local/lib;
-	/usr/bin/install -m 644 rta.h /usr/local/include
-	ln -sf /usr/local/lib/librtadb.so.2.0 /usr/local/lib/librtadb.so.2
-	ln -sf /usr/local/lib/librtadb.so.2.0 /usr/local/lib/librtadb.so
+install:
+	-mkdir -p $(DESTDIR)/$(INSTLIBDIR)
+	-mkdir -p $(DESTDIR)/$(INSTINCDIR)
+	install -m 644 librta* $(DESTDIR)/$(INSTLIBDIR);
+	install -m 644 rta.h $(DESTDIR)/$(INSTINCDIR)
+	-test -f librtadb.so.3 && ln -sf \
+	    $(DESTDIR)/$(INSTLIBDIR)/librtadb.so.3.0 \
+	    $(DESTDIR)/$(INSTLIBDIR)/librtadb.so.3
+	-test -f librtadb.so.3 && ln -sf \
+	    $(DESTDIR)/$(INSTLIBDIR)/librtadb.so.3.0 \
+	    $(DESTDIR)/$(INSTLIBDIR)/librtadb.so
 
-uninstall:	
-	rm /usr/local/lib/librta*;
-	rm /usr/local/include/rta.h
+uninstall:
+	rm $(DESTDIR)/$(INSTLIBDIR)/librta*;
+	rm $(DESTDIR)/$(INSTINCDIR)/rta.h
 
 clean: 
 	rm -rf *.o parse.tab.? token.c lib* parse.output parse.save *~

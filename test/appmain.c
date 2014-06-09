@@ -48,13 +48,18 @@ int      listen_on_port(int port);
 int      reverse_str(char *tbl, char *col, char *sql, void *pr, int rowid,
                      void *por);
 void    *get_next_conn(void *prow, void *it_data, int rowid);
-extern TBLDEF UITables[];
+void    *get_next_dlist(void *prow, void *it_data, int rowid);
+int      add_demolist(char *tbl, char *sql, void *pr);
+void     del_demolist(char *tbl, char *sql, void *pr);
+
+extern RTA_TBLDEF UITables[];
 extern int nuitables;
 
 /*  -allocate static, global storage for tables and variables */
 UI      *ConnHead;  /* head of linked list of UI conns */
 int      nui = 0;   /* number of open UI connections */
 struct MyData mydata[ROW_COUNT];
+DEMOLIST *DemoHead; /* head of demo linked list */
 
 
 /***************************************************************
@@ -77,12 +82,13 @@ main()
 
 
   /* Init */
+  ConnHead = (UI *) NULL;
+  DemoHead =  (DEMOLIST *) NULL;
+
   for (i = 0; i < nuitables; i++)
   {
     rta_add_table(&UITables[i]);
   }
-  ConnHead = (UI *) NULL;
-
 
   while (1)
   {
@@ -315,11 +321,11 @@ handle_ui_request(UI *pui)
   do
   {
     t = pui->cmdindx;                        /* packet in length */
-      dbstat = dbcommand(pui->cmd,           /* packet in */
+    dbstat = rta_dbcommand(pui->cmd,         /* packet in */
       &(pui->cmdindx),                       /* packet in length */
       &(pui->rsp[MXRSP - pui->rspfree]),     /* ptr to out buf */
       &(pui->rspfree));                      /* N bytes at out */
-    t -= pui->cmdindx;      /* t = # bytes consumed */
+    t -= pui->cmdindx;                       /* t = # bytes consumed */
     /* move any trailing SQL cmd text up in the buffer */
     (void) memmove(pui->cmd, &(pui->cmd[t]), t);
   } while (dbstat == RTA_SUCCESS);
@@ -476,3 +482,107 @@ get_next_conn(void *prow, void *it_data, int rowid)
 
   return((void *) ((UI *)prow)->nextconn);
 }
+
+
+/***************************************************************
+ * get_next_dlist(): - an 'iterator' on the demo linked list
+ *
+ * Input:        void *prow  -- pointer to current row
+ *               void *it_data -- callback data.  Unused.
+ *               int   rowid -- the row number.  Unused.
+ * Output:       pointer to next row.  NULL on last row
+ * Effects:      No side effects
+ ***************************************************************/
+void *
+get_next_dlist(void *prow, void *it_data, int rowid)
+{
+  if (prow == (void *) NULL)
+    return((void *) DemoHead);
+
+  return((void *) ((DEMOLIST *)prow)->dlnxt);
+}
+
+/***************************************************************
+ * add_demolist(): - INSERT callback on the demolist table
+ *
+ * Input:        char *tbl -- the name of the table
+ *               char *sql -- the text of the insert command
+ *               void *pr -- pointer to the allocated row
+ * Output:       the zero-indexed row number for the added row.
+ *               (Or -1 on row insertion failure.)
+ * Effects:      No side effects
+ ***************************************************************/
+int
+add_demolist(char *tbl, char *sql, void *pr)
+{
+  DEMOLIST **pdemo;  // pointer to a row
+  int        i;      // our row index (and return value)
+
+  /* "5", we hate "5".  Give us a "5" and we'll reject the row! */
+  if (((DEMOLIST *) pr)->dllong == 5)
+    return(-1);
+
+  /* walk the linked list and add this row to the end */
+  i = 0;
+  pdemo = &DemoHead;
+  while (*pdemo) {
+    pdemo = (DEMOLIST **) &((*pdemo)->dlnxt);
+    i++;
+  }
+  *pdemo = (DEMOLIST *) pr;
+  ((DEMOLIST *) pr)->dlnxt = (DEMOLIST *) 0;
+
+  /* here we add application specific initialization of the
+     new row.  Not much to do in this demo app. */
+  ((DEMOLIST *) pr)->dlid  = i;
+ 
+  return(i);
+}
+
+
+
+/***************************************************************
+ * del_demolist(): - DELETE callback on the demolist table
+ *
+ * Input:        char *tbl -- the name of the table
+ *               char *sql -- the text of the insert command
+ *               void *pr -- pointer to row to delete
+ * Output:       void
+ * Effects:      Frees allocated memory for the row.
+ ***************************************************************/
+void
+del_demolist(char *tbl, char *sql, void *pr)
+{
+  DEMOLIST **prevpdemo;  // pointer/pointer to a row
+  DEMOLIST *demo;        // pointer to a row
+
+  /* walk the linked list to find the row and copy its next
+   * pointer into the previous row's next pointer. */
+  prevpdemo = &DemoHead;
+  demo      = DemoHead;
+  while (demo) {
+    if (demo == (DEMOLIST *) pr)
+      break;
+    prevpdemo = (DEMOLIST **) &(demo->dlnxt);
+    demo = demo->dlnxt;
+  }
+
+  /* demo will be zero if we reached the bottom of the list
+   * without finding the target row.  */
+  if (!demo)
+    return;  /* failed.  No row deleted */
+
+  /* Link past the delete row. */
+  *prevpdemo = ((DEMOLIST *)pr)->dlnxt;
+
+  /* delete the row pointers and then the row itself */
+  free(((DEMOLIST *)pr)->dlpstr);     // A pointer to a string of NOTE_LEN bytes
+  free(((DEMOLIST *)pr)->dlpint);     // points to an interger
+  free(((DEMOLIST *)pr)->dlplong);    // points to a long type
+  free(((DEMOLIST *)pr)->dlpfloat);   // point to a float
+  free(pr);                           // the row itself
+
+  return;
+}
+
+

@@ -1,3 +1,16 @@
+2008-09-10  Bob Smith / Christian Werner  Version 0.8.0
+    - Added support for INSERT and DELETE.  This change affects
+      the table definition making this version slightly
+      incompatible with previous version.
+    - Modified the API to add "RTA_" or "rta_" to the front
+      of all RTA defines and API routines.  COLDEF, for example
+      is now RTA_COLDEF.  This change also makes this release 
+      incomatible with previous versions but simple substitutions
+      are all that is required to convert from previous versions.  
+    - Internal functions are now defined static
+    - Increased the limits for tables and columns
+    - Eliminated some warnings when compiled for x86_64
+
 2006-04-06  Bob Smith                 Version 0.7.5
     - Removed support for FUSE
     - Makefile changes include removing efence, making librtadb

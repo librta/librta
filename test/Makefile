@@ -16,7 +16,7 @@
 
 CC = gcc
 OPT =  -fPIC -c -I.
-DEBUG = -g -DDEBUG -DYYDEBUG -ggdb -Wall
+DEBUG = -g3 -DDEBUG -DYYDEBUG -ggdb -Wall
 CFLAGS = $(OPT) $(DEBUG)
 APPOBJS   = appmain.o apptables.o
 
@@ -46,7 +46,7 @@ standard: clean
 	 indent  -bad -bap -nbbb -bli0 -cdw -cli2 -cbi0 -saf -nut \
 		-sai -saw -di9 -nbc -bfda -bls -lp -ci2 -i2 -nbbo -l72 \
 		-fca -nbfda -nbfde -nlp -bbo -sob -cd24 -ts0 -npcs -nut \
-		-T TBLDEF -T COLDEF -T PRXPORT $$i ; \
+		-T RTA_TBLDEF -T RTA_COLDEF $$i ; \
 	 rm $$i~ ; \
 	done
 

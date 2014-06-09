@@ -27,11 +27,12 @@ static int  whrrelat;
 /* error is detected.  Instead, we allocate the memory and */
 /* put the pointer into the following table where it is easy */
 /* free on error.  */
-char *parsestr[MXPARSESTR];
+char *rta_parsestr[MXPARSESTR];
 
 static int   n;            /* temp/scratch integer */
+static int   n_values;     /* part of processing for INSERT values */
 
-extern struct Sql_Cmd cmd; /* encoded SQL command (a global) */
+extern struct Sql_Cmd rta_cmd; /* encoded SQL command (a global) */
 extern char *yytext;
 extern int   yyleng;
 extern void  yyerror(char *);
@@ -40,8 +41,12 @@ extern int   yylex();
 
 %token SELECT
 %token UPDATE
+%token INSERT
+%token INTO
+%token DELETE
 %token FROM
 %token WHERE
+%token VALUES
 %token NAME
 %token STRING
 %token INTEGER
@@ -68,6 +73,8 @@ extern int   yylex();
 command:
 		select_statement
 	|	update_statement
+	|	insert_statement
+	|	delete_statement
 	| empty_statement
 	;
 
@@ -80,24 +87,56 @@ empty_statement:
 
 select_statement:
 		SELECT column_list FROM table_name where_clause limit_clause TERMINATOR
-		{	cmd.command = RTA_SELECT;
+		{	rta_cmd.command = RTA_SELECT;
 			YYACCEPT;
 		}
 	;
 
+update_statement:
+		UPDATE table_name SET set_list where_clause limit_clause TERMINATOR
+		{	rta_cmd.command = RTA_UPDATE;
+			YYACCEPT;
+		}
+	;
+
+insert_statement:
+		INSERT INTO table_name '(' insert_cols ')' VALUES '(' value_list ')' TERMINATOR
+		{	rta_cmd.command = RTA_INSERT;
+			if (n_values != rta_cmd.ncols) {
+				/* Must have same number of values as columns */
+				rta_send_error(LOC, E_BADPARSE);
+        YYABORT;
+			}
+			YYACCEPT;
+		}
+	;
+
+delete_statement:
+		DELETE FROM table_name where_clause limit_clause TERMINATOR
+		{	rta_cmd.command = RTA_DELETE;
+			YYACCEPT;
+		}
+	;
+
+insert_cols:
+		/* empty, optional */
+	|	column_list
+	;
+
 column_list:
 		NAME
-		{	cmd.cols[cmd.ncols] = parsestr[(int) $1];
-			parsestr[(int) $1] = (char *) NULL;
-			cmd.ncols++;
+		{	rta_cmd.cols[rta_cmd.ncols] = rta_parsestr[(int) $1];
+			rta_parsestr[(int) $1] = (char *) NULL;
+			rta_cmd.ncols++;
 		}
 	|	column_list ',' NAME
-		{	cmd.cols[cmd.ncols] = parsestr[(int) $3];
-			parsestr[(int) $3] = (char *) NULL;
-			cmd.ncols++;
-			if (cmd.ncols > NCMDCOLS) {
+		{	rta_cmd.cols[rta_cmd.ncols] = rta_parsestr[(int) $3];
+			rta_parsestr[(int) $3] = (char *) NULL;
+			rta_cmd.ncols++;
+			if (rta_cmd.ncols > RTA_NCMDCOLS) {
 				/* too many columns in list */
-				send_error(LOC, E_BADPARSE);
+				rta_send_error(LOC, E_BADPARSE);
+        YYABORT;
 			}
 		}
 	;
@@ -105,8 +144,8 @@ column_list:
 table_name:
 		NAME
 		{
-			cmd.tbl = parsestr[(int) $1];
-			parsestr[(int) $1] = (char *) NULL;
+			rta_cmd.tbl = rta_parsestr[(int) $1];
+			rta_parsestr[(int) $1] = (char *) NULL;
 		}
 	;
 
@@ -121,16 +160,17 @@ test_condition:
 		'(' test_condition ')'
 	|	test_condition AND test_condition
 	|	NAME relation literal
-		{	n = cmd.nwhrcols;
-			cmd.whrcols[n] = parsestr[(int) $1];
-			parsestr[(int) $1] = (char *) NULL;
-			cmd.whrrel[n] = whrrelat;
-			cmd.whrvals[n] = parsestr[(int) $3];
-			parsestr[(int) $3] = (char *) NULL;
-			cmd.nwhrcols++;
-			if (cmd.nwhrcols > NCMDCOLS) {
+		{	n = rta_cmd.nwhrcols;
+			rta_cmd.whrcols[n] = rta_parsestr[(int) $1];
+			rta_parsestr[(int) $1] = (char *) NULL;
+			rta_cmd.whrrel[n] = whrrelat;
+			rta_cmd.whrvals[n] = rta_parsestr[(int) $3];
+			rta_parsestr[(int) $3] = (char *) NULL;
+			rta_cmd.nwhrcols++;
+			if (rta_cmd.nwhrcols > RTA_NCMDCOLS) {
 				/* too many columns in list */
-				send_error(LOC, E_BADPARSE);
+				rta_send_error(LOC, E_BADPARSE);
+        YYABORT;
 			}
 		}
 	;
@@ -149,42 +189,50 @@ relation:
 limit_clause:
 		/* empty, optional */
 	|	LIMIT INTEGER
-		{	cmd.limit  = atoi(parsestr[(int) $2]);
-            free(parsestr[(int) $2]);
-			parsestr[(int) $2] = (char *) NULL;
+		{	rta_cmd.limit  = atoi(rta_parsestr[(int) $2]);
+			free(rta_parsestr[(int) $2]);
+			rta_parsestr[(int) $2] = (char *) NULL;
 		}
 	|	LIMIT INTEGER OFFSET INTEGER
-		{	cmd.limit  = atoi(parsestr[(int) $2]);
-            free(parsestr[(int) $2]);
-			parsestr[(int) $2] = (char *) NULL;
-			cmd.offset = atoi(parsestr[(int) $4]);
-            free(parsestr[(int) $4]);
-			parsestr[(int) $4] = (char *) NULL;
+		{	rta_cmd.limit  = atoi(rta_parsestr[(int) $2]);
+			free(rta_parsestr[(int) $2]);
+			rta_parsestr[(int) $2] = (char *) NULL;
+			rta_cmd.offset = atoi(rta_parsestr[(int) $4]);
+			free(rta_parsestr[(int) $4]);
+			rta_parsestr[(int) $4] = (char *) NULL;
 		}
 	;
 
-
-update_statement:
-		UPDATE NAME SET set_list where_clause limit_clause TERMINATOR
-		{	cmd.command = RTA_UPDATE;
-			cmd.tbl     = parsestr[(int) $2];
-			parsestr[(int) $2] = (char *) NULL;
-			YYACCEPT;
+value_list:
+		/* empty -- optional */
+	| value_list ',' value_list
+	|	literal
+		{	n = n_values;
+			rta_cmd.updvals[n] = rta_parsestr[(int) $1];
+			rta_parsestr[(int) $1] = (char *) NULL;
+			n_values++;
+			if (n_values > rta_cmd.ncols) {
+				/* more values than columns specified */
+				rta_send_error(LOC, E_BADPARSE);
+        YYABORT;
+			}
 		}
 	;
+
 
 set_list:
 		set_list ',' set_list
 	|	NAME EQ literal
-		{	n = cmd.ncols;
-			cmd.cols[n] = parsestr[(int) $1];
-			parsestr[(int) $1] = (char *) NULL;
-			cmd.updvals[n] = parsestr[(int) $3];
-			parsestr[(int) $3] = (char *) NULL;
-			cmd.ncols++;
-			if (cmd.ncols > NCMDCOLS) {
+		{	n = rta_cmd.ncols;
+			rta_cmd.cols[n] = rta_parsestr[(int) $1];
+			rta_parsestr[(int) $1] = (char *) NULL;
+			rta_cmd.updvals[n] = rta_parsestr[(int) $3];
+			rta_parsestr[(int) $3] = (char *) NULL;
+			rta_cmd.ncols++;
+			if (rta_cmd.ncols > RTA_NCMDCOLS) {
 				/* too many columns in list */
-				send_error(LOC, E_BADPARSE);
+				rta_send_error(LOC, E_BADPARSE);
+        YYABORT;
 			}
 		}
 	;
@@ -200,51 +248,52 @@ literal:
 
 
 /***************************************************************
- * dosql_init(): - Set up data structures prior to parse of
+ * rta_dosql_init(): - Set up data structures prior to parse of
  * an SQL command.
  *
  * Input:        None.
  * Output:       None.
- * Affects:      structure cmd is initialized
+ * Affects:      structure rta_cmd is initialized
  ***************************************************************/
-void dosql_init() {
+void rta_dosql_init() {
     int   i;
 
-    for (i=0; i<NCMDCOLS; i++) {
-        if (cmd.cols[i])
-            free(cmd.cols[i]);
-        if (cmd.updvals[i])
-            free(cmd.updvals[i]); /* values for column updates */
-        if (cmd.whrcols[i])
-            free(cmd.whrcols[i]); /* cols in where */
-        if (cmd.whrvals[i])
-            free(cmd.whrvals[i]); /* values in where clause */
-        cmd.cols[i]    = (char *) 0;
-        cmd.updvals[i] = (char *) 0;
-        cmd.whrcols[i] = (char *) 0;
-        cmd.whrvals[i] = (char *) 0;
+    for (i=0; i<RTA_NCMDCOLS; i++) {
+        if (rta_cmd.cols[i])
+            free(rta_cmd.cols[i]);
+        if (rta_cmd.updvals[i])
+            free(rta_cmd.updvals[i]); /* values for column updates */
+        if (rta_cmd.whrcols[i])
+            free(rta_cmd.whrcols[i]); /* cols in where */
+        if (rta_cmd.whrvals[i])
+            free(rta_cmd.whrvals[i]); /* values in where clause */
+        rta_cmd.cols[i]    = (char *) 0;
+        rta_cmd.updvals[i] = (char *) 0;
+        rta_cmd.whrcols[i] = (char *) 0;
+        rta_cmd.whrvals[i] = (char *) 0;
     }
-    if (cmd.tbl);
-        free(cmd.tbl);
+    if (rta_cmd.tbl);
+        free(rta_cmd.tbl);
     for (i=0; i<MXPARSESTR; i++) {
-        if (parsestr[i]) {
-            free(parsestr[i]);
-            parsestr[i] = (char *) NULL;
+        if (rta_parsestr[i]) {
+            free(rta_parsestr[i]);
+            rta_parsestr[i] = (char *) NULL;
         }
     }
 
-    cmd.tbl = (char *) 0;
-    cmd.ptbl = (TBLDEF *) 0;
-    cmd.ncols    = 0;
-    cmd.nwhrcols = 0;
-    cmd.limit  = 1<<30;  /* no real limit */
-    cmd.offset = 0;
-    cmd.err    = 0;
+    rta_cmd.tbl = (char *) 0;
+    rta_cmd.ptbl = (RTA_TBLDEF *) 0;
+    rta_cmd.ncols    = 0;
+    rta_cmd.nwhrcols = 0;
+    rta_cmd.limit  = 1<<30;  /* no real limit */
+    rta_cmd.offset = 0;
+    rta_cmd.err    = 0;
+    n_values       = 0;      /* used in processing VALUES in insert */
 }
 
 void yyerror(char *s)
 {
-    send_error(LOC, E_BADPARSE);
+    rta_send_error(LOC, E_BADPARSE);
     return;
 }
 

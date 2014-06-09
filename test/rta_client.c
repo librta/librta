@@ -13,7 +13,7 @@
  
 #include <stdio.h>
 #include <stdlib.h>
-#include "pgsql/libpq-fe.h"      /* libpq header file */
+#include <postgresql/libpq-fe.h>    /* libpq header file */
 
 char cmd1[] ="UPDATE mytable SET myint=43";
 char cmd2[] ="SELECT myint, myfloat, notes FROM mytable";

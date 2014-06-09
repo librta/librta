@@ -43,11 +43,8 @@ h3 {font-family: sans-serif}
   <li><a href="#q04">Is this like the /proc filesystem?</a></li>
   <li><a href="#q05">Why PostgreSQL?</a></li>
   <li><a href="#q06">What SQL commands are implemented?</a></li>
-  <li><a href="#q07">What SQL/Postgres commands are not
-implemented?</a></li>
+  <li><a href="#q07">What SQL/Postgres commands are not implemented?</a></li>
   <li><a href="#q08">Why such a small subset of SQL?</a></li>
-  <li><a href="#q16">What file system commands are in RTA?</a><br>
-  </li>
   <li><a href="#q09">Who should not use RTA?</a></li>
   <li><a href="#q10">How big is it?</a></li>
   <li><a href="#q11">Do I need to know SQL to use RTA?</a></li>
@@ -58,29 +55,20 @@ implemented?</a></li>
 </ul>
 <h3>Building, modifying, and understanding RTA</h3>
 <ul compact="compact" type="circle">
-  <li><a href="#p13">What do I need to do to use RTA in my
-program?</a></li>
-  <li><a href="#p15">What libraries, tools and include files are
-needed?</a></li>
+  <li><a href="#p13">What do I need to do to use RTA in my program?</a></li>
+  <li><a href="#p14">What tools are available to explore RTA tables?</a></li>
+  <li><a href="#p15">What libraries, tools and include files are needed?</a></li>
   <li><a href="#p16">Do I need the Postgres libraries?</a></li>
   <li><a href="#p17">Can I link to it statically?</a></li>
   <li><a href="#p18">What has it been tested on?</a></li>
   <li><a href="#p19">Can I add my own data type?</a></li>
-  <li><a href="#p20">Why are there "magic" numbers in the
-code?</a></li>
-  <li><a href="#p21">Why are the pseudo-tables arrays of
-pointers?</a></li>
+  <li><a href="#p20">Why are there "magic" numbers in the code?</a></li>
+  <li><a href="#p21">Why are the pseudo-tables arrays of pointers?</a></li>
   <li><a href="#p22">Why do I get segmentation violations?</a></li>
   <li><a href="#p23">How can I change the size of a table?</a></li>
-  <li><a href="#p24">Why use native data type instead of INT4 and
-INT8?</a></li>
-  <li><a href="#p25">Why do I get: "error while loading shared
-libraries:
-librtadb.so.2:"</a></li>
-  <li><a href="#p26">How big should I make the output buffer for
-dbcommand()?</a></li>
-  <li><a href="#p27">Why must a write() have all data in a single
-buffer?</a></li>
+  <li><a href="#p24">Why use native data type instead of INT4 and INT8?</a></li>
+  <li><a href="#p25">Why do I get: "error while loading shared libraries: librtadb.so.3:"</a></li>
+  <li><a href="#p26">How big should I make the output buffer for rta_dbcommand()?</a></li>
   <li><a href="#p28">Can I export a simple variable?</a></li>
   <li><a href="#p30">Is RTA thread safe?</a></li>
   <li><a href="#p31">What is in the To-Do list?</a></li>
@@ -88,12 +76,12 @@ buffer?</a></li>
 <hr>
 <h3>General questions</h3>
 <p><b><a name="q01">What is RTA?</a></b><br>
-RTA is a memory resident database and virtual file
-system interface. It is not a stand-alone database server or
-file system but a library which offers
-up the program's internal structures and arrays as database tables or
-as files in a file system. The database interface uses a subset of the
-Postgres protocol and is compatible with the Postgres bindings for "C",
+RTA is library that lets PostgreSQL clients talk to your daemon
+using SQL and the PostgreSQL protocol. RTA is not a stand-alone
+database server or file system but a library which offers
+up your program's internal structures and arrays as database tables.
+RTA uses a subset of the Postgres protocol but is still compatible
+with the Postgres bindings for "C",
 PHP, and the Postgres command line tool, psql.</p>
 <p><b><a name="q02">What is the purpose of RTA?</a></b><br>
 It provides a means for external programs to view and edit the
@@ -103,29 +91,26 @@ apart from the core functionality.</p>
 <p><b><a name="q03">So, is this a database, or what?</a></b><br>
 No, it is *not* a database. It is an API which lets external
 programs view and edit your internal data as if the data were in a
-database or as files in a file system.</p>
+database.</p>
 <p><b><a name="q04">Is this like the /proc filesystem?</a></b><br>
 Yes, in a way. The /proc system lets you view the kernel's internal
-data as if the data were stored in files in a filesystem. RTA has
-two libraries, one lets you view your program's internal tables
-(arrays of structures) as if they were files in a file system, and
-the other lets you view your arrays of structures as if they were
-tables in a PostgreSQL database.</p>
+data as if the data were stored in files in a filesystem. RTA lets
+you view your program's internal tables (arrays of structures) as
+if they were tables in a PostgreSQL database.</p>
 <p><b><a name="q05">Why PostgreSQL?</a></b><br>
 Mostly because both the design and the documentation of the
 PostgreSQL protocol are very clean. PostgreSQL offers a simple,
 well documented protocol to the client. (Our thanks to the designers
 and tech-writers for PostgreSQL.)</p>
 <p><b><a name="q06">What SQL commands are implemented?</a></b><br>
-Only two: SELECT and UPDATE, and even then it is only a subset of
-the usual SELECT and UPDATE. See rta.h for the syntax details of
-the commands. RTA does not implement transactions.
+Only four: SELECT, UPDATE, INSERT, and DELETE, and even then it is
+only a subset of their PostgreSQL equivalents.  See rta.h for the
+syntax details of the commands. RTA does not implement transactions.
 </p>
 <p><b><a name="q07">What SQL/Postgres commands are not
 implemented?</a></b><br>
-This is not a database. We do not implement INSERT or DELETE since
-tables are (for the most part) fixed in size. Nor do we have CREATE
-TABLE, ALTER TABLE, or DROP TABLE.<br>
+This is not a database! RTA does not have the usual PosgreSQL meta
+tables, nor does it have CREATE TABLE, ALTER TABLE, or DROP TABLE.<br>
 <br>
 The command line tool for PostgreSQL, psql, will connect to a program
 with RTA, but none of the psql backslash commands will work (since 
@@ -134,10 +119,6 @@ most of the backslash commands require a real PostgreSQL database).
 <p><b><a name="q08">Why such a small subset of SQL?</a></b><br>
 This is not a database; it is an API. SELECT and UPDATE are the
 minimum needed to read and edit the data in your running program.</p>
-<p><b><a name="q16">What file system commands are in RTA?</a></b><br>
-The read(), write(), and readdir() commands are implemented as is
-the stat() function. Minimal stubs are provided for both open()
-and truncate().
 </p>
 <p><b><a name="q09">Who should not use RTA?</a></b><br>
 RTA is great if you have data already arranged as structs or as
@@ -146,21 +127,16 @@ lots of structs pointing to other structs pointing to other
 structs. That is, it is a good fit for simple tables of data and is
 not a good fit for a deeply nested tree structure of data.<br>
 <br>
-It is also best for single process applications where the data is
-in one memory space. For instance, it might not be a good fit for
-Apache which forks several equal, independent processes.</p>
+RTA is also not a good fit for program that use a C style "union"
+for what would be a column.  RTA can not deal with columns of data
+that can change data type while in use.</p>
 <p><b><a name="q10">How big is it?</a></b><br>
-The stripped shared-object SQL interface library (librtadb.so.2)
-is 55 KB and the static (.a) library is 46 KB. The stripped virtual
-file system interface
-(librtafs.so.2) is 28KB and the static library is 11KB. Note that
-to use the virtual file system interface you need to load the SQL
-interface as well.</p>
+The stripped shared-object SQL interface library (librtadb.so.3)
+is 56 KB and the static (.a) library is 50 KB.  </p>
 <p><b><a name="q11">Do I need to know SQL to use RTA?</a></b><br>
-Not really.  There are only two commands and they match pretty
-well with the intuitive idea of "change this column in this table
-where ...".  It is pretty simple.<br>
-Also, the librtafs library lets you avoid SQL entirely if you wish. </p>
+Not really.  Usually only two commands are required and they match
+pretty well with the intuitive idea of "change this column in this
+table where ...".  It is pretty simple.<br>
 <p><b><a name="q12">How difficult is it to learn and use RTA?</a></b>
 <br>
 It is easy to learn. There are only two important data structures
@@ -189,6 +165,16 @@ column of the table. The table description includes attributes of
 the table in general and a description of each column in the table.
 See the sample application and the API reference for more
 detail.<br>
+
+<p><b><a name="p14">What tools are available to explore RTA
+tables?</a></b><br>
+RTA uses two internal tables (rta_tables and rta_columns) to
+store information about all of the tables visible to RTA.  RTA
+include a "table editor" written in PHP that lets you use a web
+browser to view and edit any table in your application.  The RTA
+table editor does not need prior knowledge about the tables since
+it can read everything it need from the two meta tables.  Follow
+the "Live Demo" link to see the table editor in action.
 </p>
 <p><b><a name="p15">What libraries, tools and include files are
 needed?</a></b><br>
@@ -199,7 +185,7 @@ fclose(), fdopen(), fgets(), fopen(), fprintf(), free(), malloc(),
 memchr(), mkstemp(), offsetof(), openlog(), rename(), snprintf(),
 sprintf(), sscanf(), strcat(), strcmp(), strcpy(), strlen(),
 strncmp(), strncpy(), strstr(), syslog(), va_arg(), va_end(),
-va_start(). You will need yacc and lex to build RTA.</p>
+va_start(). You will need yacc (bison) and lex (flex) to build RTA.</p>
 <p><b><a name="p16">Do I need the Postgres libraries?</a></b><br>
 Your application does not need any libraries or include files from
 the PostgreSQL distribution. Your *client* applications may need
@@ -208,8 +194,9 @@ PostgreSQL libraries as appropriate.</p>
 Yes, You can link to the .a file or just include the .c files in
 the build of your application.</p>
 <p><b><a name="p18">What has it been tested on?</a></b><br>
-It has been used successfully Red Hat 8.0 and 9.0,
-and on Mandrake 9.1 and 9.2 systems.</p>
+It has been used successfully Red Hat, SUSE, and Ubuntu system.
+With slight modification it can be used on Macintosh and Windows
+systems as well.
 <p><b><a name="p19">Can I add my own data type?</a></b><br>
 Yes. You will need to modify the lex program to recognize the new
 data type as well as the .c files which print or compare its
@@ -228,15 +215,13 @@ saving the pointers to the table and column definitions we avoid
 using lots of memory to duplicate data. Saving pointers has the
 second advantage of letting you change the table definition on the
 fly if needed.</p>
-<p><b><a name="p22">Why do I get segmentation
-violations?</a></b><br>
+<p><b><a name="p22">Why do I get segmentation violations?</a></b><br>
 We've tried very hard to eliminate memory leaks and segmentation
 violations from the RTA package but some might have slipped
 through. A common source of problems is overrunning a string. Be
 sure to verify that your strings have the proper size specified in
 the column definitions.</p>
-<p><b><a name="p23">How can I change the size of a
-table?</a></b><br>
+<p><b><a name="p23">How can I change the size of a table?</a></b><br>
 Allocate enough memory to store the new, larger table. Copy the old
 table into the new space. Initialize the new rows added. Copy the
 address of the new table into the "address" field of the table
@@ -248,13 +233,13 @@ The idea is to give easy access to *your* data structures. Since
 most programmers use the native int, long long, and float, we do
 too.</p>
 <p><b><a name="p25">Why do I get "error while loading shared libraries:
-librtadb.so.2"?</a></b><br>
-You need to put the librtadb.so and librtafs.so files into one of
+librtadb.so.3"?</a></b><br>
+You need to put the librtadb.so files into one of
 the system library directories or you need to something like "export
 LD_LIBRARY_PATH=../src" in order to let the application find the
 library.</p>
 <p><b><a name="p26">How big should I make the output buffer for
-dbcommand()?</a></b><br>
+rta_dbcommand()?</a></b><br>
 It depends on the number of rows and the size and number of fields
 you request. You should be able to estimate the number of
 characters in your response. Assume that strings are returned with
@@ -262,15 +247,10 @@ all bytes filled, that integers return 12 characters per field,
 longs return 24, and floats return 24. Thus if you request two
 integers, a 40 byte string and a float, you would need about
 40+(2*12)+24=88 bytes. The Postgres overhead per row returned is
-about 4 bytes. Make the output buffer for dbcommand() big enough to
+about 4 bytes. Make the output buffer for rta_dbcommand() big enough to
 hold the maximum number of rows you want times the size of each
 row. Be sure to use LIMIT and OFFSET to step through a big list of
 returned rows.</p>
-<p><b><a name="p27">Why must a write() have all data in a single
-buffer?</a></b><br>
-RTA requires a single write buffer
-in order to be sure that all table writes are atomic. Without
-atomic table writes we could not guarantee table consistency.</p>
 <p><b><a name="p28">Can I export a simple variable?</a></b><br>
 Sure. Just define a single column for your variable and a table
 with a single row. You can make visible simple variables, single
@@ -297,9 +277,5 @@ includes:</p>
   <li> add a column data type of "table" to allow nested tables</li>
   <li> make it thread safe</li>
 </ul>
-<p> <a href="http://validator.w3.org/check/referer"><img border="0"
- src="http://www.w3.org/Icons/valid-html401" alt="Valid HTML 4.01!"
- height="31" width="88"></a>
-</p>
 </body>
 </html>

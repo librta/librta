@@ -57,5 +57,23 @@ typedef struct ui
   llong    nbytout;    /* number of bytes sent out */
   int      ctm;        /* connect time (==time();) */
   int      cdur;       /* duration time (== now()-ctm;) */
-}
-UI;
+} UI;
+
+
+/***************************************************************
+ * A demo linked list table
+ **************************************************************/
+typedef struct {
+    char   dlstr[NOTE_LEN];  // A string type
+    void  *dlnxt;       // points to next row.  Zero at terminus.
+    int    dlid;        // Unique row id == zero-indexed row #
+    llong  dllong;      // A long type
+    char  *dlpstr;      // A pointer to a string of NOTE_LEN bytes
+    void  *dlpint;      // points to an interger
+    llong *dlplong;     // points to a long type
+    float  dlfloat;     // A floating point number
+    float *dlpfloat;    // point to a float
+    short  dlshort;     // A short integer
+    unsigned char dluchar;     // An unsigned character
+    double dldouble;    // A double precision floating point number
+} DEMOLIST;

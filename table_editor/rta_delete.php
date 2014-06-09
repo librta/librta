@@ -2,26 +2,26 @@
 <html>
 <!-- ----------------------------------------------------------------- -->
 <!--  Run Time Access                                                  -->
-<!--  Copyright (C) 2003-2006 Robert W Smith (bsmith@linuxtoys.org)    -->
+<!--  Copyright (C) 2003-2008 Robert W Smith (bsmith@linuxtoys.org)    -->
 <!--                                                                   -->
 <!--   This program is distributed under the terms of the GNU          -->
 <!--   LGPL.  See the file COPYING file.                               -->
 <!-- ----------------------------------------------------------------- -->
 <head>
-<title>Edit Row</title>
+<title>Delete Row</title>
 </head>
 <body>
 <?php
 
-    // The user has submitted an update to a particular
+    // The user has asked to delet a particular
     // row in a particular table.  Build and execute 
-    // the UPDATE command.
-    $tbl  = htmlentities(current($_POST));
-    $row  = htmlentities(next($_POST));
-    $port= htmlentities(next($_POST));
+    // the DELETE command.
+    $tbl  = htmlentities($_GET[table]);
+    $row  = htmlentities($_GET[row]);
+    $port = htmlentities($_GET[port]);
 
     // Say where we are.
-    print("<center><h3>Update $tbl, row $row</h3></center><hr>\n");
+    print("<center><h3>Delete $tbl, row $row</h3></center><hr>\n");
 
     // Suppress Postgres error messages
     error_reporting(error_reporting() & 0xFFFD);
@@ -35,22 +35,8 @@
         exit();
     }
 
-    // Build SQL UPDATE command.
-    $command = "UPDATE $tbl SET ";
-    $count = count($_POST);
-    for ($index=3; $index < $count; $index++) {
-        // use "htmlentities()" to protect from malicious HTML
-        // $value=htmlentities(next($_POST));
-        // $key = htmlentities(key($_POST));
-        $value=next($_POST);
-        $key = key($_POST);
-        if ($index > 3)
-            $command = "$command, \"$key\" = \"$value\" ";
-        else
-            $command = "$command \"$key\" = \"$value\" ";
-    }
-    $command = "$command LIMIT 1 OFFSET $row";
-
+    // Build SQL DELETE command.
+    $command = "DELETE FROM $tbl LIMIT 1 OFFSET $row";
 
     // execute query 
     $r1 = pg_exec($c1, $command);
@@ -62,8 +48,10 @@
     }
 
     // Update succeeded.  Say so.
-    print("<p><font color=\"green\" size=+1>Update succeeded.");
+    print("<p><font color=\"green\" size=+1>Delete succeeded.");
     print("</font></p>\n<p>Command: $command</p>\n");
+    print("<p>&nbsp;</p>\n");
+    print("<p>Please be sure to refresh your screen when you go back.</p>\n");
 
     // free the result and close the connection 
     pg_freeresult($r1);

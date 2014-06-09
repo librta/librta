@@ -11,9 +11,9 @@
  *    The "rta" package provides a Postgres-like API into our
  * system tables and variables.  We need to describe each of our
  * tables as if it were a data base table.  We describe each
- * table in general in an array of TBLDEF structures with one
+ * table in general in an array of RTA_TBLDEF structures with one
  * structure per table, and each column of each table in an
- * array of COLDEF structures with one COLDEF structure per
+ * array of RTA_COLDEF structures with one RTA_COLDEF structure per
  * column.
  **************************************************************/
 
@@ -21,12 +21,12 @@
 #include <stddef.h>             /* for 'offsetof' */
 #include <syslog.h>             /* for LOG_ERR, LOG_USER */
 #include <string.h>             /* for strncmp prototypes */
-#include "rta.h"                /* for TBLDEF and COLDEF */
+#include "rta.h"                /* for RTA_TBLDEF and RTA_COLDEF */
 #include "do_sql.h"             /* for struct Sql_Cmd */
 
 /* Forward reference for read callbacks and iterators */
-int      restart_syslog();
-void    *get_next_sysrow(void *, void *, int);
+int          rta_restart_syslog();
+static void *get_next_sysrow(void *, void *, int);
 
 /***************************************************************
  * We define a table which contains the column definitions of
@@ -39,13 +39,13 @@ void    *get_next_sysrow(void *, void *, int);
  **************************************************************/
 
 /* Define the table columns */
-COLDEF   rta_columnsCols[] = {
+RTA_COLDEF   rta_columnsCols[] = {
   {
       "rta_columns",            /* table name */
       "table",                  /* column name */
       RTA_PSTR,                 /* type of data */
-      MXTBLNAME,                /* #bytes in col data */
-      offsetof(COLDEF, table), /* offset 2 col strt */
+      RTA_MXTBLNAME,            /* #bytes in col data */
+      offsetof(RTA_COLDEF, table), /* offset 2 col strt */
       RTA_READONLY,    /* Flags for read-only/disksave */
       (int (*)()) 0,  /* called before read */
       (int (*)()) 0,  /* called after write */
@@ -54,21 +54,21 @@ COLDEF   rta_columnsCols[] = {
       "rta_columns",            /* table name */
       "name",                   /* column name */
       RTA_PSTR,                 /* type of data */
-      MXCOLNAME,                /* #bytes in col data */
-      offsetof(COLDEF, name), /* offset 2 col strt */
+      RTA_MXCOLNAME,            /* #bytes in col data */
+      offsetof(RTA_COLDEF, name), /* offset 2 col strt */
       RTA_READONLY,    /* Flags for read-only/disksave */
       (int (*)()) 0,  /* called before read */
       (int (*)()) 0,  /* called after write */
       "The name of the column.  Must be unique within a table "
       "definition but may be replicated in other tables.  The "
       "maximum string length of the column name is set by "
-      "MXCOLNAME defined in the rta.h file."},
+      "RTA_MXCOLNAME defined in the rta.h file."},
   {
       "rta_columns",            /* table name */
       "type",                   /* column name */
       RTA_INT,                  /* type of data */
       sizeof(int),              /* #bytes in col data */
-      offsetof(COLDEF, type), /* offset 2 col strt */
+      offsetof(RTA_COLDEF, type), /* offset 2 col strt */
       RTA_READONLY,    /* Flags for read-only/disksave */
       (int (*)()) 0,  /* called before read */
       (int (*)()) 0,  /* called after write */
@@ -80,7 +80,7 @@ COLDEF   rta_columnsCols[] = {
       "length",                 /* column name */
       RTA_INT,                  /* type of data */
       sizeof(int),              /* #bytes in col data */
-      offsetof(COLDEF, length), /* offset 2 col strt */
+      offsetof(RTA_COLDEF, length), /* offset 2 col strt */
       RTA_READONLY,    /* Flags for read-only/disksave */
       (int (*)()) 0,  /* called before read */
       (int (*)()) 0,  /* called after write */
@@ -91,7 +91,7 @@ COLDEF   rta_columnsCols[] = {
       "noff",                   /* column name */
       RTA_PTR,                  /* type of data */
       sizeof(void *),           /* #bytes in col data */
-      offsetof(COLDEF, offset), /* offset 2 col strt */
+      offsetof(RTA_COLDEF, offset), /* offset 2 col strt */
       RTA_READONLY,    /* Flags for read-only/disksave */
       (int (*)()) 0,  /* called before read */
       (int (*)()) 0,  /* called after write */
@@ -106,7 +106,7 @@ COLDEF   rta_columnsCols[] = {
       "flags",                  /* column name */
       RTA_INT,                  /* type of data */
       sizeof(int),              /* #bytes in col data */
-      offsetof(COLDEF, flags), /* offset 2 col strt */
+      offsetof(RTA_COLDEF, flags), /* offset 2 col strt */
       RTA_READONLY,    /* Flags for read-only/disksave */
       (int (*)()) 0,  /* called before read */
       (int (*)()) 0,  /* called after write */
@@ -119,7 +119,7 @@ COLDEF   rta_columnsCols[] = {
       "readcb",                 /* column name */
       RTA_PTR,                  /* type of data */
       sizeof(void *),           /* #bytes in col data */
-      offsetof(COLDEF, readcb), /* offset 2 col strt */
+      offsetof(RTA_COLDEF, readcb), /* offset 2 col strt */
       RTA_READONLY,    /* Flags for read-only/disksave */
       (int (*)()) 0,  /* called before read */
       (int (*)()) 0,  /* called after write */
@@ -133,7 +133,7 @@ COLDEF   rta_columnsCols[] = {
       "writecb",                /* column name */
       RTA_PTR,                  /* type of data */
       sizeof(void *),           /* #bytes in col data */
-      offsetof(COLDEF, writecb), /* offset 2 col strt */
+      offsetof(RTA_COLDEF, writecb), /* offset 2 col strt */
       RTA_READONLY,    /* Flags for read-only/disksave */
       (int (*)()) 0,  /* called before read */
       (int (*)()) 0,  /* called after write */
@@ -149,26 +149,28 @@ COLDEF   rta_columnsCols[] = {
       "rta_columns",            /* table name */
       "help",                   /* column name */
       RTA_PSTR,                 /* type of data */
-      MXHELPSTR,                /* #bytes in col data */
-      offsetof(COLDEF, help), /* offset 2 col strt */
+      RTA_MXHELPSTR,            /* #bytes in col data */
+      offsetof(RTA_COLDEF, help), /* offset 2 col strt */
       RTA_READONLY,    /* Flags for read-only/disksave */
       (int (*)()) 0,  /* called before read */
       (int (*)()) 0,  /* called after write */
       "A brief description of the column.  Should include "
       "limits, default value, and a description of how to set "
-      "it.  Can contain at most MXHELPSTR characters."},
+      "it.  Can contain at most RTA_MXHELPSTR characters."},
 };
 
 /* Define the table */
-TBLDEF   rta_columnsTable = {
+RTA_TBLDEF   rta_columnsTable = {
   "rta_columns",                /* table name */
   (void *) 0,                   /* address of table */
-  sizeof(COLDEF),               /* length of each row */
+  sizeof(RTA_COLDEF),               /* length of each row */
   0,                            /* incremented as tables are added */
   get_next_sysrow,              /* iterator function */
   (void *) RTA_COLUMNS,         /* iterator callback data */
+  (void *) NULL,                /* INSERT callback function */
+  (void *) NULL,                /* DELETE callback function */
   rta_columnsCols,              /* Column definitions */
-  sizeof(rta_columnsCols) / sizeof(COLDEF), /* # columns */
+  sizeof(rta_columnsCols) / sizeof(RTA_COLDEF), /* # columns */
   "",                           /* save file name */
   "The list of all columns in all tables along with their "
     "attributes."
@@ -182,18 +184,18 @@ TBLDEF   rta_columnsTable = {
  **************************************************************/
 
 /* Define the table columns */
-COLDEF   rta_tablesCols[] = {
+RTA_COLDEF   rta_tablesCols[] = {
   {
       "rta_tables",             /* table name */
       "name",                   /* column name */
       RTA_PSTR,                 /* type of data */
-      MXTBLNAME,                /* #bytes in col data */
-      offsetof(TBLDEF, name), /* offset 2 col strt */
+      RTA_MXTBLNAME,            /* #bytes in col data */
+      offsetof(RTA_TBLDEF, name), /* offset 2 col strt */
       RTA_READONLY,    /* Flags for read-only/disksave */
       (int (*)()) 0,  /* called before read */
       (int (*)()) 0,  /* called after write */
       "The name of the table.  This must be unique in the system. "
-      " Table names can be at most MXTBLNAME characters in length."
+      " Table names can be at most RTA_MXTBLNAME characters in length."
       "  See rta.h for details.  Note that some table names are "
       "reserved for internal use."},
   {
@@ -201,7 +203,7 @@ COLDEF   rta_tablesCols[] = {
       "address",                /* column name */
       RTA_PTR,                  /* type of data */
       sizeof(void *),           /* #bytes in col data */
-      offsetof(TBLDEF, address), /* offset 2 col strt */
+      offsetof(RTA_TBLDEF, address), /* offset 2 col strt */
       RTA_READONLY,    /* Flags for read-only/disksave */
       (int (*)()) 0,  /* called before read */
       (int (*)()) 0,  /* called after write */
@@ -212,7 +214,7 @@ COLDEF   rta_tablesCols[] = {
       "rowlen",                 /* column name */
       RTA_INT,                  /* type of data */
       sizeof(int),              /* #bytes in col data */
-      offsetof(TBLDEF, rowlen), /* offset 2 col strt */
+      offsetof(RTA_TBLDEF, rowlen), /* offset 2 col strt */
       RTA_READONLY,    /* Flags for read-only/disksave */
       (int (*)()) 0,  /* called before read */
       (int (*)()) 0,  /* called after write */
@@ -223,7 +225,7 @@ COLDEF   rta_tablesCols[] = {
       "nrows",                  /* column name */
       RTA_INT,                  /* type of data */
       sizeof(int),              /* #bytes in col data */
-      offsetof(TBLDEF, nrows), /* offset 2 col strt */
+      offsetof(RTA_TBLDEF, nrows), /* offset 2 col strt */
       RTA_READONLY,    /* Flags for read-only/disksave */
       (int (*)()) 0,  /* called before read */
       (int (*)()) 0,  /* called after write */
@@ -233,7 +235,7 @@ COLDEF   rta_tablesCols[] = {
       "iterator",               /* column name */
       RTA_PTR,                  /* type of data */
       sizeof(void *),           /* #bytes in col data */
-      offsetof(TBLDEF, iterator), /* offset 2 col strt */
+      offsetof(RTA_TBLDEF, iterator), /* offset 2 col strt */
       RTA_READONLY,    /* Flags for read-only/disksave */
       (int (*)()) 0,  /* called before read */
       (int (*)()) 0,  /* called after write */
@@ -248,7 +250,7 @@ COLDEF   rta_tablesCols[] = {
       "it_info",                /* column name */
       RTA_PTR,                  /* type of data */
       sizeof(void *),           /* #bytes in col data */
-      offsetof(TBLDEF, it_info), /* offset 2 col strt */
+      offsetof(RTA_TBLDEF, it_info), /* offset 2 col strt */
       RTA_READONLY,    /* Flags for read-only/disksave */
       (int (*)()) 0,  /* called before read */
       (int (*)()) 0,  /* called after write */
@@ -260,21 +262,45 @@ COLDEF   rta_tablesCols[] = {
       "can handle each one as appropriate. "},
   {
       "rta_tables",             /* table name */
-      "cols",                   /* column name */
+      "insertcb",               /* column name */
       RTA_PTR,                  /* type of data */
       sizeof(void *),           /* #bytes in col data */
-      offsetof(TBLDEF, cols), /* offset 2 col strt */
+      offsetof(RTA_TBLDEF, insertcb), /* offset 2 col strt */
       RTA_READONLY,    /* Flags for read-only/disksave */
       (int (*)()) 0,  /* called before read */
       (int (*)()) 0,  /* called after write */
-      "A pointer to an array of COLDEF structures.  There is one "
-      "COLDEF for each column in the table."},
+      "The INSERT callback is invoked to add a row to a table. "
+      "It is used mostly with tables in which the rows are "
+      "dynamically allocated. "},
+  {
+      "rta_tables",             /* table name */
+      "deletecb",               /* column name */
+      RTA_PTR,                  /* type of data */
+      sizeof(void *),           /* #bytes in col data */
+      offsetof(RTA_TBLDEF, deletecb), /* offset 2 col strt */
+      RTA_READONLY,    /* Flags for read-only/disksave */
+      (int (*)()) 0,  /* called before read */
+      (int (*)()) 0,  /* called after write */
+      "The DELETE callback is invoked to remove a row from a "
+      "table.  It is used mostly with tables in which the rows "
+      "are dynamically allocated. "},
+  {
+      "rta_tables",             /* table name */
+      "cols",                   /* column name */
+      RTA_PTR,                  /* type of data */
+      sizeof(void *),           /* #bytes in col data */
+      offsetof(RTA_TBLDEF, cols), /* offset 2 col strt */
+      RTA_READONLY,    /* Flags for read-only/disksave */
+      (int (*)()) 0,  /* called before read */
+      (int (*)()) 0,  /* called after write */
+      "A pointer to an array of RTA_COLDEF structures.  There is one "
+      "RTA_COLDEF for each column in the table."},
   {
       "rta_tables",             /* table name */
       "ncol",                   /* column name */
       RTA_INT,                  /* type of data */
       sizeof(int),              /* #bytes in col data */
-      offsetof(TBLDEF, ncol), /* offset 2 col strt */
+      offsetof(RTA_TBLDEF, ncol), /* offset 2 col strt */
       RTA_READONLY,    /* Flags for read-only/disksave */
       (int (*)()) 0,  /* called before read */
       (int (*)()) 0,  /* called after write */
@@ -283,8 +309,8 @@ COLDEF   rta_tablesCols[] = {
       "rta_tables",             /* table name */
       "savefile",               /* column name */
       RTA_PSTR,                 /* type of data */
-      MXFILENAME,               /* #bytes in col data */
-      offsetof(TBLDEF, savefile), /* offset 2 col strt */
+      RTA_MXFILENAME,           /* #bytes in col data */
+      offsetof(RTA_TBLDEF, savefile), /* offset 2 col strt */
       RTA_READONLY,    /* Flags for read-only/disksave */
       (int (*)()) 0,  /* called before read */
       (int (*)()) 0,  /* called after write */
@@ -296,8 +322,8 @@ COLDEF   rta_tablesCols[] = {
       "rta_tables",             /* table name */
       "help",                   /* column name */
       RTA_PSTR,                 /* type of data */
-      MXHELPSTR,                /* #bytes in col data */
-      offsetof(TBLDEF, help), /* offset 2 col strt */
+      RTA_MXHELPSTR,            /* #bytes in col data */
+      offsetof(RTA_TBLDEF, help), /* offset 2 col strt */
       RTA_READONLY,    /* Flags for read-only/disksave */
       (int (*)()) 0,  /* called before read */
       (int (*)()) 0,  /* called after write */
@@ -305,15 +331,17 @@ COLDEF   rta_tablesCols[] = {
 };
 
 /* Define the table */
-TBLDEF   rta_tablesTable = {
+RTA_TBLDEF   rta_tablesTable = {
   "rta_tables",                 /* table name */
   (void *) 0,                   /* address of table */
-  sizeof(TBLDEF),               /* length of each row */
+  sizeof(RTA_TBLDEF),               /* length of each row */
   0,                            /* It's a pseudo table */
   get_next_sysrow,              /* iterator function */
   (void *) RTA_TABLES,          /* iterator callback data */
+  (void *) NULL,                /* INSERT callback function */
+  (void *) NULL,                /* DELETE callback function */
   rta_tablesCols,               /* Column definitions */
-  sizeof(rta_tablesCols) / sizeof(COLDEF), /* # columns */
+  sizeof(rta_tablesCols) / sizeof(RTA_COLDEF), /* # columns */
   "",                           /* save file name */
   "The table of all tables in the system.  This is a pseudo "
     "table and not an array of structures like other tables."
@@ -329,23 +357,23 @@ TBLDEF   rta_tablesTable = {
  * Output:       Pointer to next row or NULL if at end of list
  * Effects:      None
  **************************************************************/
-void    *
+static void    *
 get_next_sysrow(void *pui, void *it_info, int rowid)
 {
-  extern TBLDEF *Tbl[];
-  extern COLDEF *Col[];
-  extern int Ntbl;
-  extern int Ncol;
+  extern RTA_TBLDEF *rta_Tbl[];
+  extern RTA_COLDEF *rta_Col[];
+  extern int rta_Ntbl;
+  extern int rta_Ncol;
 
   /* The tables for tables and columns contain pointers to the actual
-     TBLDEF and COLDEF structures.  This saves memory and makes it easy 
+     RTA_TBLDEF and RTA_COLDEF structures.  This saves memory and makes it easy 
      for a program to change parts of the table or column definition
-     when needed.  So this routine just return the Tbl or Col value. */
-  if (((int) it_info == RTA_TABLES) && (rowid < Ntbl)) {
-    return ((void *) Tbl[rowid]);
+     when needed.  So this routine just return the rta_Tbl or rta_Col value. */
+  if ((it_info == RTA_TABLES) && (rowid < rta_Ntbl)) {
+    return ((void *) rta_Tbl[rowid]);
   }
-  else if (((int) it_info == RTA_COLUMNS) && (rowid < Ncol)) {
-    return ((void *) Col[rowid]);
+  else if ((it_info == RTA_COLUMNS) && (rowid < rta_Ncol)) {
+    return ((void *) rta_Col[rowid]);
   }
 
   /* Must be at end of list */
@@ -360,13 +388,13 @@ get_next_sysrow(void *pui, void *it_info, int rowid)
  * in this table are volatile.  You will need to set the values
  * in your main program to make them seem persistent.
  * (Try something like
- *    "SQL_string("UPDATE rta_dbgconfig SET dbg ....").)
+ *    "rta_SQL_string("UPDATE rta_dbgconfig SET dbg ....").)
  * A callback attached to dbg_facility causes a close/reopen of
  * syslog().
  **************************************************************/
 
 /* Allocate and initialize the table */
-struct RtaDbg rtadbg = {
+struct RtaDbg rta_dbg = {
   1,                            /* log system errors */
   1,                            /* log rta errors */
   1,                            /* log SQL errors */
@@ -378,7 +406,7 @@ struct RtaDbg rtadbg = {
 };
 
 /* Define the table columns */
-COLDEF   rta_dbgCols[] = {
+RTA_COLDEF   rta_dbgCols[] = {
   {
       "rta_dbg",                /* table name */
       "syserr",                 /* column name */
@@ -433,7 +461,7 @@ COLDEF   rta_dbgCols[] = {
       offsetof(struct RtaDbg, target), /* offset 2 col strt */
       0,               /* Flags for read-only/disksave */
       (int (*)()) 0,  /* called before read */
-      restart_syslog,  /* called after write */
+      rta_restart_syslog,  /* called after write */
       "Sets destination of log messages.  Zero turns off all "
       "logging of errors.  One sends log messages to syslog()."
       "  Two sends log messages to stderr.  Three sends error "
@@ -464,7 +492,7 @@ COLDEF   rta_dbgCols[] = {
       "rta_dbg",                /* table name */
       "ident",                  /* column name */
       RTA_STR,                  /* type of data */
-      MXDBGIDENT,               /* #bytes in col data */
+      RTA_MXDBGIDENT,           /* #bytes in col data */
       offsetof(struct RtaDbg, ident), /* offset 2 col strt */
       0,               /* Flags for read-only/disksave */
       (int (*)()) 0,  /* called before read */
@@ -475,10 +503,10 @@ COLDEF   rta_dbgCols[] = {
 };
 
 /***************************************************************
- * restart_syslog(): - Routine to restart or reconfigure the
+ * rta_restart_syslog(): - Routine to restart or reconfigure the
  * logging facility.  Syslog is always closed and (if enabled)
  * reopened with the priority and facility specified in the
- * rtadbg structure.
+ * rta_dbg structure.
  *
  * Input:        Name of the table 
  *               Name of the column
@@ -490,36 +518,38 @@ COLDEF   rta_dbgCols[] = {
  * Effects:      No side effects.
  **************************************************************/
 int
-restart_syslog(char *tblname, char *colname, char *sqlcmd,
+rta_restart_syslog(char *tblname, char *colname, char *sqlcmd,
                void *prow, void *poldrow,  int rowid)
 {
-  extern struct RtaDbg rtadbg;
+  extern struct RtaDbg rta_dbg;
 
   closelog();
 
-  if (rtadbg.target == 1 || rtadbg.target == 3) {
-    openlog(rtadbg.ident, LOG_ODELAY | LOG_PID, rtadbg.facility);
+  if (rta_dbg.target == 1 || rta_dbg.target == 3) {
+    openlog(rta_dbg.ident, LOG_ODELAY | LOG_PID, rta_dbg.facility);
   }
 
   return(0);
 }
 
 /* Define the table */
-TBLDEF   rta_dbgTable = {
+RTA_TBLDEF   rta_dbgTable = {
   "rta_dbg",                    /* table name */
-  (void *) &rtadbg,             /* address of table */
+  (void *) &rta_dbg,             /* address of table */
   sizeof(struct RtaDbg),        /* length of each row */
   1,                            /* # rows in table */
   (void *) NULL,                /* iterator function */
   (void *) NULL,                /* iterator callback data */
+  (void *) NULL,                /* INSERT callback function */
+  (void *) NULL,                /* DELETE callback function */
   rta_dbgCols,                  /* Column definitions */
-  sizeof(rta_dbgCols) / sizeof(COLDEF), /* # columns */
+  sizeof(rta_dbgCols) / sizeof(RTA_COLDEF), /* # columns */
   "",                           /* save file name */
   "Configure of debug logging.  A callback on the 'target' "
     "field closes and reopens syslog().  None of the values "
     "in this table are saved to disk.  If you want non-default "
     "values you need to change the rta source or do an "
-    "SQL_string() to set the values when you initialize your "
+    "rta_SQL_string() to set the values when you initialize your "
     "program."
 };
 
@@ -531,7 +561,7 @@ TBLDEF   rta_dbgTable = {
  **************************************************************/
 
 /* Allocate and initialize the table */
-struct RtaStat rtastat = {
+struct RtaStat rta_stat = {
   (llong) 0,                    /* count of failed OS calls. */
   (llong) 0,                    /* count of internal rta failures. */
   (llong) 0,                    /* count of SQL failures. */
@@ -541,7 +571,7 @@ struct RtaStat rtastat = {
 };
 
 /* Define the table columns */
-COLDEF   rta_statCols[] = {
+RTA_COLDEF   rta_statCols[] = {
   {
       "rta_stat",               /* table name */
       "nsyserr",                /* column name */
@@ -603,18 +633,40 @@ COLDEF   rta_statCols[] = {
       (int (*)()) 0,  /* called before read */
       (int (*)()) 0,  /* called after write */
       "Count of UPDATE commands."},
+  {
+      "rta_stat",               /* table name */
+      "ninsert",                /* column name */
+      RTA_LONG,                 /* type of data */
+      sizeof(llong),            /* #bytes in col data */
+      offsetof(struct RtaStat, ninsert), /* offset 2 col strt */
+      RTA_READONLY,    /* Flags for read-only/disksave */
+      (int (*)()) 0,  /* called before read */
+      (int (*)()) 0,  /* called after write */
+      "Count of INSERT commands."},
+  {
+      "rta_stat",               /* table name */
+      "ndelete",                /* column name */
+      RTA_LONG,                 /* type of data */
+      sizeof(llong),            /* #bytes in col data */
+      offsetof(struct RtaStat, ndelete), /* offset 2 col strt */
+      RTA_READONLY,    /* Flags for read-only/disksave */
+      (int (*)()) 0,  /* called before read */
+      (int (*)()) 0,  /* called after write */
+      "Count of DELETE commands."},
 };
 
 /* Define the table */
-TBLDEF   rta_statTable = {
+RTA_TBLDEF   rta_statTable = {
   "rta_stat",                   /* table name */
-  (void *) &rtastat,            /* address of table */
+  (void *) &rta_stat,           /* address of table */
   sizeof(struct RtaStat),       /* length of each row */
   1,                            /* # rows in table */
   (void *) NULL,                /* iterator function */
   (void *) NULL,                /* iterator callback data */
+  (void *) NULL,                /* INSERT callback function */
+  (void *) NULL,                /* DELETE callback function */
   rta_statCols,                 /* Column definitions */
-  sizeof(rta_statCols) / sizeof(COLDEF), /* # columns */
+  sizeof(rta_statCols) / sizeof(RTA_COLDEF), /* # columns */
   "",                           /* save file name */
   "Usage and error counts for the rta package."
 };

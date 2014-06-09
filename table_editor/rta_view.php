@@ -30,6 +30,19 @@
         exit();
     }
 
+    // Does the table have INSERT and DELETE ?
+    $command = "SELECT insertcb, deletecb FROM rta_tables WHERE name = $tbl";
+    $result = pg_exec($connection, $command);
+    if ($result == "") { 
+        print("<p><font color=\"red\" size=+1>SQL Command failed!</p>");
+        print("<p>Command: $command</p>\n");
+        exit();
+    }
+    $hasinsert = pg_result($result, $row, 0);
+    $hasdelete = pg_result($result, $row, 1);
+    pg_freeresult($result);
+
+
     // print each row in a table 
     print("<center><table border=3 cellpadding=4>\n");
 
@@ -52,8 +65,15 @@
         print("<th>$colname</th>");
         $readonly = $readonly & $colflags;
     }
-    if ($readonly == 0)
-        print("<th>&nbsp;</th>\n");
+    if ($readonly == 0 || $hasinsert) {
+        print("<th>&nbsp;");
+        if ($hasinsert) {
+            // editing row # -1 says to get ready for INSERT
+            print("<a href=rta_editadd.php?table=$tbl");
+            print("&row=-1&port=$port>(insert row)</a><br>");
+        }
+        print("</th>\n");
+    }
     print("</tr>\n");
     pg_freeresult($result);
 
@@ -75,10 +95,18 @@
             print("</td>\n");
         }
         // Add link to edit the row if editable.
-        if ($readonly == 0) {
+        if ($readonly == 0 || $hasdelete) {
+            print("<td>");
             $rowindex = $offset + $row;
-            print("<td><a href=rta_edit.php?table=$tbl");
-            print("&row=$rowindex&port=$port>(edit)</a></td>");
+            if ($readonly == 0) {
+                print("<a href=rta_editadd.php?table=$tbl");
+                print("&row=$rowindex&port=$port>(edit)</a><br>");
+            }
+            if ($hasdelete != 0) {
+                print("<a href=rta_delete.php?table=$tbl");
+                print("&row=$rowindex&port=$port>(delete)</a><br>");
+            }
+            print("</td>");
         }
         print("</tr>\n");
     }

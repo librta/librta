@@ -23,22 +23,22 @@
 #include "rta.h"                /* for various constants */
 #include "do_sql.h"             /* for LOC */
 
-/* Tbl and Col contain pointers to table and column
+/* rta_Tbl and rta_Col contain pointers to table and column
  * definitions of all tables and columns in * the system.
- * Ntbl and Ncol are the number of tables and columns in each
+ * rta_Ntbl and rta_Ncol are the number of tables and columns in each
  * list.  These are used often enough that they are globals.
- * Ntbl starts out with a -1 flag to indicate that we are not
+ * rta_Ntbl starts out with a -1 flag to indicate that we are not
  * initialized.  */
  
-TBLDEF  *Tbl[MX_TBL];
-int      Ntbl = -1;
-COLDEF  *Col[MX_COL];
-int      Ncol;
+RTA_TBLDEF  *rta_Tbl[RTA_MX_TBL];
+int          rta_Ntbl = -1;
+RTA_COLDEF  *rta_Col[RTA_MX_COL];
+int          rta_Ncol;
 
-extern struct RtaDbg rtadbg;
+extern struct RtaDbg rta_dbg;
 static char  *ConfigDir = (char *) 0;
 
-int is_reserved(char *pword);
+static int is_reserved(char *pword);
 
 
 /***************************************************************
@@ -51,16 +51,16 @@ void
 rta_init()
 {
   int      i;          /* loop index */
-  extern TBLDEF rta_tablesTable;
-  extern TBLDEF rta_columnsTable;
-  extern TBLDEF rta_dbgTable;
-  extern TBLDEF rta_statTable;
-  extern void restart_syslog();
+  extern RTA_TBLDEF rta_tablesTable;
+  extern RTA_TBLDEF rta_columnsTable;
+  extern RTA_TBLDEF rta_dbgTable;
+  extern RTA_TBLDEF rta_statTable;
+  extern void rta_restart_syslog();
 
-  for (i = 0; i < MX_TBL; i++) {
-    Tbl[i] = (TBLDEF *) 0;
+  for (i = 0; i < RTA_MX_TBL; i++) {
+    rta_Tbl[i] = (RTA_TBLDEF *) 0;
   }
-  Ntbl = 0;
+  rta_Ntbl = 0;
 
   /* add system and internal tables here */
   (void) rta_add_table(&rta_tablesTable);
@@ -68,8 +68,8 @@ rta_init()
   (void) rta_add_table(&rta_dbgTable);
   (void) rta_add_table(&rta_statTable);
 
-  restart_syslog((char *) 0, (char *) 0, (char *) 0, (void *) 0,
-                 (void *) 0, 0);
+  rta_restart_syslog((char *) 0, (char *) 0, (char *) 0, (void *) 0,
+		     (void *) 0, 0);
 }
 
 
@@ -89,7 +89,7 @@ rta_config_dir(char *configdir)
   int         len;          /* length of the path */
 
   /* Initialize the RTA tables if this is the first call to add_table */
-  if (Ntbl == -1)
+  if (rta_Ntbl == -1)
     rta_init();
 
   /* Perform some sanity checks */
@@ -123,76 +123,76 @@ rta_config_dir(char *configdir)
  *                         problem
  **************************************************************/
 int
-rta_add_table(TBLDEF *ptbl)
+rta_add_table(RTA_TBLDEF *ptbl)
 {
-  extern struct RtaStat rtastat;
-  extern TBLDEF rta_columnsTable;
+  extern struct RtaStat rta_stat;
+  extern RTA_TBLDEF rta_columnsTable;
   int      i, j;       /* a loop index */
 
 
   /* Initialize the RTA tables if this is the first call to add_table */
-  if (Ntbl == -1)
+  if (rta_Ntbl == -1)
     rta_init();
 
-  /* Error if at Ntbl limit */
-  if (Ntbl == MX_TBL) {
-    rtastat.nrtaerr++;
-    if (rtadbg.rtaerr)
-      rtalog(LOC, Er_Max_Tbls);
+  /* Error if at rta_Ntbl limit */
+  if (rta_Ntbl == RTA_MX_TBL) {
+    rta_stat.nrtaerr++;
+    if (rta_dbg.rtaerr)
+      rta_log(LOC, Er_Max_Tbls);
     return (RTA_ERROR);
   }
 
   /* verify that table name is unique */
   i = 0;
-  while (i < Ntbl) {
-    if (!strncmp(ptbl->name, Tbl[i]->name, MXTBLNAME)) {
-      rtastat.nrtaerr++;
-      if (rtadbg.rtaerr)
-        rtalog(LOC, Er_Tbl_Dup, ptbl->name);
+  while (i < rta_Ntbl) {
+    if (!strncmp(ptbl->name, rta_Tbl[i]->name, RTA_MXTBLNAME)) {
+      rta_stat.nrtaerr++;
+      if (rta_dbg.rtaerr)
+        rta_log(LOC, Er_Tbl_Dup, ptbl->name);
       return (RTA_ERROR);
     }
     i++;
   }
 
   /* verify length of table name */
-  if (strlen(ptbl->name) > MXTBLNAME) {
-    rtastat.nrtaerr++;
-    if (rtadbg.rtaerr)
-      rtalog(LOC, Er_Tname_Big, ptbl->name);
+  if (strlen(ptbl->name) > RTA_MXTBLNAME) {
+    rta_stat.nrtaerr++;
+    if (rta_dbg.rtaerr)
+      rta_log(LOC, Er_Tname_Big, ptbl->name);
     return (RTA_ERROR);
   }
 
   /* verify table name is not a reserved word */
   if (is_reserved(ptbl->name)) {
-    rtastat.nrtaerr++;
-    if (rtadbg.rtaerr)
-      rtalog(LOC, Er_Reserved, ptbl->name);
+    rta_stat.nrtaerr++;
+    if (rta_dbg.rtaerr)
+      rta_log(LOC, Er_Reserved, ptbl->name);
     return (RTA_ERROR);
   }
 
   /* verify savefile name is a valid pointer */
   if (ptbl->savefile == (char *) 0) {
-    rtastat.nrtaerr++;
-    if (rtadbg.rtaerr)
-      rtalog(LOC, Er_Col_Type, "savefile");
+    rta_stat.nrtaerr++;
+    if (rta_dbg.rtaerr)
+      rta_log(LOC, Er_Col_Type, "savefile");
     return (RTA_ERROR);
   }
 
   /* Check the upper bound on # columns / table */
-  if (ptbl->ncol > NCMDCOLS) {
-    rtastat.nrtaerr++;
-    if (rtadbg.rtaerr)
-      rtalog(LOC, Er_Cmd_Cols, ptbl->name);
+  if (ptbl->ncol > RTA_NCMDCOLS) {
+    rta_stat.nrtaerr++;
+    if (rta_dbg.rtaerr)
+      rta_log(LOC, Er_Cmd_Cols, ptbl->name);
     return (RTA_ERROR);
   }
 
   /* verify that column names are unique within table */
   for (i = 0; i < ptbl->ncol; i++) {
     for (j = 0; j < i; j++) {
-      if (!strncmp(ptbl->cols[i].name, ptbl->cols[j].name, MXCOLNAME)) {
-        rtastat.nrtaerr++;
-        if (rtadbg.rtaerr)
-          rtalog(LOC, Er_Col_Dup, ptbl->name, ptbl->cols[i].name);
+      if (!strncmp(ptbl->cols[i].name, ptbl->cols[j].name, RTA_MXCOLNAME)) {
+        rta_stat.nrtaerr++;
+        if (rta_dbg.rtaerr)
+          rta_log(LOC, Er_Col_Dup, ptbl->name, ptbl->cols[i].name);
         return (RTA_ERROR);
       }
     }
@@ -201,59 +201,59 @@ rta_add_table(TBLDEF *ptbl)
   /* verify column name length, help length, data type, flag contents,
      and that column table name is valid */
   for (i = 0; i < ptbl->ncol; i++) {
-    if (strlen(ptbl->cols[i].name) > MXCOLNAME) {
-      rtastat.nrtaerr++;
-      if (rtadbg.rtaerr)
-        rtalog(LOC, Er_Cname_Big, ptbl->cols[i].name);
+    if (strlen(ptbl->cols[i].name) > RTA_MXCOLNAME) {
+      rta_stat.nrtaerr++;
+      if (rta_dbg.rtaerr)
+        rta_log(LOC, Er_Cname_Big, ptbl->cols[i].name);
       return (RTA_ERROR);
     }
     if (is_reserved(ptbl->cols[i].name)) {
-      rtastat.nrtaerr++;
-      if (rtadbg.rtaerr)
-        rtalog(LOC, Er_Reserved, ptbl->cols[i].name);
+      rta_stat.nrtaerr++;
+      if (rta_dbg.rtaerr)
+        rta_log(LOC, Er_Reserved, ptbl->cols[i].name);
       return (RTA_ERROR);
     }
-    if (strlen(ptbl->cols[i].help) > MXHELPSTR) {
-      rtastat.nrtaerr++;
-      if (rtadbg.rtaerr)
-        rtalog(LOC, Er_Hname_Big, ptbl->cols[i].name);
+    if (strlen(ptbl->cols[i].help) > RTA_MXHELPSTR) {
+      rta_stat.nrtaerr++;
+      if (rta_dbg.rtaerr)
+        rta_log(LOC, Er_Hname_Big, ptbl->cols[i].name);
       return (RTA_ERROR);
     }
-    if (ptbl->cols[i].type > MXCOLTYPE) {
-      rtastat.nrtaerr++;
-      if (rtadbg.rtaerr)
-        rtalog(LOC, Er_Col_Type, ptbl->cols[i].name);
+    if (ptbl->cols[i].type > RTA_MXCOLTYPE) {
+      rta_stat.nrtaerr++;
+      if (rta_dbg.rtaerr)
+        rta_log(LOC, Er_Col_Type, ptbl->cols[i].name);
       return (RTA_ERROR);
     }
     if (ptbl->cols[i].flags > RTA_DISKSAVE + RTA_READONLY) {
-      rtastat.nrtaerr++;
-      if (rtadbg.rtaerr)
-        rtalog(LOC, Er_Col_Flag, ptbl->cols[i].name);
+      rta_stat.nrtaerr++;
+      if (rta_dbg.rtaerr)
+        rta_log(LOC, Er_Col_Flag, ptbl->cols[i].name);
       return (RTA_ERROR);
     }
     if (strcmp(ptbl->cols[i].table, ptbl->name)) {
-      rtastat.nrtaerr++;
-      if (rtadbg.rtaerr)
-        rtalog(LOC, Er_Col_Name, ptbl->cols[i].name);
+      rta_stat.nrtaerr++;
+      if (rta_dbg.rtaerr)
+        rta_log(LOC, Er_Col_Name, ptbl->cols[i].name);
       return (RTA_ERROR);
     }
   }
 
   /* Verify that we can add the columns */
-  if ((Ncol + ptbl->ncol) >= MX_COL) {
-    rtastat.nrtaerr++;
-    if (rtadbg.rtaerr)
-      rtalog(LOC, Er_Max_Cols);
+  if ((rta_Ncol + ptbl->ncol) >= RTA_MX_COL) {
+    rta_stat.nrtaerr++;
+    if (rta_dbg.rtaerr)
+      rta_log(LOC, Er_Max_Cols);
     return (RTA_ERROR);
   }
 
   /* Everything looks OK.  Add table and columns */
-  Tbl[Ntbl++] = ptbl;
-  Tbl[0]->nrows = Ntbl;
+  rta_Tbl[rta_Ntbl++] = ptbl;
+  rta_Tbl[0]->nrows = rta_Ntbl;
 
   /* Add columns to list of column pointers */
   for (i = 0; i < ptbl->ncol; i++) {
-    Col[Ncol++] = &(ptbl->cols[i]);
+    rta_Col[rta_Ncol++] = &(ptbl->cols[i]);
   }
   rta_columnsTable.nrows += ptbl->ncol;
 
@@ -265,7 +265,7 @@ rta_add_table(TBLDEF *ptbl)
 }
 
 /***************************************************************
- * Postgres "packets" are identified by their first few bytes.
+ * PostgreSQL "packets" are identified by their first few bytes.
  * The protocol uses the first byte to identify the packet type.  I
  * If the first byte is a zero the packet is either a start-up
  * packet or a cancel packet.  If the first byte is not a zero
@@ -278,7 +278,7 @@ rta_add_table(TBLDEF *ptbl)
  **************************************************************/
 
 /***************************************************************
- * dbcommand():  - Depacketize and execute any Postgres 
+ * rta_dbcommand():  - Depacketize and execute any Postgres 
  * commands in the input buffer.  
  * 
  * Input:  buf - the buffer with the Postgres packet
@@ -294,9 +294,9 @@ rta_add_table(TBLDEF *ptbl)
  *         RTA_NOBUF     - insufficient output buffer space
  **************************************************************/
 int
-dbcommand(char *buf, int *nin, char *out, int *nout)
+rta_dbcommand(char *buf, int *nin, char *out, int *nout)
 {
-  extern struct RtaStat rtastat;
+  extern struct RtaStat rta_stat;
   int      length;     /* length of the packet if old protocol */
 
   /* startup or cancel packet if first byte is zero */
@@ -375,9 +375,9 @@ dbcommand(char *buf, int *nin, char *out, int *nout)
 
       /* Verify that the buffer has enough room for the response */
       if (*nout < 164) {
-        rtastat.nsqlerr++;
-        if (rtadbg.sqlerr)
-          rtalog(LOC, Er_No_Space);
+        rta_stat.nsqlerr++;
+        if (rta_dbg.sqlerr)
+          rta_log(LOC, Er_No_Space);
 
         return (RTA_NOBUF);
       }
@@ -385,7 +385,7 @@ dbcommand(char *buf, int *nin, char *out, int *nout)
       *nin -= length;
       (void) memcpy(out, reply, 164);
       *nout -= 164;
-      rtastat.nauth++;
+      rta_stat.nauth++;
       return (RTA_SUCCESS);
     }
     else if (length == 16) {    /* a cancel request */
@@ -421,7 +421,7 @@ dbcommand(char *buf, int *nin, char *out, int *nout)
 
     /* Got a complete command; do it. (buf[5] since the SQL follows the 
        'Q' and length) */
-    SQL_string(&buf[5], (*nin - 5), out, nout);
+    rta_SQL_string(&buf[5], (*nin - 5), out, nout);
     *nin -= length;             /* to swallow the cmd */
     return (RTA_SUCCESS);
   }
@@ -446,9 +446,9 @@ dbcommand(char *buf, int *nin, char *out, int *nout)
  *         RTA_ERROR     - some kind of error
  **************************************************************/
 int
-rta_save(TBLDEF *ptbl, char *fname)
+rta_save(RTA_TBLDEF *ptbl, char *fname)
 {
-  extern struct RtaStat rtastat;
+  extern struct RtaStat rta_stat;
   int      sr;         /* the Size of each Row in the table */
   int      rx;         /* Row indeX */
   void    *pr;         /* Pointer to the row in the table/column */
@@ -460,7 +460,9 @@ rta_save(TBLDEF *ptbl, char *fname)
   FILE    *ftmp;       /* FILE handle to the temp file */
   int      did_header; /* == 1 if printed UPDATE part */
   int      did_1_col;  /* == 1 if at least one col printed */
-
+  int      hcx;        /* header column index while building INSERT */
+  int      did_1_hcol; /* == 1 if at least one INSERT col printed */
+  
 
   /* Fill in the path with the full path to the config file */
   path[0] = (char) 0;
@@ -478,9 +480,9 @@ rta_save(TBLDEF *ptbl, char *fname)
 
   /* Do a sanity check on the lengths of the paths involved */
   if (strlen(path) + strlen("/tmpXXXXXX") > PATH_MAX -1) {
-    rtastat.nsyserr++;
-    if (rtadbg.syserr)
-      rtalog(LOC, Er_No_Save, ptbl->name, path);
+    rta_stat.nsyserr++;
+    if (rta_dbg.syserr)
+      rta_log(LOC, Er_No_Save, ptbl->name, path);
     return (RTA_ERROR);
   }
 
@@ -490,20 +492,29 @@ rta_save(TBLDEF *ptbl, char *fname)
   (void) strcat(tfile, "/tmpXXXXXX");
   fd = mkstemp(tfile);
   if (fd < 0) {
-    rtastat.nsyserr++;
-    if (rtadbg.syserr)
-      rtalog(LOC, Er_No_Save, ptbl->name, tfile);
+    rta_stat.nsyserr++;
+    if (rta_dbg.syserr)
+      rta_log(LOC, Er_No_Save, ptbl->name, tfile);
     return (RTA_ERROR);
   }
   ftmp = fdopen(fd, "w");
   if (ftmp == (FILE *) 0) {
-    rtastat.nsyserr++;
-    if (rtadbg.syserr)
-      rtalog(LOC, Er_No_Save, ptbl->name, tfile);
+    rta_stat.nsyserr++;
+    if (rta_dbg.syserr)
+      rta_log(LOC, Er_No_Save, ptbl->name, tfile);
     return (RTA_ERROR);
   }
 
-  /* OK, temp file is open and ready to receive table data */
+  /* OK, temp file is open and ready to receive table data.
+   * What gets put into the savefile depends on whether or 
+   * not the table uses INSERT.  If it does, then we save the
+   * table as a series of INSERTs.  If it does not, then we
+   * save the table as a series of UPDATEs.  What makes this
+   * messy is that an INSERT requires two passes through the
+   * columns and an UPDATE requires one.  That is, ....
+   * INSERT INTO tbl (col1, col2, ...) VALUES (val1, val2, ...)
+   * UPDATE tbl SET col1=val1, col2=val2, ...    */
+
   /* Get row length and a pointer to the first row */
   sr = ptbl->rowlen;
   rx = 0;
@@ -516,62 +527,94 @@ rta_save(TBLDEF *ptbl, char *fname)
   while (pr) {
     did_header = 0;
     did_1_col = 0;
+    did_1_hcol = 0;
     for (cx = 0; cx < ptbl->ncol; cx++) {
       if ((!(ptbl->cols[cx].flags & RTA_DISKSAVE)) ||
         (ptbl->cols[cx].flags & RTA_READONLY))
         continue;
       if (!did_header) {
-        fprintf(ftmp, "UPDATE %s SET", ptbl->name);
+        if (!ptbl->insertcb)
+          fprintf(ftmp, "UPDATE %s SET ", ptbl->name);
+        else {
+          /* the header for insert is little more complex */
+          fprintf(ftmp, "INSERT INTO %s (", ptbl->name);
+          for (hcx = 0; hcx < ptbl->ncol; hcx++) {
+            if ((!(ptbl->cols[hcx].flags & RTA_DISKSAVE)) ||
+              (ptbl->cols[hcx].flags & RTA_READONLY))
+              continue;
+            if (did_1_hcol)
+              fprintf(ftmp, ", %s", ptbl->cols[hcx].name);
+            else {
+              did_1_hcol = 1;
+              fprintf(ftmp, "%s", ptbl->cols[hcx].name);
+            }
+          }
+          fprintf(ftmp, ") VALUES (");
+        }
         did_header = 1;
       }
-      if (!did_1_col)
-        fprintf(ftmp, " %s ", ptbl->cols[cx].name);
-      else
-        fprintf(ftmp, ", %s ", ptbl->cols[cx].name);
+      if (did_1_col)
+        fprintf(ftmp, ", ");
+      if (!ptbl->insertcb)
+        fprintf(ftmp, "%s = ", ptbl->cols[cx].name);
 
       /* compute pointer to actual data */
       pd = (char *)pr + ptbl->cols[cx].offset;
       switch ((ptbl->cols[cx]).type) {
         case RTA_STR:
           if (memchr((char *) pd, '"', ptbl->cols[cx].length))
-            fprintf(ftmp, "= \'%s\'", (char *) pd);
+            fprintf(ftmp, "\'%s\'", (char *) pd);
           else
-            fprintf(ftmp, "= \"%s\"", (char *) pd);
+            fprintf(ftmp, "\"%s\"", (char *) pd);
           break;
         case RTA_PSTR:
           if (memchr((char *) pd, '"', ptbl->cols[cx].length))
-            fprintf(ftmp, "= \'%s\'", *(char **) pd);
+            fprintf(ftmp, "\'%s\'", *(char **) pd);
           else
-            fprintf(ftmp, "= \"%s\"", *(char **) pd);
+            fprintf(ftmp, "\"%s\"", *(char **) pd);
           break;
         case RTA_INT:
-          fprintf(ftmp, "= %d", *((int *) pd));
+          fprintf(ftmp, "%d", *((int *) pd));
           break;
         case RTA_PINT:
-          fprintf(ftmp, "= %d", **((int **) pd));
+          fprintf(ftmp, "%d", **((int **) pd));
           break;
         case RTA_LONG:
-          fprintf(ftmp, "= %lld", *((llong *) pd));
+          fprintf(ftmp, "%lld", *((llong *) pd));
           break;
         case RTA_PLONG:
-          fprintf(ftmp, "= %lld", **((llong **) pd));
+          fprintf(ftmp, "%lld", **((llong **) pd));
           break;
         case RTA_PTR:
 
           /* works only if INT and PTR are same size */
-          fprintf(ftmp, "= %d", *((int *) pd));
+          fprintf(ftmp, "%d", *((int *) pd));
           break;
         case RTA_FLOAT:
-          fprintf(ftmp, "= %20.10f", *((float *) pd));
+          fprintf(ftmp, "%20.10f", *((float *) pd));
           break;
         case RTA_PFLOAT:
-          fprintf(ftmp, "= %20.10f", **((float **) pd));
+          fprintf(ftmp, "%20.10f", **((float **) pd));
+          break;
+
+        case RTA_SHORT:
+          fprintf(ftmp, "%d", *((short *) pd));
+          break;
+        case RTA_UCHAR:
+          fprintf(ftmp, "%d", *((unsigned char *) pd));
+          break;
+        case RTA_DOUBLE:
+          fprintf(ftmp, "%20.10f", *((double *) pd));
           break;
       }
       did_1_col = 1;
     }
-    if (did_header)
-      fprintf(ftmp, " LIMIT 1 OFFSET %d\n", rx);
+    if (did_header) {
+      if (!ptbl->insertcb)
+        fprintf(ftmp, " LIMIT 1 OFFSET %d\n", rx);
+      else
+        fprintf(ftmp, ")\n");
+    }
     rx++;
     if (ptbl->iterator)
       pr = (ptbl->iterator) (pr, ptbl->it_info, rx);
@@ -592,9 +635,9 @@ rta_save(TBLDEF *ptbl, char *fname)
      target file.) */
   (void) fclose(ftmp);
   if (rename(tfile, path) != 0) {
-    rtastat.nsyserr++;
-    if (rtadbg.syserr)
-      rtalog(LOC, Er_No_Save, ptbl->name, path);
+    rta_stat.nsyserr++;
+    if (rta_dbg.syserr)
+      rta_log(LOC, Er_No_Save, ptbl->name, path);
     return (RTA_ERROR);
   }
   return (RTA_SUCCESS);
@@ -612,29 +655,30 @@ rta_save(TBLDEF *ptbl, char *fname)
  *         RTA_ERROR     - some kind of error
  **************************************************************/
 int
-rta_load(TBLDEF *ptbl, char *fname)
+rta_load(RTA_TBLDEF *ptbl, char *fname)
 {
-  extern struct RtaStat rtastat;
+  extern struct RtaStat rta_stat;
   FILE    *fp;         /* FILE handle to the load file */
   char    *savefilename; /* table's savefile name */
-  char     line[MX_LN_SZ]; /* input line from file */
-  char     reply[MX_LN_SZ]; /* response from SQL process */
+  char     line[RTA_MX_LN_SZ]; /* input line from file */
+  char     reply[RTA_MX_LN_SZ]; /* response from SQL process */
   int      nreply;     /* number of free bytes in reply */
   char     path[PATH_MAX];  /* full path/file name */
 
   /* We open the load file and read it one line at a time, executing
-     each line that contains "UPDATE" as the first word.  (Lines not
-     starting with UPDATE are comments.) Note that any write callbacks
-     associated with the table will be invoked. We hide the table's
-     save file name, if any, in order to prevent the system from trying 
-     to save the table before we are done loading it. */
+     each line that contains "UPDATE" or "INSERT" as the first word.
+     (Lines not starting with UPDATE or INSERT are comments.) Note
+     that any write callbacks associated with the table will be invoked.
+     We hide the table's save file name, if any, in order to prevent
+     the system from trying to save the table before we are done
+     loading it. */
 
 
   /* Fill in the path with the full path to the config file */
   path[0] = (char) 0;
   if (fname[0] == '/') {
     (void) strncpy(path, fname, PATH_MAX);
-    path[PATH_MAX] = (char) 0;
+    path[PATH_MAX -1] = (char) 0;
   }
   else {
     if (ConfigDir) {
@@ -647,9 +691,9 @@ rta_load(TBLDEF *ptbl, char *fname)
   /* Open the savefile of SQL UPDATE statements */
   fp = fopen(path, "r");
   if (fp == (FILE *) 0) {
-    rtastat.nsyserr++;
-    if (rtadbg.syserr)
-      rtalog(LOC, Er_No_Load, ptbl->name, path);
+    rta_stat.nsyserr++;
+    if (rta_dbg.syserr)
+      rta_log(LOC, Er_No_Load, ptbl->name, path);
     return (RTA_ERROR);
   }
 
@@ -658,18 +702,18 @@ rta_load(TBLDEF *ptbl, char *fname)
   ptbl->savefile = (char *) 0;
 
   /* process each line in the file */
-  while (fgets(line, MX_LN_SZ, fp)) {
-    /* A comment if first word is not "UPDATE " */
-    if (strncmp(line, "UPDATE ", 7))
+  while (fgets(line, RTA_MX_LN_SZ, fp)) {
+    /* A comment if first word is not UPDATE or INSERT */
+    if (strncmp(line, "UPDATE ", 7) && strncmp(line, "INSERT ", 7))
       continue;
 
-    nreply = MX_LN_SZ;
-    SQL_string(line, strlen(line), reply, &nreply);
-    if (!strncmp(line, "UPDATE 1", 8)) {
+    nreply = RTA_MX_LN_SZ;
+    rta_SQL_string(line, strlen(line), reply, &nreply);
+    if (!strncmp(line, "UPDATE 1", 8) && !strncmp(line, "INSERT", 6)) {
       /* SQL command failed! Report error */
-      rtastat.nsyserr++;
-      if (rtadbg.syserr)
-        rtalog(LOC, Er_No_Load, ptbl->name, fname);
+      rta_stat.nsyserr++;
+      if (rta_dbg.syserr)
+        rta_log(LOC, Er_No_Load, ptbl->name, fname);
       return (RTA_ERROR);
     }
   }
@@ -689,12 +733,16 @@ rta_load(TBLDEF *ptbl, char *fname)
  *
  * Return: 0 if not a reserved word,  1 if it is.
  **************************************************************/
-int
+static int
 is_reserved(char *pword)
 {
   return (!strcasecmp(pword, "SELECT") ||
           !strcasecmp(pword, "UPDATE") ||
+          !strcasecmp(pword, "DELETE") ||
+          !strcasecmp(pword, "INSERT") ||
+          !strcasecmp(pword, "VALUES") ||
           !strcasecmp(pword, "FROM") ||
+          !strcasecmp(pword, "INTO") ||
           !strcasecmp(pword, "WHERE") ||
           !strcasecmp(pword, "LIMIT") ||
           !strcasecmp(pword, "OFFSET") ||

@@ -31,7 +31,7 @@ struct MyData {
 struct MyData mydata[ROW_COUNT];
 
 
-COLDEF mycolumns[] = {
+RTA_COLDEF mycolumns[] = {
   {
     "mytable",          /* the table name */
     "myint",            /* the column name */
@@ -79,7 +79,7 @@ COLDEF mycolumns[] = {
 };
 
 
-TBLDEF mytbldef = {
+RTA_TBLDEF mytbldef = {
     "mytable",           /* table name */
     mydata,              /* address of table */
     sizeof(struct MyData), /* length of each row */
@@ -87,7 +87,7 @@ TBLDEF mytbldef = {
     (void *) NULL,       /* linear array; no need for an iterator */
     (void *) NULL,       /* no iterator callback data either */
     mycolumns,           /* array of column defs */
-    sizeof(mycolumns) / sizeof(COLDEF),
+    sizeof(mycolumns) / sizeof(RTA_COLDEF),
                          /* the number of columns */
     "",                  /* no save file */
     "A sample table"
@@ -153,7 +153,7 @@ int main()
                 connfd = -1;
             }
             outcnt = OUTSZ;
-            dbret = dbcommand(inbuf, &incnt, outbuf, &outcnt);
+            dbret = rta_dbcommand(inbuf, &incnt, outbuf, &outcnt);
             switch (dbret) {
                 case RTA_SUCCESS:
                     write(connfd, outbuf, (OUTSZ - outcnt));

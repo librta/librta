@@ -81,12 +81,12 @@ mounted under "/tmp/mydir".</p>
 <br> 
 <h3><a name="tbl">Table Definitions</a></h3>
 <p>We need to tell the RTA package about our table. To do this we need
-to build a COLDEF structure for each of the four columns, and to
-build a TBLDEF structure for "mydata", the array of structures.</p>
-<p>We use an array of four COLDEFs to describe our columns. This is
+to build a RTA_COLDEF structure for each of the four columns, and to
+build a RTA_TBLDEF structure for "mydata", the array of structures.</p>
+<p>We use an array of four RTA_COLDEFs to describe our columns. This is
 pretty simple:</p>
 <pre>
-COLDEF mycolumns[] = {
+RTA_COLDEF mycolumns[] = {
   {
     "mytable",          /* the table name */
     "myint",            /* the column name */
@@ -141,13 +141,13 @@ table name, column name, type, size, position in the struct, flags,
 read and write callbacks, and a short string to describe it.</p>
 <p>We define the table in a similar way:</p>
 <pre>
-TBLDEF mytbldef {
+RTA_TBLDEF mytbldef {
     "mytable",           /* table name */
     mydata,              /* address of table */
     sizeof(struct MyData), /* length of each row */
     ROW_COUNT,           /* number of rows */
     mycolumns,           /* array of column defs */
-    sizeof(mycolumns) / sizeof(COLDEF),
+    sizeof(mycolumns) / sizeof(RTA_COLDEF),
                          /* the number of columns */
     "",                  /* no save file */
     "A sample table"
@@ -234,7 +234,7 @@ understandable by getting it into as few lines as possible.</p>
 </pre>
 <p>The main loop in our program waits for a TCP connection from a
 client, then loops reading the Postgres encoded stream of SQL
-commands, processing them with dbcommand(), and then writing any
+commands, processing them with rta_dbcommand(), and then writing any
 results back to the client. While a connection can close for
 errors, we normally expect the client to request an orderly close
 to the connection.:</p>
@@ -254,7 +254,7 @@ to the connection.:</p>
                 connfd = -1;
             }
             outcnt = OUTSZ;
-            dbret = dbcommand(inbuf, &amp;incnt, outbuf, &amp;outcnt);
+            dbret = rta_dbcommand(inbuf, &amp;incnt, outbuf, &amp;outcnt);
             switch (dbret) {
                 case RTA_SUCCESS:
                     write(connfd, outbuf, (OUTSZ - outcnt));
@@ -307,10 +307,10 @@ to download, build, and run the sample application.</p>
 given above.  Untar it.  Go to the src directory
 and do a make.  </p>
 <pre>
-    # tar -xzf rta-0.7.4.tgz
-    # cd rta-0.7.4
+    # tar -xzf rta-0.8.0.tgz
+    # cd rta-0.8.0
     # cd src
-    # make librtadb.so.2
+    # make
 </pre>
 <p>Download the myappdb.c file (available 
 <a href=myappdb.c>here</a>).  Place the file
@@ -327,7 +327,7 @@ directory.</p>
 it where to find the shared object library.  From
 the <tt>test</tt> directory enter:</p>
 <pre>
-    # export LD_LIBRARY_PATH=/home/rta-0.7.4/src
+    # export LD_LIBRARY_PATH=/home/rta-0.8.0/src
     # ./myappdb &amp;
 </pre>
 <p>That is all there is to it.  Please use the contact
@@ -361,6 +361,9 @@ of these tables.</p>
            \g or terminate with semicolon to execute query
            \q to quit
 </pre>
+<p>(The PostgreSQL 8.x shell client, psql, will give a warning that
+the 8.x client might not be compatible with a 7.x server.  You
+can safely ignore this error message.)</p>
 <p>Let's try some SQL commands to play with the tables.</p>
 <p>Give me a list of the tables:</p>
 <pre>
@@ -455,10 +458,10 @@ into a variable for other processing.</p>
 rta_client.php</a>, illustrates how to get data out of our
 application from a PHP program.  You need the php-pgsql
 package to run this program.  If you are running Apache, check
-for the PHP interpreter in modules directory.  On RH8.0 look
-for libphp4.so in /etc/httpd/modules.  You can verify that the
+for the PHP interpreter in modules directory.
+You can verify that the
 PHP-Postgres library is loaded by checking for pgsql.so in the
-/usr/lib/php4 directory.  Clearly your configuration for PHP
+/usr/lib/php5 directory.  Clearly your configuration for PHP
 and Postgres may be different than what is described here. </p>
 <p>This program gets and displays the fields myint, myfloat,
 and notes for all twenty rows in the table.</p>

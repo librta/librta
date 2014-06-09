@@ -116,10 +116,11 @@ Postgres binding to query your table of TCP connections....</p>
     SELECT lport, dport FROM Conns WHERE fd != -1;
     UPDATE Conns SET dport = 0 WHERE fd = -1;
 </pre>
-<p>Only two commands, SELECT and UPDATE, are implemented, but they
+<p>Only four commands, SELECT, UPDATE, INSERT, and DELETE are
+implemented, but they
 give you tremendous power to interact with your program. The RTA
 SQL implementation includes a WHERE clause and both LIMIT and
-OFFSET. Say you want to allocate one <tt>tcpconn</tt> by setting
+OFFSET. Say you want to pull one <tt>tcpconn</tt> into use by setting
 the file descriptor to a non-negative number. The UPDATE part of
 the command would be 'UPDATE Conns SET fd=newfd'. To change only a
 row where the file descriptor is -1, we add 'WHERE fd=-1'. We want
@@ -188,12 +189,6 @@ information includes things like the associated table, the column
 name, the column's data type, and whether we want any special
 functions called when the column is read or written. Please see
  the Quick Start or the API reference for more details.</p>
-
-<p>
-      <a href="http://validator.w3.org/check/referer"><img border="0"
-          src="http://www.w3.org/Icons/valid-html401"
-          alt="Valid HTML 4.01!" height="31" width="88"></a>
-</p>
 
 </body>
 </html>
