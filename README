@@ -1,0 +1,21 @@
+"rta" gives you run time access to the data in your program.
+
+It is a specialized memory resident data base interface.
+It is not a stand-alone server but a library which attaches
+to your program and offers up your program's internal
+structures and arrays as data base tables. It uses a subset
+of the Postgres protocol and is compatible with the Postgres
+bindings for "C", PHP, and the Postgres command line tool,
+psql.
+
+For comparison: /proc is to the kernel is to a filesystem
+as rta is to your_program is to a Postgres data base.
+
+It is intended for embedded system developers and can 
+greatly simplify user-interface programs by separating the
+service from the UI programs.
+
+Please see http://www.linuxappliancedesign.com for more
+information and a working example.
+
+

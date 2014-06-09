@@ -1,0 +1,244 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+"http://www.w3.org
+/TR/REC-html401/loose.dtd">
+<html lang="en">
+<head>
+<title>rta: Embedded DB API</title>
+<style type="text/css">
+p {font-size: large;}
+th {font-size: large;}
+td {font-size: large;}
+pre {font-size: large;}
+h1 {font-family: sans-serif}
+h2 {font-family: sans-serif}
+h3 {font-family: sans-serif}
+</style>
+</head>
+<body>
+<table width="95%" summary="" align="center">
+<tr>
+<td valign="top" align="left"><font size="+1"><a href=
+ "index.html">Introduction</a><br>
+ <a href="FAQ.html">FAQ</a><br>
+ <a href="apiref.html">API Spec</a><br>
+ <a href="download.html">Download</a><br>
+ <a href="quickstart.html">Quick Start</a><br>
+ <a href="rta_tables.php">Live Demo</a><br>
+ <a href="contact.html">Contact Info</a><br></font></td>
+<td align="center" valign=bottom>
+ <h2>Run Time Access</h2></td>
+</tr></table>
+<h2>Frequently Asked Questions</h2> 
+<h3>General questions</h3>
+<ul compact type="circle">
+<li><a href="#q01">What is rta?</a></li>
+<li><a href="#q02">What is the purpose of rta?</a></li>
+<li><a href="#q03">So, is this a data base, or what?</a></li>
+<li><a href="#q04">Is this like the /proc filesystem?</a></li>
+<li><a href="#q05">Why PostgreSQL?</a></li>
+<li><a href="#q06">What SQL commands are implemented?</a></li>
+<li><a href="#q07">What SQL/Postgres commands are not
+implemented?</a></li>
+<li><a href="#q08">Why such a small subset of SQL?</a></li>
+<li><a href="#q09">Who should not use rta?</a></li>
+<li><a href="#q10">How big is it?</a></li>
+<li><a href="#q11">Do I need to know SQL to use rta?</a></li>
+<li><a href="#q12">How difficult is it to learn and use?</a></li>
+<li><a href="#q13">How do I report bugs?</a></li>
+<li><a href="#q14">Where can I get help?</a></li>
+<li><a href="#q15">Can I send you money?</a></li></ul>
+<h3>Building, modifying, and understanding rta</h3>
+<ul compact type="circle">
+<li><a href="#p13">What do I need to do to use rta in my
+program?</a></li>
+<li><a href="#p14">Why is there no "./configure" file?</a></li>
+<li><a href="#p15">What libraries, tools and include files are
+needed?</a></li>
+<li><a href="#p16">Do I need the Postgres libraries?</a></li>
+<li><a href="#p17">Can I link to it statically?</a></li>
+<li><a href="#p18">What has it been tested on?</a></li>
+<li><a href="#p19">Can I add my own data type?</a></li>
+<li><a href="#p20">Why are there "magic" numbers in the
+code?</a></li>
+<li><a href="#p21">Why are the pseudo-tables arrays of
+pointers?</a></li>
+<li><a href="#p22">Why do I get segmentation violations?</a></li>
+<li><a href="#p23">How can I change the size of a table?</a></li>
+<li><a href="#p24">Why use native data type instead of INT4 and
+INT8?</a></li>
+<li><a href="#p25">Why do I get: "error while loading shared libraries:
+librta.so.1:"</a></li>
+<li><a href="#p26">How big should I make the output buffer for
+dbcommand()?</a></li></ul>
+<hr>
+<h3>General questions</h3>
+<p><b><a name="q01">What is rta?</a></b><br>
+"rta" is a specialized memory resident data base interface. It is
+not a stand-alone data base server but a library which attaches to
+a program and offers up the program's internal structures and
+arrays as data base tables. It uses a subset of the Postgres
+protocol and is compatible with the Postgres bindings for "C", PHP,
+and the Postgres command line tool, psql.</p>
+<p><b><a name="q02">What is the purpose of rta?</a></b><br>
+It provides a means for external programs to view and edit the
+tables in your running program. This makes debugging easier and
+means that the user interface parts of your system can be kept
+apart from the core functionality.</p>
+<p><b><a name="q03">So, is this a data base, or what?</a></b><br>
+No, it is *not* a data base. It is an API which lets external
+programs view and edit your internal data as if the data were in a
+data base.</p>
+<p><b><a name="q04">Is this like the /proc filesystem?</a></b><br>
+Yes, in a way. The /proc system lets you view the kernel's internal
+data as if the data were stored in files in a filesystem. In a
+similar sense, rta lets you view your program's data as if it were
+tables in a data base. They accomplish the same thing but use
+different paradigms.</p>
+<p><b><a name="q05">Why PostgreSQL?</a></b><br>
+Mostly because both the design and the documentation of the
+PostgreSQL protocol are very clean. PostgreSQL offers a simple,
+well documented protocol to the client. (My thanks to the designers
+and tech-writers for PostgreSQL.)</p>
+<p><b><a name="q06">What SQL commands are implemented?</a></b><br>
+Only two: SELECT and UPDATE, and even then it is only a subset of
+the usual SELECT and UPDATE. See rta.h for the syntax details of
+the commands.</p>
+<p><b><a name="q07">What SQL/Postgres commands are not
+implemented?</a></b><br>
+This is not a data base. We do not implement INSERT or DELETE since
+tables are (for the most part) fixed in size. Nor do we have CREATE
+TABLE, ALTER TABLE, or DROP TABLE. The only PostgreSQL internal
+table we try to partially implement is "pg_user" which is part of
+the authentication process.<br>
+<br>
+Although "psql" will attach to a program with rta, none of the psql
+ backslash commands will work.</p>
+<p><b><a name="q08">Why such a small subset of SQL?</a></b><br>
+This is not a data base; it is an API. SELECT and UPDATE are the
+minimum needed to read and edit the data in your running program.</p>
+<p><b><a name="q09">Who should not use rta?</a></b><br>
+"rta" is great if you have data already arranged as structs or as
+array of structs. It is a little more difficult to use if you have
+lots of structs pointing to other structs pointing to other
+structs. That is, it is a good fit for simple tables of data and is
+not a good fit for a deeply nested tree structure of data.<br>
+<br>
+It is also best for single process applications where the data is
+in one memory space. For instance, it might not be a good fit for
+Apache which forks several equal, independent processes.</p>
+<p><b><a name="q10">How big is it?</a></b><br> The stripped
+shared-object library has 53KB and the static (.a) library has
+44KB.</p>
+<p><b><a name="q11">Do I need to know SQL to use rta?</a></b><br> Not
+really. There are only two commands and they match pretty well with
+the intuitive idea of "change this column in this table where ...".
+It is pretty simple.</p>
+<p><b><a name="q12">How difficult is it to learn and use?</a></b>
+<br>It is easy to learn. There are only two important data structures
+(one to describe a table and one to describe a column) and only six
+subroutines in the API. The tutorial elsewhere on this page should
+give you a pretty good idea of the simplicity of the approach.<br>
+It is simple but *may* require some effort on your part. Each table
+and each column in each table needs to be defined in a data
+structure. While simple, it can be a fair amount of work.</p>
+<p><b><a name="q13">How do I report bugs?</a></b><br>
+Please select "Contact Info" from the menu to the left to open a
+query form. Please give as much detail as possible.</p>
+<p><b><a name="q14">Where can I get help?</a></b><br>
+Please select "Contact Info" from the menu to the left to open a
+query form. Please give as much detail as possible.</p>
+<p><b><a name="q15">Can I send you money?</a></b><br>
+Please send bug reports and change requests. Send money to the Free
+Software Foundation.</p>
+<hr width="70%">
+<h3>Building, modifying, and understanding rta</h3>
+<p><b><a name="p13">What do I need to do to use rta in my
+program?</a></b><br>
+You need to describe each table you wish to make available. A table
+is an array of structures. Each member of the structure forms a
+column of the table. The table description includes attributes of
+the table in general and a description of each column in the table.
+See the sample application and the API reference for more
+detail.<br>
+<br>
+<p><b><a name="p14">Why is there no "./configure" file?</a></b><br>
+We hope to add autoconf and a configure script in a later release.
+(Please let us know if you would like to help with this
+effort.)</p>
+<p><b><a name="p15">What libraries, tools and include files are
+needed?</a></b><br>
+We use the following system include files: libgen.h, limits.h,
+stdarg.h, stddef.h, stdio.h, stdlib.h, string.h, syslog.h, and the
+following system and utility calls: closelog(), dirname(),
+fclose(), fdopen(), fgets(), fopen(), fprintf(), free(), malloc(),
+memchr(), mkstemp(), offsetof(), openlog(), rename(), snprintf(),
+sprintf(), sscanf(), strcat(), strcmp(), strcpy(), strlen(),
+strncmp(), strncpy(), strstr(), syslog(), va_arg(), va_end(),
+va_start(). You will need yacc and lex to build rta.</p>
+<p><b><a name="p16">Do I need the Postgres libraries?</a></b><br>
+Your application does not need any libraries or include files from
+the PostgreSQL distribution. Your client applications may need
+PostgreSQL libraries as appropriate.</p>
+<p><b><a name="p17">Can I link to it statically?</a></b><br>
+Yes, You can link to the .a file or just include the .c files in
+the build of your application.</p>
+<p><b><a name="p18">What has it been tested on?</a></b><br>
+So far, Linux 2.4.18 from a Red Hat 8.0 installation.</p>
+<p><b><a name="p19">Can I add my own data type?</a></b><br>
+Yes. You will need to modify the lex program to recognize the new
+data type as well as the .c files which print or compare its
+values.</p>
+<p><b><a name="p20">Why are there "magic" numbers in the
+code?</a></b><br>
+Several places in the code contain what seem like magic values.
+These are all related to the PostgreSQL protocol and should all be
+described by comments in the surrounding code.</p>
+<p><b><a name="p21">Why are the pseudo-tables arrays of
+pointers?</a></b><br>
+The short answer is to save memory. If rta_add_table() were to copy
+the table definition your application would have the definition two
+places in memory: internal to rta, and in your application code. By
+saving the pointers to the table and column definitions we avoid
+using lots of memory to duplicate data. Saving pointers has the
+second advantage of letting you change the table definition on the
+fly if needed.</p>
+<p><b><a name="p22">Why do I get segmentation
+violations?</a></b><br>
+We've tried very hard to eliminate memory leaks and segmentation
+violations from the rta package but some might have slipped
+through. A common source of problems is overrunning a string. Be
+sure to verify that your strings have the proper size specified in
+the column definitions.</p>
+<p><b><a name="p23">How can I change the size of a
+table?</a></b><br>
+Allocate enough memory to store the new, larger table. Copy the old
+table into the new space. Initialize the new rows added. Copy the
+address of the new table into the "address" field of the table
+definition and update the "nrows" field with the new number of
+rows.</p>
+<p><b><a name="p24">Why use native data type instead of INT4
+and INT8?</a></b><br>
+The idea is to give easy access to *your* data structures. Since
+most programmers use the native int, long long, and float, we do
+too.</p>
+<p><b><a name="p25">Why do I get "error while loading shared libraries:
+librta.so.1"?</a></b><br>
+You need to put the librta.so files into one of the system library
+directories or you need to something like "export
+LD_LIBRARY_PATH=../src" in order to let the application find the
+library.</p>
+<p><b><a name="p26">How big should I make the output buffer for
+dbcommand()?</a></b><br>
+It depends on the number of rows and the size and number of fields
+you request. You should be able to estimate the number of
+characters in your response. Assume that strings are returned with
+all bytes filled, that integers return 12 characters per field,
+longs return 24, and floats return 24. Thus if you request two
+integers, a 40 byte string and a float, you would need about
+40+(2*12)+24=88 bytes. The Postgres overhead per row returned is
+about 4 bytes. Make the output buffer for dbcommand() big enough to
+hold the maximum number of rows you want times the size of each
+row. Be sure to use LIMIT and OFFSET to step through a big list of
+returned rows.</p>
+</body>
+</html>

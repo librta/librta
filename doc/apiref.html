@@ -1,0 +1,873 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+"http://www.w3.org
+/TR/REC-html401/loose.dtd">
+<html lang="en">
+<head>
+<title>rta: Embedded DB API</title>
+<style type="text/css">
+p {font-size: large;}
+th {font-size: large;}
+td {font-size: large;}
+pre {font-size: large;}
+h1 {font-family: sans-serif}
+h2 {font-family: sans-serif}
+h3 {font-family: sans-serif}
+</style>
+</head>
+<body>
+<table width="95%" summary="" align="center">
+<tr>
+<td valign="top" align="left"><font size="+1"><a href=
+ "index.html">Introduction</a><br>
+ <a href="FAQ.html">FAQ</a><br>
+ <a href="apiref.html">API Spec</a><br>
+ <a href="download.html">Download</a><br>
+ <a href="quickstart.html">Quick Start</a><br>
+ <a href="rta_tables.php">Live Demo</a><br>
+ <a href="contact.html">Contact Info</a><br></font></td>
+<td align="center" valign=bottom>
+ <h2>Run Time Access</h2></td>
+</tr></table>
+<h2>API Specification</h2> 
+<h3><a name="Preamble">- Preamble</a></h3>
+<p> "rta" is a specialized memory resident data base interface. It is
+not a stand-alone server but a library which attaches to your
+program and offers up the program's internal structures and arrays
+as data base tables. It uses a subset of the Postgres protocol and
+is compatible with the Postgres bindings for "C", PHP, and the
+Postgres command line tool, psql.</p>
+<p>This page contains the defines, structures, and function
+prototypes for the 'rta' package. The information in this page is
+taken from the rta.h file in the rta package. The rta.h file is the
+authoritative reference to the API.</p>
+<table summary="">
+<tr>
+<td valign="top" colspan="2" rowspan="10">INDEX:</td></tr>
+<tr>
+<td></td></tr>
+<tr>
+<td></td>
+<td><a href="#Preamble">- Preamble</a></td></tr>
+<tr>
+<td></td>
+<td><a href="#Limits">- Limits</a></td></tr>
+<tr>
+<td></td>
+<td><a href="#Structures">- Data Structures</a></td></tr>
+<tr>
+<td></td>
+<td><a href="#Subroutines">- Subroutines</a></td></tr>
+<tr>
+<td></td>
+<td><a href="#Syntax">- rta UPDATE and SELECT syntax</a></td></tr>
+<tr>
+<td></td>
+<td><a href="#Internal">- Internal DB tables</a></td></tr>
+<tr>
+<td></td>
+<td><a href="#Messages">- List of all error messages</a></td></tr>
+<tr>
+<td></td>
+<td><a href="#Callbacks">- How to write callback
+routines</a></td></tr></table>
+<hr width="70%">
+<h3><a name="Limits">- Limits</a></h3>
+ <p>Here are the defines which describe the internal limits set in the
+rta package. You are welcome to change these limits; just be sure
+to recompile the rta package using your new settings.</p>
+<table summary="defines used to set limits in rta" width="95%">
+<tr>
+<th>#define</th>
+<th>Value</th>
+<th>Description</th></tr>
+<tr>
+<td valign="top">MX_TBL</td>
+<td valign="top">500</td>
+<td>Maximum number of tables allowed in the system. Your data base
+may not contain more than this number of tables.</td></tr>
+<tr>
+<td valign="top">MX_COL</td>
+<td valign="top">2500</td>
+<td>Maximum number of columns allowed in the system. Your data base
+may not contain more than this number of columns.</td></tr>
+<tr>
+<td valign="top">MXCOLNAME</td>
+<td valign="top">30</td>
+<td rowspan="4">Maximum number of characters in a column name,
+table name, help text, and path to the save file. See TBLDEF and
+COLDEF below.</td></tr>
+<tr>
+<td valign="top">MXTBLNAME</td>
+<td valign="top">30</td></tr>
+<tr>
+<td valign="top">MXHELPSTR</td>
+<td valign="top">1000</td></tr>
+<tr>
+<td valign="top">MXFILENAME</td>
+<td valign="top">PATH_MAX</td></tr>
+<tr>
+<td valign="top">MXDBGIDENT</td>
+<td valign="top">20</td>
+<td>Maximum number of characters in the 'ident' field of the
+openlog() call. See the rta_dbg table below.</td></tr>
+<tr>
+<td valign="top">MX_LN_SZ</td>
+<td valign="top">1500</td>
+<td>Maximum line size. SQL commands in save files may contain no
+more than MX_LN_SZ characters. Lines with more than MX_LN_SZ
+characters are silently truncated to MX_LN_SZ characters.</td></tr>
+<tr>
+<td valign="top">NCMDCOLS</td>
+<td valign="top">40</td>
+<td>Maximum number of columns allowed in a table.</td></tr>
+<tr>
+<td valign="top"></td>
+<td valign="top"></td>
+<td></td></tr></table>
+<hr width="70%">
+<h3><a name="Structures">- Data Structures</a></h3>
+<p>Each column and table in the data base must be described in a data
+structure. Here are the data structures and associated defines to
+describe tables and columns.</p>
+<p>The column definition (COLDEF) structure describes one column of
+a table. A table description has an array of COLDEFs to describe
+the columns in the table.</p>
+<table summary="the COLDEF structure" width="95%">
+<caption>The COLDEF Structure</caption>
+<tr>
+<th>Type/Name</th>
+<th>Description</th></tr>
+<tr>
+<td valign="top">char&nbsp;*table</td>
+<td>The name of the table that has this column.</td></tr>
+<tr>
+<td valign="top">char&nbsp;*name</td>
+<td>The name of the column. Must be at most MXCOLNAME characters in
+length and must be unique within a table. The same column name may
+be used in more than one table.</td></tr>
+<tr>
+<td valign="top">int&nbsp;type</td>
+<td>The data type of the column. Must be int, long, string, pointer
+to void, pointer to int, pointer to long, or pointer to string. The
+DB types are defined immediately following this
+structure.</td></tr>
+<tr>
+<td valign="top">int&nbsp;length</td>
+<td>The number of bytes in the string if the above type is RTA_STR
+or RTA_PSTR.</td></tr>
+<tr>
+<td valign="top">int&nbsp;offset</td>
+<td>Number of bytes from the start of the structure to this column.
+For example, a structure with an int, a 20 character string, and a
+long, would have the offset of the long set to 24. Use of the
+function offsetof() is encouraged. If you have structure members
+that do not start on word boundaries and you do not want to use
+offsetof(), then consider using -fpack-struct with gcc.</td></tr>
+<tr>
+<td valign="top">int&nbsp;flags</td>
+<td>Boolean flags which describe attributes of the columns. The
+flags are defined after this structure and include a "read-only"
+flag and a flag to indicate that updates to this column should
+cause a table save. (See table savefile described below.)</td></tr>
+<tr>
+<td valign="top">void&nbsp;(*readcb)&nbsp;()</td>
+<td>Read callback. This routine is called before the column value
+is used. Input values include the table name, the column name, the
+input SQL command, and the (zero indexed) row number for the row
+that is being read. This routine is called *each* time the column
+is read so the following would produce two calls:<br>
+ SELECT intime FROM inns WHERE intime &gt;= 100;</td></tr>
+<tr>
+<td valign="top">void&nbsp;(*writecb)&nbsp;()</td>
+<td>Write callback. This routine is called after an UPDATE in which
+the column is written. Input values include the table name, the
+column name, the SQL command, and the (zero indexed) row number of
+the the row that changed. See the callback section below. This
+routine is called only once after all column updates have occurred.
+For example, if there were a write callback attached to the addr
+column, the following SQL statement would cause the execution of
+the write callback once after both mask and addr have been written:
+UPDATE ethers SET mask="255.255.255.0", addr = \ "192.168.1.10"
+WHERE name = "eth1"; The callback is called for each row
+modified.</td></tr>
+<tr>
+<td valign="top">char&nbsp;*help</td>
+<td>A brief description of the column. This should include the
+meaning of the data in the column, the limits, if any, and the
+default values. Include a brief description of the side effects of
+changes. This field is particularly important for tables which are
+part of the "boundary" between the UI developers and the
+application programmers.</td></tr></table>
+<table summary="COLDEF flags and data types" width="95%">
+<caption>COLDEF Types and Flags</caption>
+<tr>
+<td valign="top">RTA_STR</td>
+<td>String refers to an array of char. The 'length' of column must
+contain the number of bytes in the array.</td></tr>
+<tr>
+<td valign="top">RTA_PSTR</td>
+<td>Pointer to string. Pointer to an array of char, or a (**char).
+Note that the column length should be the number of bytes in the
+string, not a sizeof(char *).</td></tr>
+<tr>
+<td valign="top">RTA_INT</td>
+<td>Integer. This is the compiler/architecture native integer. On
+Linux/gcc/Pentium an integer is 32 bits.</td></tr>
+<tr>
+<td valign="top">RTA_PINT</td>
+<td>Pointer to integer.</td></tr>
+<tr>
+<td valign="top">RTA_LONG</td>
+<td>Long. This is the compiler/architecture native long long. On
+Linux/gcc/Pentium a long long is 64 bits.</td></tr>
+<tr>
+<td valign="top">RTA_PLONG</td>
+<td>Pointer to long.</td></tr>
+<tr>
+<td valign="top">RTA_FLOAT</td>
+<td>Float. This is the compiler/architecture native
+float.</td></tr>
+<tr>
+<td valign="top">RTA_PFLOAT</td>
+<td>Pointer to float.</td></tr>
+<tr>
+<td valign="top">RTA_PTR</td>
+<td>Pointer to void. Use for generic pointers</td></tr>
+<tr>
+<td valign="top">RTA_DISKSAVE</td>
+<td>Flag: If the disksave bit is set any writes to the column
+causes the table to be saved to the "savefile". See savefile
+described in the TBLDEF section below.</td></tr>
+<tr>
+<td valign="top">RTA_READONLY</td>
+<td>Flag: If the readonly flag is set, any writes to the column
+will fail and a debug log message will be sent. (For unit test you
+may find it very handy to leave this bit clear to get better test
+coverage of the corner cases.)</td></tr></table>
+<br>
+<br>
+ 
+<p>The table definition (TBLDEF) structure describes a table and is
+passed into the DB system by the rta_add_table() subroutine.</p>
+<table summary="the TBLDEF structure" width="95%">
+<caption>The TBLDEF Structure</caption>
+<tr>
+<th>Type/Name</th>
+<th>Description</th></tr>
+<tr>
+<td valign="top">char&nbsp;*name</td>
+<td>The name of the table. Must be less than than MXTLBNAME
+characters in length. Must be unique within the DB.</td></tr>
+<tr>
+<td valign="top">void&nbsp;*address</td>
+<td>Address of the first element of the first row of the array of
+struct that make up the table.</td></tr>
+<tr>
+<td valign="top">int&nbsp;rowlen</td>
+<td>The number of bytes in each row of the table. This is usually a
+sizeof() of the structure associated with the table. (The idea is
+that we can get to data element E in row R with ... data =
+*(address + (R * rowlen) + offset(E))</td></tr>
+<tr>
+<td valign="top">int&nbsp;nrows</td>
+<td>Number of rows in the table.</td></tr>
+<tr>
+<td valign="top">COLDEF&nbsp;*cols</td>
+<td>An array of COLDEF structures which describe the columns in the
+table. These must be in statically allocated memory since the rta
+system references them while running.</td></tr>
+<tr>
+<td valign="top">int&nbsp;ncol</td>
+<td>The number of columns in the table. That is, the number of
+COLDEFs defined by 'cols'.</td></tr>
+<tr>
+<td valign="top">char&nbsp;*savefile</td>
+<td>Save file. Path and name of a file which stores the
+non-volatile part of the table. The file has all of the UPDATE
+statements needed to rebuild the table. The file is rewritten in
+its entirety each time a 'savetodisk' column is updated. No file
+save is attempted if the savefile is blank.</td></tr>
+<tr>
+<td valign="top">char&nbsp;*help</td>
+<td>Help text. A description of the table, how it is used, and what
+its intent is. A brief note to describe how it relate to other
+parts of the system and description of important callbacks is nice
+thing to include here.</td></tr></table>
+<hr width="70%">
+<h3><a name="Subroutines">- Subroutines</a></h3>
+ <p>Here is a summary of the few routines in the rta API:</p>
+<table summary="list of API subroutines">
+<tr>
+<td>rta_init()</td>
+<td>initialize internal tables</td></tr>
+<tr>
+<td>dbcommand()</td>
+<td>I/F to Postgres clients</td></tr>
+<tr>
+<td>egp_add_table()</td>
+<td>add a table and its columns to the DB</td></tr>
+<tr>
+<td>SQL_string()</td>
+<td>execute an SQL statement in the DB</td></tr>
+<tr>
+<td>rta_save()</td>
+<td>save a table to a file</td></tr>
+<tr>
+<td>rta_load()</td>
+<td>load a table from a file</td></tr></table>
+<br>
+<br>
+ 
+<p><b>rta_init() - Initialize internal tables</b><br>
+ Initialize all rta internal variables and tables. It has no
+calling parameters and returns void.</p>
+<pre>
+void
+rta_init();
+</pre>
+<br>
+<br>
+
+<p><b>dbcommand() - Depacketize and execute Postgres
+commands</b><br>
+ The main application accepts TCP connections from Postgres clients
+and passes the stream of bytes (encoded SQL requests) from the
+client into the rta system via this routine. If the input buffer
+contains a complete command, it is executed, nin is decrement by
+the number of bytes consumed, and RTA_SUCCESS is returned. If there
+is not a complete command, RTA_NOCMD is returned and no bytes are
+removed from the input buffer. If a command is executed, the
+results are encoded into the Postgres protocol and placed in the
+output buffer. When the routine is called the input variable, nout,
+has the number of free bytes available in the output buffer, out.
+When the routine returns nout has been decremented by the size of
+the response placed in the output buffer. An error message is
+generated if the number of available bytes in the output buffer is
+too small to hold the response from the SQL command.</p>
+<pre>
+int
+dbcommand(char *cmd - the buffer with the Postgres packet
+          int  *nin - on entry, the number of bytes in 'cmd',
+                      on exit, the number of bytes remaining in cmd
+          char *out - the buffer to hold responses back to client
+          int  *nout - on entry, the number of free bytes in 'out'
+                       on exit, the number of remaining free bytes)
+Return: RTA_SUCCESS   - executed one command
+        RTA_NOCMD     - input did not have a full cmd
+        RTA_CLOSE     - client requests a orderly close
+</pre>
+<br>
+<br>
+
+<p><b>rta_add_table() - Add table to DB</b><br>
+Registers a table for inclusion in the DB interface. Adding a table
+allows external Postgres clients access to the table's content.
+Note that the TBLDEF structure must be statically allocated. The DB
+system keeps just the pointer to the table and does not copy the
+information. This means that you can change the contents of the
+table definition by changing the contents of the TBLDEF structure.
+This might be useful if you need to allocate more memory for the
+table and change its row count and address. An error is returned if
+another table by the same name already exists in the DB or if the
+table is defined without any columns. If a 'savefile' is specified,
+it is loaded. (See the rta_load() command below for more
+details.)</p>
+<pre>
+int
+rta_add_table(TBLDEF *ptbl  -pointer to the TBLDEF to add);
+Return: RTA_SUCCESS   - table added
+        RTA_ERROR     - error
+</pre>
+<br>
+<br>
+
+<p><b>SQL_string()- Execute single SQL command</b><br>
+ Executes the SQL command placed in the null-terminated string,
+cmd. The results are encoded into the Postgres protocol and placed
+in the output buffer. When the routine is called the input
+variable, nout, has the number of free bytes available in the
+output buffer, out. When the routine returns nout has been
+decremented by the size of the response placed in the output
+buffer. An error message is generated if the number of available
+bytes in the output buffer is too small to hold the response from
+the SQL command.</p>
+<p>This routine may be most useful when updating a table value in
+order to invoke the write callbacks. (The output buffer has the
+results encoded in the Postgres protocol and might not be too
+useful directly.)</p>
+<pre>
+void
+SQL_string(char *cmd - the buffer with the SQL command
+           char *out - the buffer to hold responses back to client,
+           int *nout - on entry, the number of free bytes in 'out'
+                       on exit, the number of remaining free bytes);
+</pre>
+<br>
+<br>
+
+<p><b>rta_save() - Save table to file</b><br>
+ Saves all "savetodisk" columns to the path/file specified. Only
+savetodisk columns are saved. The resultant file is a list of
+UPDATE commands containing the desired data. There is one UPDATE
+command for each row in the table.</p>
+<p>This routine tries to minimize exposure to corrupted save files
+by opening a temp file in the same directory as the target file.
+The data is saved to the temp file and the system call rename() is
+called to atomically move the temp to the save file. Errors are
+generated if rta_save can not open the temp file or is unable to
+rename() it.</p>
+<p>As a general warning, note that any disk I/O can cause a program
+to block briefly and so saving and loading tables might cause your
+program to block.</p>
+<pre>
+int
+rta_save(TBLDEF *ptbl - pointer to the TBLDEF structure for the
+                        table to save,
+         char *fname  - null terminated string with the path and
+                        file name for the stored data);
+Return: RTA_SUCCESS   - table saved
+        RTA_ERROR     - some kind of error
+</pre>
+<p><b>rta_load() - Load table from file</b><br>
+Load a table from a file of UPDATE commands. The file format is a
+series of UPDATE commands with one command per line. Any write
+callbacks are executed as the update occurs.</p>
+<pre>
+int
+rta_load(TBLDEF *ptbl   - pointer to the table to be loaded,
+         char *fname  - string with name of the load file);
+Return: RTA_SUCCESS   - table loaded
+        RTA_ERROR     - could not open the file specified
+</pre>
+
+<hr width="70%">
+<h3><a name="Syntax">- rta UPDATE and SELECT syntax</a></h3>
+<p>rta IS AN API, *NOT* A DATABASE!</p>
+<p>Neither the rta UPDATE nor the rta SELECT adhere to the Postgres
+equivalents. Joins are not allowed, and the WHERE clause supports
+only the AND relation. There are no locks or transactions.</p>
+<pre>
+<b>SELECT:
+    SELECT column_list FROM table [where_clause] [limit_clause]
+</b>
+</pre>
+<p>SELECT supports multiple columns, '*', LIMIT, and OFFSET. At
+most MXCMDCOLS columns can be specified in the select list or in
+the WHERE clause. LIMIT restricts the number of rows returned to
+the number specified. OFFSET skips the number of rows specified and
+begins output with the next row. 'column_list' is a '*' or
+'column_name [, column_name ...]'. 'where_clause' is 'col_name =
+value [AND col_name = value ..]' in which all col=val pairs must
+match for a row to match.</p>
+<p>LIMIT and OFFSET are very useful to prevent a buffer overflow on
+the output buffer of dbcommand(). They are also very useful for web
+based user interfaces in which viewing the data a page-at-a-time is
+desirable.</p>
+<p>Column and table names are case sensitive. If a column or table
+name is one of the reserved words it must be placed in quotes when
+used. The reserved words are: AND, FROM, LIMIT, OFFSET, SELECT,
+SET, UPDATE, and WHERE. Reserved words are *not* case sensitive.
+You may use lower case reserved words in your names.</p>
+<p>Comparison operator in the WHERE clause include =, |=, &gt;=, &lt;=,
+&gt;, and &lt;.</p>
+<p>You can use a reserved word, like OFFSET, as a column name but
+you will need to quote it whenever you reference it in an SQL
+command (SELECT "offset" FROM tunings ...). Strings may contain any
+of the !@#$%^&amp;*()_+-={}[]\|:;&lt;&gt;?,./~` characters. If a
+string contains a double quote, use a single quote to wrap it (eg
+'The sign says "Hi mom!"'), and use double quotes to wrap a string
+with embedded single quotes.</p>
+<p>Examples:</p>
+<pre>
+ SELECT * FROM rta_tables
+
+ SELECT destIP FROM conns WHERE fd != 0
+
+ SELECT destIP FROM conns WHERE fd != 0 AND lport = 80
+
+ SELECT destIP, destPort FROM conns
+       WHERE fd != 0 
+       LIMIT 100 OFFSET 0
+ 
+ SELECT destIP, destPort FROM conns
+       WHERE fd != 0
+       LIMIT 100 OFFSET 0
+</pre>
+
+<pre>
+<b>UPDATE:
+    UPDATE table SET update_list [where_clause] [limit_clause]
+</b>
+</pre>
+
+<p>UPDATE writes values into a table. The update_list is of the
+form 'col_name = val [, col_name = val ...]. The WHERE and LIMIT
+clauses are as described above.</p>
+<p>An update invokes write callbacks on the affected columns. All
+data in the row is written before the callbacks are called.</p>
+<p>The LIMIT clause for updates is not standard Postgres SQL, but
+can be really useful for stepping through a table one row at a
+time. To change only the n'th row of a table, use a limit clause
+like 'LIMIT 1 OFFSET n' (n is zero-indexed).</p>
+<p>Examples:</p>
+<pre>
+ UPDATE conn SET lport = 0;
+
+ UPDATE ethers SET mask = "255.255.255.0",  
+                   addr = "192.168.1.10"    
+               WHERE name = "eth0"
+
+ UPDATE conn SET usecount = 0 WHERE fd != 0 AND lport = 21
+</pre>
+
+<hr width="70%">
+<h3><a name="Internal">- Internal DB tables</a></h3>
+<p>The rta API has five tables visible to the application:</p>
+<table summary="">
+<tr>
+<td rowspan="5">&nbsp;&nbsp;&nbsp;</td>
+<td>rta_tables:</td>
+<td>- a table of all tables in the DB</td></tr>
+<tr>
+<td>rta_columns:</td>
+<td>- a table of all columns in the DB</td></tr>
+<tr>
+<td>pg_user:</td>
+<td>- spoof of Postgres table needed to log on</td></tr>
+<tr>
+<td>rta_dbg:</td>
+<td>- controls what gets logged from rta</td></tr>
+<tr>
+<td>egp_stats:</td>
+<td>- simple usage and error statistics</td></tr></table>
+<p>The rta_tables table gives SQL access to all internal and
+registered tables. The data in the table is exactly that of the
+TBLDEF structures registered with rta_add_table(). This table is
+used for the generic table editor application. The columns of
+rta_tables are:</p>
+<table summary="">
+<tr>
+<td rowspan="8">&nbsp;&nbsp;&nbsp;</td>
+<td>name</td>
+<td>- the name of the table</td></tr>
+<tr>
+<td>address</td>
+<td>- the start address of the table in memory</td></tr>
+<tr>
+<td>rowlen</td>
+<td>- number of bytes in each row of the table</td></tr>
+<tr>
+<td>nrows</td>
+<td>- number of rows in the table</td></tr>
+<tr>
+<td>cols</td>
+<td>- pointer to array of column definitions</td></tr>
+<tr>
+<td>ncol</td>
+<td>- number of columns in the table</td></tr>
+<tr>
+<td>savefile</td>
+<td>- the file used to store non-volatile columns</td></tr>
+<tr>
+<td>help</td>
+<td>- a description of the table</td></tr></table>
+<br>
+<br>
+ 
+<p>The rta_columns table has the column definitions of all columns
+in the DB. The data in the table is exactly that of the COLDEF
+structures registered with rta_add_table(). This table is used for
+the generic table editor. The columns of rta_columns are:</p>
+<table summary="">
+<tr>
+<td rowspan="9">&nbsp;&nbsp;&nbsp;</td>
+<td>table</td>
+<td>- the name of the column's table</td></tr>
+<tr>
+<td>name</td>
+<td>- name of the column</td></tr>
+<tr>
+<td>type</td>
+<td>- column's data type</td></tr>
+<tr>
+<td>length</td>
+<td>- number of bytes columns data type</td></tr>
+<tr>
+<td>offset</td>
+<td>- number of bytes from start of structure</td></tr>
+<tr>
+<td>flags</td>
+<td>- Bit field for 'read-only' and 'savetodisk'</td></tr>
+<tr>
+<td>readcb</td>
+<td>- pointer to subroutine called before reads</td></tr>
+<tr>
+<td>writecb</td>
+<td>- pointer to subroutine called after writes</td></tr>
+<tr>
+<td>help</td>
+<td>- a description of the column</td></tr></table>
+<br>
+<br>
+ 
+<p>The pg_user table is provided to complete the connection
+protocol between Postgres clients and the rta package. It
+authenticates the connecting user. We spoof the protocol by using a
+read callback to add the user into the table before checking if the
+user is valid. In this way *any* user who connects is in the table
+and so is authenticated. (One future enhancement to rta might be to
+do real Postgres style authentication.) The columns of pg_user
+are:</p>
+<table summary="">
+<tr>
+<td rowspan="8">&nbsp;&nbsp;&nbsp;</td>
+<td>usename</td>
+<td>- spoofed to match any requested name</td></tr>
+<tr>
+<td>usesysid</td>
+<td>- 100</td></tr>
+<tr>
+<td>usecreatedb</td>
+<td>- 'f'</td></tr>
+<tr>
+<td>usetrace</td>
+<td>- 'f'</td></tr>
+<tr>
+<td>usesuper</td>
+<td>- 'f'</td></tr>
+<tr>
+<td>usecatupd</td>
+<td>- 'f'</td></tr>
+<tr>
+<td>passwd</td>
+<td>- "******"</td></tr>
+<tr>
+<td>valuntil</td>
+<td>- ""</td></tr></table>
+<br>
+<br>
+ 
+<p>The rta_dbgconfig table controls which errors generate debug log
+messages. See the logging section below for the exact mapping. The
+rta package generates no user level log messages, only debug
+messages. All of the fields in this table are volatile. You will
+need to set the values in your main program to make them seem
+persistent. (Try something like "SQL_string("UPDATE rta_dbgconfig
+SET dbg ....").) The columns of rta_dbgconfig are:</p>
+<table summary="">
+<tr>
+<td rowspan="8">&nbsp;&nbsp;&nbsp;</td>
+<td valign="top">syserr</td>
+<td>- integer, 0 means no log, 1 means log. This logs OS call
+errors like malloc() failures. Default is 1.</td></tr>
+<tr>
+<td valign="top">rtaerr</td>
+<td>- integer, 0 means no log, 1 means log. Enables logging of
+errors internal to the rta package itself. Default is 1.</td></tr>
+<tr>
+<td valign="top">sqlerr</td>
+<td>- integer, 0 means no log, 1 means log. Log any SQL request
+which generates an error reply. Error replies occur if an SQL
+request is malformed or if it requests a non-existent table or
+column. Default is 1. (SQL errors are usually client programming
+errors.)</td></tr>
+<tr>
+<td valign="top">trace</td>
+<td>- integer, 0 means no log, 1 means log all SQL requests.
+Default is 0.</td></tr>
+<tr>
+<td valign="top">target</td>
+<td>- 0: disable all debug logging<br>
+ 1: log debug messages to syslog()<br>
+ 2: log debug messages to stderr<br>
+ 3: log to both syslog() and stderr<br>
+ The default is 1. Setting the facility causes a close and an open
+of syslog().</td></tr>
+<tr>
+<td valign="top">priority</td>
+<td>- integer. Syslog() requires a priority as part of all log
+messages. This specifies the priority to use when sending rta debug
+messages. Changes to this do not take effect until dbg_target is
+updated.<br>
+ 0: LOG_EMERG<br>
+ 1: LOG_ALERT<br>
+ 2: LOG_CRIT<br>
+ 3: LOG_ERR<br>
+ 4: LOG_WARNING<br>
+ 5: LOG_NOTICE<br>
+ 6: LOG_INFO<br>
+ 7: LOG_DEBUG<br>
+ Default is 3.</td></tr>
+<tr>
+<td valign="top">facility</td>
+<td>- integer. Syslog() requires a facility as part of all log
+messages. This specifies the facility to use when sending rta debug
+messages. It is best to use the defines in .../sys/syslog.h to set
+this. The default is LOG_USER. Changes to this do not take effect
+until dbg_target is updated.</td></tr>
+<tr>
+<td valign="top">ident</td>
+<td>- string. Syslog() requires an 'ident' string as part of all
+log messages. This specifies the ident string to use when sending
+rta debug messages. This is normally set to the process or command
+name. The default is "rta". Changes to this do not take effect
+until dbg_target is updated. This can be at most MXDBGIDENT
+characters in length.</td></tr></table>
+<br>
+<br>
+ 
+<p>The rta_stat table contains usage and error statistics which
+might be of interest to developers. All fields are of type long,
+are read-only, and are set to zero by rta_init(). The columns of
+rta_stats are:</p>
+<table summary="">
+<tr>
+<td rowspan="8">&nbsp;&nbsp;&nbsp;</td>
+<td>nsyserr</td>
+<td>- count of failed OS calls.</td></tr>
+<tr>
+<td>nrtaerr</td>
+<td>- count of internal rta failures.</td></tr>
+<tr>
+<td>nsqlerr</td>
+<td>- count of SQL failures.</td></tr>
+<tr>
+<td>nauth</td>
+<td>- count of authorizations. (==#connections)</td></tr>
+<tr>
+<td>nupdate</td>
+<td>- count of UPDATE requests</td></tr>
+<tr>
+<td>nselect</td>
+<td>- count of SELECT requests</td></tr></table>
+<br>
+<br>
+ 
+<hr width="70%">
+<h3><a name="Messages">- List of all error messages</a></h3>
+<p>There are two types of error messages available in the rta
+package. The first type is the error messages returned in response
+to a failed SQL request. The messages of this type are:</p>
+<table summary="" width="95%">
+<tr>
+<td valign="top" rowspan="2">1)</td>
+<td><tt>"ERROR: Relation '%s' does not exist"</tt></td></tr>
+<tr>
+<td>This reply indicates that a table requested in a SELECT,
+UPDATE, or WHERE clause does not exist. The %s is replaced by the
+name of the requested table.</td></tr>
+<tr>
+<td valign="top" rowspan="2">2)</td>
+<td><tt>"ERROR: Attribute '%s' not found\n"</tt></td></tr>
+<tr>
+<td>This reply indicates that a column requested in a SELECT.
+UPDATE, or WHERE clause does not exist. The %s is replaced by the
+name of the requested column.</td></tr>
+<tr>
+<td valign="top" rowspan="2">3)</td>
+<td><tt>"ERROR: SQL parse error"</tt></td></tr>
+<tr>
+<td>This reply indicates a mal-formed SQL request or a mis-match in
+the types of data in a WHERE clause or in an UPDATE list.</td></tr>
+<tr>
+<td valign="top" rowspan="2">4)</td>
+<td><tt>"ERROR: Output buffer full"</tt></td></tr>
+<tr>
+<td>This reply indicates that the size of the response to a request
+exceeds the size of the output buffer. See dbcommand() and the
+'out' and 'nout' parameters. This error can be avoided with a large
+enough output buffer or, preferably, with the use of LIMIT and
+OFFSET.</td></tr>
+<tr>
+<td valign="top" rowspan="2">5)</td>
+<td><tt>"ERROR: String too long for '%s'"</tt></td></tr>
+<tr>
+<td>This reply indicates that an UPDATE to a column of type string
+or pointer to string would have exceeded the width of the column.
+The %s is replaced by the column name.</td></tr>
+<tr>
+<td valign="top" rowspan="2">6)</td>
+<td><tt>"ERROR: Can not update read-only column
+'%s'"</tt></td></tr>
+<tr>
+<td>This reply indicates that an attempt to UPDATE a column marked
+as read-only. The %s is replaced by the column
+name.</td></tr></table>
+<p>The other type of error messages are internal debug messages.
+Debug messages are logged using the standard syslog() facility
+available on all Linux systems. The default syslog "facility" used
+is LOG_USER but this can be changed by setting 'facility' in the
+rta_dbg table.</p>
+<p>You are welcome to modify syslogd in order to do post processing
+such as generating SNMP traps off these debug messages. All error
+messages of this type are send to syslog() as: "egp[PID]: FILE
+LINE#: error_message", where PID, FILE, and LINE# are replaced by
+the process ID, the source file name, and the line number where the
+error was detected.</p>
+<p>Following are the defines used to generate these debug and error
+messages. These are the messages that will appear in the syslog and
+on the stderr output. The "%s %d" at the start of each error string
+is replaced by the file name and line number where the error is
+detected.</p>
+<pre>
+         "System" errors 
+"%s %d: Can not allocate memory\n"
+"%s %d: Table save failure.  Can not open %s\n"
+"%s %d: Table load failure.  Can not open %s\n"
+
+         "RTA" errors 
+"%s %d: Too many tables in DB\n"
+"%s %d: Too many columns in DB\n"
+"%s %d: Too many characters in table name: %s\n"
+"%s %d: Too many characters in column name: %s\n"
+"%s %d: Too many characters in help text: %s\n"
+"%s %d: DB already has table named: %s\n"
+"%s %d: Table already has column named: %s\n"
+"%s %d: Column contains an unknown data type: %s\n"
+"%s %d: Column contains unknown flag data: %s\n"
+"%s %d: Too many columns in table: %s\n"
+"%s %d: Not enough buffer space to dbcommand()\n"
+
+         "SQL" errors 
+"%s %d: SQL parse error: %s\n"
+"%s %d: Attempt to update readonly column: %s\n"
+
+         "Trace" messages 
+"%s %d: SQL command: %s  (%s)\n"
+</pre>
+<br>
+<br>
+
+<hr width="70%">
+<h3><a name="Callbacks">- How to write callback routines</a></h3>
+<p>As mentioned above, read callbacks are executed before a column
+value is used and write callbacks are called after all columns have
+been updated. Both read and write callbacks return nothing (are of
+type void) and have the same calling parameters:</p>
+<table summary="" align="center" width="90%" cellspacing="1">
+<tr>
+<td valign="top">char *tblname</td>
+<td>&nbsp;&nbsp;the name of the table referenced</td></tr>
+<tr>
+<td valign="top">char *colname</td>
+<td>&nbsp;&nbsp;the name of the column referenced</td></tr>
+<tr>
+<td valign="top">char *sqlcmd</td>
+<td>&nbsp;&nbsp;the text of the SQL command</td></tr>
+<tr>
+<td valign="top">int rowid</td>
+<td>&nbsp;&nbsp;the zero-indexed row number of the row being read
+or written</td></tr></table>
+<br>
+<br>
+ 
+<p>Read callbacks are particularly useful to compute things like
+sums and averages; things that aren't worth the effort to compute
+continuously if it's possible to compute it just when it is
+used.</p>
+<p>Write callbacks can form the real engine driving the
+application. These are most applicable when tied to configuration
+changes. Write callbacks are also a useful place to log
+configuration changes.</p>
+</body>
+</html>

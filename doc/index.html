@@ -1,0 +1,111 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+"http://www.w3.org
+/TR/REC-html401/loose.dtd">
+<html lang="en">
+<head>
+<title>rta: Embedded DB API</title>
+<style type="text/css">
+p {font-size: large;}
+th {font-size: large;}
+td {font-size: large;}
+pre {font-size: large;}
+h1 {font-family: sans-serif}
+h2 {font-family: sans-serif}
+h3 {font-family: sans-serif}
+</style>
+</head>
+<body>
+<table width="95%" summary="" align="center">
+<tr>
+<td valign="top" align="left"><font size="+1"><a href=
+ "index.html">Introduction</a><br>
+ <a href="FAQ.html">FAQ</a><br>
+ <a href="apiref.html">API Spec</a><br>
+ <a href="download.html">Download</a><br>
+ <a href="quickstart.html">Quick Start</a><br>
+ <a href="rta_tables.php">Live Demo</a><br>
+ <a href="contact.html">Contact Info</a><br></font></td>
+<td align="center" valign=bottom>
+ <h2>Run Time Access</h2></td>
+</tr></table>
+ <h2>Introduction</h2>
+<p><b><font face="san-serif">rta</font></b> is 
+a specialized memory resident interface to the internal data of your application. 
+It is not a stand-alone server but a library which attaches to your program and 
+offers up your program's internal structures and arrays as tables. It uses a subset 
+of the Postgres protocol and is compatible with the Postgres bindings for <b>C</b>, 
+<b>PHP</b>, and the <b>Postgres</b> command line tool, <b>psql</b>. </p>
+
+<h2>Purpose</h2> 
+<p>One of the problems facing Linux is the lack of run time access
+to status, statistics, and configuration of a service once the service has
+started. We assume that to configure an application we will be able
+to ssh into the box, vi the /etc configuration file, and do a 'kill
+-1' on the process. Real time status and statistics are things
+Linux programmers don't even think to ask for. The need for run
+time access is particularly pronounced for network appliances where
+ssh is not available or might not be allowed.</p>
+<table summary="" align=center>
+<caption>The Bad Unix Model</caption>
+<tr><td><img src=BadUnixModel.png alt=""></td></tr>
+</table>
+<p>Another problem for appliance designers is that more than one
+type of user interface may be required. Sometimes a customer
+requires that no configuration information be sent over an
+Ethernet line which transports unsecured user data. In such a case
+the customer may turn off the web interface and require that
+configuration, status, and statistics be sent over an RS-232 serial
+line. Other popular interfaces include the VGA console, SNMP MIBs,
+ and LDAP.</p>
+<p>The rta package helps solve both of these problems by giving run time
+access to the data structures and arrays inside your running program.
+With minimal effort, you make your program's data structures appear as
+Postgres tables in a Postgres data base.</p>
+<table summary="" align=center>
+<caption>The Good rta Model</caption>
+<tr><td><img src=GoodrtaModel.png alt=""></td></tr>
+</table>
+<p>For example, say you have a structure for TCP connections
+defined as:</p>
+<pre>
+   struct tcpconn {
+     int   fd;       // conn's file descriptor
+     int   lport;    // local port number
+     int   dport;    // destination port number
+     long  nsbytes;  // number of sent bytes
+     long  nrbytes;  // number of received bytes
+     long  nread;    // number of reads on the socket
+     long  nwrite;   // number of writes on the socket
+   };
+</pre>
+<p>You might then define an array of these structures as:<br>
+<pre>
+    struct tcpconn Conns[MX_CONN];
+</pre>
+<p>The rta package allows any programming language with a Postgres
+binding to query your table of TCP connections....<br>
+ <pre>
+    SELECT lport, dport FROM Conns WHERE fd != -1;
+
+    UPDATE Conns SET dport = 0 WHERE fd = -1;
+</pre></p>
+<p>A data base API for all of your program's configuration, status,
+and statistics makes debugging easier since you can view much more
+of your program's state with simple Postgres tools. A data base API
+makes building user interface programs easier since there are
+Postgres bindings for PHP, Tcl/Tk, Perl, "C", as well as many
+more.</p>
+<p>A data base API can help speed development. Carefully defining
+the tables to be used by the UI programs lets the core application
+team build the application while the UI developers work on the web
+pages, wizards, and MIBs of the various UI programs.</p>
+<p>Some effort is required. In order to make your arrays and
+structures available to the data base API, you need to tell rta
+about the tables and columns in the data base. Table information
+includes things like the name, start address, number of rows and
+the length of each row. Column information includes things like the
+associated table, the column name, the column's data type, and
+whether we want any special functions called when the column is
+read or written.</p>
+</body>
+</html>

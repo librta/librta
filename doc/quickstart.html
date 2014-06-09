@@ -1,0 +1,456 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+"http://www.w3.org
+/TR/REC-html401/loose.dtd">
+<html lang="en">
+<head>
+<title>rta: Embedded DB API</title>
+<style type="text/css">
+p {font-size: large;}
+th {font-size: large;}
+td {font-size: large;}
+pre {font-size: large;}
+h1 {font-family: sans-serif}
+h2 {font-family: sans-serif}
+h3 {font-family: sans-serif}
+</style>
+</head>
+<body>
+<table width="95%" summary="" align="center">
+<tr>
+<td valign="top" align="left"><font size="+1"><a href=
+ "index.html">Introduction</a><br>
+ <a href="FAQ.html">FAQ</a><br>
+ <a href="apiref.html">API Spec</a><br>
+ <a href="download.html">Download</a><br>
+ <a href="quickstart.html">Quick Start</a><br>
+ <a href="rta_tables.php">Live Demo</a><br>
+ <a href="contact.html">Contact Info</a><br></font></td>
+<td align="center" valign=bottom>
+ <h2>Run Time Access</h2></td>
+</tr></table>
+ <h2>Quick Start</h2> 
+<p>This page give a brief tutorial on the use of the rta package by
+building a trivial application which uses rta. We define the task,
+define the tables, give the code, and describe how to build and
+link the application. The last section describes how to the test
+the application.</p>
+<ul compact type="circle">
+<li><a href="#app">Problem Statement</a></li>
+<li><a href="#tbl">Table Definitions</a></li>
+<li><a href="#code">C Code</a></li>
+<li><a href="#build">Build and Link</a></li>
+<li><a href="#test">Test</a></li></ul>
+<br>
+<br>
+ 
+<h3><a name="app">Problem Statement</a></h3>
+<p>We want to build an application called "myapp" in which we expose
+an internal array of data structures to a PHP-based user interface
+program. The array has twenty structures and each structure has a
+writeable integer, a writeable float, a writeable string, and a
+read-only string. Both strings are thirty characters in length. A
+call back on the writeable string does two things: it replaces any
+'&lt;' and '&gt;' characters with a '.', and it copies the reversed
+string into the the read-only string.</p>
+<p>The structure would be defined as:</p>
+<pre>
+#define NOTE_LEN   30
+struct MyData {
+    int    myint;
+    float  myfloat;
+    char   notes[NOTE_LEN];
+    char   seton[NOTE_LEN];
+};
+</pre>
+<p>We allocate storage for the data as:</p>
+<pre>
+#define ROW_COUNT  20
+struct MyData mydata[ROW_COUNT];
+</pre>
+<p>Externally, we want this array of structures to be seen as a
+Postgres table called "mytable".</p>
+<br> 
+<h3><a name="tbl">Table Definitions</a></h3>
+<p>We need to tell the rta package about our table. To do this we need
+to build a COLDEF structure for each of the four columns, and we to
+build a TBLDEF structure for "mydata", the array of structures.</p>
+<p>We use an array of four COLDEFs to describe our columns. This is
+pretty simple:</p>
+<pre>
+COLDEF mycolumns[] = {
+  {
+    "mytable",          /* the table name */
+    "myint",            /* the column name */
+    RTA_INT,            /* it is an integer */
+    sizeof(int),        /* number of bytes */
+    offsetof(struct MyData, myint), /* location in struct */
+    0,                  /* no flags */
+    (void (*)()) 0,     /* called before read */
+    (void (*)()) 0,     /* called after write */
+    "A sample integer in a table"
+  },
+  {
+    "mytable",          /* the table name */
+    "myfloat",          /* the column name */
+    RTA_FLOAT,          /* it is a float */
+    sizeof(float),      /* number of bytes */
+    offsetof(struct MyData, myfloat), /* location in struct */
+    0,                  /* no flags */
+    (void (*)()) 0,     /* called before read */
+    (void (*)()) 0,     /* called after write */
+    "A sample float in a table"
+  },
+  {
+    "mytable",          /* the table name */
+    "notes",            /* the column name */
+    RTA_STR,            /* it is an integer */
+    NOTE_LEN,           /* number of bytes */
+    offsetof(struct MyData, notes), /* location in struct */
+    0,                  /* no flags */
+    (void (*)()) 0,     /* called before read */
+    reverse_str,        /* called after write */
+    "A sample note string in a table"
+  },
+  {
+    "mytable",          /* the table name */
+    "seton",            /* the column name */
+    RTA_STR,            /* it is an integer */
+    NOTE_LEN,           /* number of bytes */
+    offsetof(struct MyData, seton), /* location in struct */
+    RTA_READONLY,       /* a read-only column */
+    (void (*)()) 0,     /* called before read */
+    (void (*)()) 0,     /* called after write */
+    "Another sample note string in a table"
+  },
+};
+</pre>
+<br>
+<br>
+
+<p>For each of the four structure elements we gave the associated
+table name, column name, type, size, position in the struct, flags,
+read and write callbacks, and a short string to describe it.</p>
+<p>We define the table in a similar way:</p>
+<pre>
+TBLDEF mytbldef {
+    "mytable",           /* table name */
+    mydata,              /* address of table */
+    sizeof(struct mydata), /* length of each row */
+    ROW_COUNT,           /* number of rows */
+    mycolumns,           /* array of column defs */
+    sizeof(mycolumns) / sizeof(COLDEF),
+                         /* the number of columns */
+    "",                  /* no save file */
+    "A sample table"
+};
+</pre>
+<p>Note the double quotes to specify no save file. This field is a
+pointer-to-string and the pointer can not be null, although the
+string can be. </p>
+<br>
+ 
+<h3><a name="code">C Code</a></h3>
+<p>The source code for our simple application is available here as
+<a href="myapp.c">myapp.c</a>. The first section of code of note is
+the list of include files:</p>
+<pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;stddef.h&gt;             /* for 'offsetof' */
+#include &lt;string.h&gt;             /* for 'strlen' */
+#include &lt;unistd.h&gt;             /* for 'read/write/close' */
+#include &lt;sys/socket.h&gt;
+#include &lt;netinet/in.h&gt;
+#include "../src/rta.h"
+</pre>
+<p>You will need to set the path to the rta.h file to reflect where
+you install it. </p>
+<p>We have already presented the code for the structures and arrays
+of structures. Let's look at the code in the main() program to
+perform all initialization:</p>
+<pre>
+int main()
+{
+    int   i;                   /* a loop counter */
+    int   srvfd;               /* FD for our server socket */
+    int   connfd;              /* FD for conn to client */
+    struct sockaddr_in srvskt; /* server listen socket */
+    struct sockaddr_in cliskt; /* socket to the UI/DB client */
+    int   adrlen;
+    char  inbuf[INSZ];         /* Buffer for incoming SQL commands */
+    char  outbuf[OUTSZ];       /* response back to the client */
+    int   incnt;               /* SQL command input count */
+    int   outcnt;              /* SQL command output count */
+    int   dbret;               /* return value from SQL command */
+
+    /* init mydata */
+    for (i=0; i&lt;ROW_COUNT; i++) {
+        mydata[i].myint    = 0;
+        mydata[i].myfloat  = 0.0;
+        mydata[i].notes[0] = (char) 0;
+        mydata[i].seton[0] = (char) 0;
+    }
+
+    /* init the rta package and tell it about mydata */
+    rta_init();
+    if (rta_add_table(&amp;mytbldef) != RTA_SUCCESS) {
+        fprintf(stderr, "Table definition error!\n");
+        exit(1);
+    }
+ 
+</pre>
+<p>This is pretty standard stuff. We allocate our socket structures
+and other local variables. We initialize the rta package and add
+our one table.</p>
+<p>The last piece of initialization is to set up the socket to
+listen for incoming client connections. Remember that each UI
+program will treat our program as if it were a Postgres database.
+We have to accept TCP connections from Postgres clients.</p>
+<p>By-the-way: the following code is pretty horrendous. It uses
+blocking IO, ignores error conditions, and makes wildly optimistic
+assumptions about socket IO. My goal is to make the code
+understandable by getting it into as few lines as possible.</p>
+<pre>
+    /* We now need to open a socket to listen for incoming
+     * client connections. */
+    adrlen = sizeof (struct sockaddr_in);
+    (void) memset ((void *) &amp;srvskt, 0, (size_t) adrlen);
+    srvskt.sin_family = AF_INET;
+    srvskt.sin_addr.s_addr = INADDR_ANY;
+    srvskt.sin_port = htons (8888);
+    srvfd = socket(AF_INET, SOCK_STREAM, 0); /* no error checks! */
+    bind(srvfd, (struct sockaddr *) &amp;srvskt, adrlen);
+    listen (srvfd, 4);
+</pre>
+<p>The main loop in our program waits for a TCP connection from a
+client, then loops reading the Postgres encoded stream of SQL
+commands, processing them with dbcommand(), and then writing any
+results back to the client. While a connection can close for
+errors, we normally expect the client to request an orderly close
+to the connection.:</p>
+<pre>
+    /* Loop forever accepting client connections */
+    while (1) {
+        connfd = accept(srvfd, (struct sockaddr *) &amp;cliskt, &amp;adrlen);
+        if (connfd &lt; 0) {
+            fprintf(stderr, "Error on socket/bind/listen/accept\n");
+            exit(1);
+        }
+        incnt = 0;
+        while (connfd &gt;= 0) {
+            incnt = read(connfd, &amp;inbuf[incnt], INSZ-incnt);
+            if (incnt &lt;= 0) {
+                close(connfd);
+                connfd = -1;
+            }
+            outcnt = OUTSZ;
+            dbret = dbcommand(inbuf, &amp;incnt, outbuf, &amp;outcnt);
+            switch (dbret) {
+                case RTA_SUCCESS:
+                    write(connfd, outbuf, (OUTSZ - outcnt));
+                    incnt = 0;
+                    break;
+                case RTA_NOCMD:
+                    break;
+                case RTA_CLOSE:
+                    close(connfd);
+                    connfd = -1;
+                    break;
+            }
+        }
+    }
+</pre>
+<p>The callback function is fairly straightforward. Remember that
+the write callback is called on a column after the write of all
+update data to the columns. Our write callback on the 'notes' field
+is called after the data has been written. It loops through the
+string replacing greater-than and less-than symbols with a period,
+and coping a reverse of the string into the 'seton' field.</p>
+<pre>
+void reverse_str(char *tbl, char *col, char *sql, int rowid)
+{
+    int   i,j;                 /* loop counters */
+
+    i = strlen(mydata[rowid].notes) -1;  /* -1 to ignore NULL */
+    for(j=0 ; i&gt;=0; i--,j++) {
+        if (mydata[rowid].notes[i] == '&lt;' ||
+            mydata[rowid].notes[i] == '&gt;')
+            mydata[rowid].notes[i] = '.';
+        mydata[rowid].seton[j] = mydata[rowid].notes[i];
+    }
+    mydata[rowid].seton[j] = (char) 0;
+}
+</pre>
+<br>
+<h3><a name="build">Build and Link</a></h3>
+<p>
+The information in this section should be sufficient
+to download, build, and run the sample application.</p>
+<p>Download the rta package from the download page 
+given above.  Untar it.  Go to the src directory
+and do a make.  </p>
+<pre>
+    tar -xzf rta-0.5.0.tgz
+    cd rta-0.5.0
+    cd src
+    make
+</pre>
+<p>Download the myapp.c file (available 
+<a href=myapp.c>here</a>).  Place the file
+in the test directory.  Build it with the
+command:
+<pre>
+  gcc myapp.c -o myapp -L../src -lrta
+</pre></p>
+<p>Note that we are telling the application that the
+library it needs is in the sibling <tt>src</tt>
+directory.</p>
+<p>To run the application we will need to tell
+it where to find the shared object library.  From
+the <tt>test</tt> directory enter:</p>
+<pre>
+   export LD_LIBRARY_PATH=../src
+   ./myapp &amp;
+</pre>
+<p>That is all there is to it.  Please use the contact
+page to report any problems you find.  </p>
+
+<br>
+<h3><a name="test">Test</a></h3>
+<p>If all has gone well, we now have an
+application running which pretends to be a Postgres
+data base server.  Only instead of a data base, it
+is our sample application offering up its internal
+tables for use by various Postgres clients.</p>
+<h4>psql</h4>
+<p>The first client to try is the Postgres browser
+tool, psql.  This tool part of the base Postgres
+install.  Remember that we have our application
+table, mytable, as well as the rta internal tables,
+rta_tables, rta_columns, pg_user, rta_dbg, and
+rta_stat.  See the API section for a description
+of these tables.</p>
+<p>To start psql to our application enter:</p>
+<pre>
+    psql -h localhost -p 8888
+</pre><p>Postgres should respond with:<p>
+<pre>
+    Welcome to psql, the PostgreSQL interactive terminal.
+
+    Type:  \copyright for distribution terms
+           \h for help with SQL commands
+           \? for help on internal slash commands
+           \g or terminate with semicolon to execute query
+           \q to quit
+</pre>
+<p>Let's try some SQL commands to play with the tables.</p>
+<p>Give me a list of the tables:</p>
+<pre>
+    SELECT name FROM rta_tables;
+        name     
+    -------------
+     rta_tables
+     rta_columns
+     pg_user
+     rta_dbg
+     rta_stat
+     mytable
+    (6 rows)
+</pre>
+<p>You do not need to use upper case for the SQL keywords.
+The psql program accepts both upper and lower case.</p>
+<p>Display the contents of mytable:</p>
+<pre>
+    SELECT * FROM mytable;
+     myint |       myfloat        | notes | seton 
+    -------+----------------------+-------+-------
+     0     |         0.0000000000 |       | 
+     0     |         0.0000000000 |       | 
+     0     |         0.0000000000 |       | 
+     0     |         0.0000000000 |       | 
+     0     |         0.0000000000 |       | 
+     0     |         0.0000000000 |       | 
+     0     |         0.0000000000 |       | 
+     0     |         0.0000000000 |       | 
+     0     |         0.0000000000 |       | 
+     0     |         0.0000000000 |       | 
+     0     |         0.0000000000 |       | 
+     0     |         0.0000000000 |       | 
+     0     |         0.0000000000 |       | 
+     0     |         0.0000000000 |       | 
+     0     |         0.0000000000 |       | 
+     0     |         0.0000000000 |       | 
+     0     |         0.0000000000 |       | 
+     0     |         0.0000000000 |       | 
+     0     |         0.0000000000 |       | 
+     0     |         0.0000000000 |       | 
+    (20 rows)
+</pre>
+<p>Set all of the myint values to 44 and display
+the new table:</p>
+<pre>
+    UPDATE mytable SET myint=44;
+    UPDATE 20
+    SELECT * FROM mytable;
+</pre>
+<p>Note that psql tells us how many rows were modified.</p>
+<p>Set the notes field to "hi mom!"</p>
+<pre>
+    UPDATE mytable SET notes="hi mom!";
+    UPDATE 20
+</pre>
+<p>Set the notes field of only row 0 to "&lt;b&gt;hi mom!&lt;/b&gt;":</p>
+<pre>
+    UPDATE mytable SET notes="&lt;b&gt;hi mom!&lt;/b&gt;" LIMIT 1 OFFSET 0;
+    UPDATE 1
+</pre>
+<p>The <tt>LIMIT</tt> says how many rows to change, and the
+<tt>OFFSET</tt> tells where to start the changes.  The default
+LIMIT is all rows, and the default OFFSET is zero.</p>
+<p>Turn on the trace of all SQL commands and send the output to
+both stderr and syslog:</p>
+<pre>
+    UPDATE rta_dbg SET trace=1, target=3;
+</pre>
+<p>You should now see all the commands echoed on the standard
+error output of the program.  The commands are also being sent
+to your syslog facility.</p>
+
+<h4>C</h4>
+<p>The C program presented here,<a href=rta_client.c> 
+rta_client.c</a>, illustrates how to get data out of our
+application from a C program.  You need the postgres-devel
+package to build this program.  Build and run the program with:</p>
+<pre>
+    gcc rta_client.c -o rta_client -lpq
+    ./rta_client
+</pre>
+<p>The program sets the field myint to a value of 44 and then gets
+and prints the fields myint, myfloat, and notes for all twenty
+rows in the table.</p>
+<p>Note that we test for success in different ways depending
+on whether or not we expect data back from the command.  Note also
+that the returned data is always a string.  You need to scan it
+into a variable for other processing.</p>
+
+<h4>PHP</h4>
+<p>The PHP program presented here,<a href=rta_client.txt> 
+rta_client.php</a>, illustrates how to get data out of our
+application from a PHP program.  You need the php-pgsql
+package to run this program.  If you are running Apache, check
+for the PHP interpreter in modules directory.  On RH8.0 look
+for libphp4.so in /etc/httpd/modules.  You can verify that the
+PHP-Postgres library is loaded by checking for pgsql.so in the
+/usr/lib/php4 directory.  Clearly your configuration for PHP
+and Postgres may be different than what is described here. </p>
+<p>This program gets and displays the fields myint, myfloat,
+and notes for all twenty rows in the table.</p>
+<p>
+Perhaps a better way to evaluate PHP is to install the
+table editor which comes with the rta package.  Just put
+the four .php files onto your web server (being sure that
+PHP and php-pgsql are installed).  The table editor is the
+application running on the <i>Live Demo</i> link above.
+</p>
+</body>
+</html>
