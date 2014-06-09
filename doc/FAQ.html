@@ -102,7 +102,10 @@ and tech-writers for PostgreSQL.)</p>
 <p><b><a name="q06">What SQL commands are implemented?</a></b><br>
 Only two: SELECT and UPDATE, and even then it is only a subset of
 the usual SELECT and UPDATE. See rta.h for the syntax details of
-the commands.</p>
+the commands.  RTA does not implement transcactions but the commands
+BEGIN and COMMIT are recognized to the extent that they do cause an
+error.  BEGIN and COMMIT are used as part of the Postgres client
+login.</p>
 <p><b><a name="q07">What SQL/Postgres commands are not
 implemented?</a></b><br>
 This is not a data base. We do not implement INSERT or DELETE since

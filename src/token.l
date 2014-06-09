@@ -26,6 +26,8 @@ extern struct Sql_Cmd cmd;
 [Ss][Ee][Tt]				{ return(SET); }
 [Uu][Pp][Dd][Aa][Tt][Ee]	{ return(UPDATE); }
 [Ww][Hh][Ee][Rr][Ee]		{ return(WHERE); }
+[Bb][Ee][Gg][Ii][Nn]		{ return(SQLBEGIN); printf("got begin\n");}
+[Cc][Oo][Mm][Mm][Ii][Tt]	{ return(SQLCOMMIT); }
 
 \"[A-Za-z][_A-Za-z0-9 \t]*\"	|
 \'[A-Za-z][_A-Za-z0-9 \t]*\'	{
@@ -67,13 +69,15 @@ extern struct Sql_Cmd cmd;
 \,				{ return((int)','); }
 \(				{ return((int)'('); }
 \)				{ return((int)')'); }
+\;				{ return((int)';'); }
+\.				{ return((int)'.'); }
 
 \"[A-Za-z0-9 \t!@#$%^&*()_+-={}|;:<>?~`\[\]'\\]*\"	|
 \'[A-Za-z0-9 \t!@#$%^&*()_+-={}|;:<>?~`\[\]"\\]*\'	{
 					yylval = strndup(&yytext[1], yyleng-2);
 					return(STRING);
 				}
-[ \t\n;]+		{ }
+[ \t\n]+		{ }
 
 %%
 
@@ -86,14 +90,13 @@ void yyerror(char *s)
 
 void SQL_string(char *s, char *out, int *nout)
 {
-    extern void yyparse();
+    extern int yyparse();
 
     YY_BUFFER_STATE x;
     int    i;
 
     yydebug = 0;
 
-    dosql_init();
     cmd.out  = out;
     cmd.nout = nout;
     cmd.sqlcmd = s;
@@ -105,29 +108,56 @@ void SQL_string(char *s, char *out, int *nout)
     cmd.nerrout  = *nout;
     cmd.nlineout = 0;
 
+    x = yy_scan_string(s);
+
+    dosql_init();
+    while(yyparse() == 0) {
+        /* At this point we have parsed the command.  */
+        /* If no errors were detected, we can continue processing */
+        if (!cmd.err) {
+            /* everything is set.  do the command */
+            do_sql(&out[cmd.nerrout - *nout], nout);
+        }
+        /* Success or failure: Either way, free allocated memory */
+        for (i=0; i<NCMDCOLS; i++) {
+            if (cmd.cols[i])
+                free(cmd.cols[i]);
+            if (cmd.updvals[i])
+                free(cmd.updvals[i]); /* values for column updates */
+            if (cmd.whrcols[i])
+                free(cmd.whrcols[i]); /* cols in where */
+            if (cmd.whrvals[i])
+                free(cmd.whrvals[i]); /* values in where clause */
+        }
+        free(cmd.tbl);
+        dosql_init();   /* and re-init the cmd structure */
+        if (cmd.err) {
+            yy_delete_buffer(x);
+            return;
+        }
+    }
+    /* We are done processing the command and have assembled response */
+    /* Tell the other end that we are ready for a new command.  */
+    out[cmd.nerrout - *nout] = 'Z';               /* Ready */
+    (*nout)--;
+    yy_delete_buffer(x);
+    return;
+}
+
+
+#ifdef xxxx
+
 #ifdef DEBUG
     printf("N-out = %d\n", *cmd.nout);
     printf("Scanning ---%s---\n", s);
 #endif
-
-    x = yy_scan_string(s);
-    yyparse();
-    yy_delete_buffer(x);
-
-
-    /* At this point we have parsed the command.  */
-    /* If no errors were detected, we can continue processing */
-    if (!cmd.err) {
 
 #ifdef DEBUG
         printf("Limit  = %d\n", cmd.limit);
         printf("Offset = %d\n", cmd.offset);
 #endif
 
-        /* everything is set.  do the command */
-        do_sql(out, nout);
 
-        
 #ifdef DEBUG
 printf("Command = %d\n", cmd.command);
         for (i=0; i<cmd.ncols; i++)
@@ -141,23 +171,4 @@ printf("Command = %d\n", cmd.command);
         printf("N-out  = %d\n", *cmd.nout);
         printf("Error  = %d\n", cmd.err);
 #endif
-    }
-
-    /* Success or failure: Either way, free allocated memory */
-    for (i=0; i<NCMDCOLS; i++) {
-        if (cmd.cols[i])
-            free(cmd.cols[i]);
-        if (cmd.updvals[i])
-            free(cmd.updvals[i]); /* values for column updates */
-        if (cmd.whrcols[i])
-            free(cmd.whrcols[i]); /* cols in where */
-        if (cmd.whrvals[i])
-            free(cmd.whrvals[i]); /* values in where clause */
-    }
-    free(cmd.tbl);
-    return;
-}
-
-
-
-
+#endif

@@ -25,6 +25,8 @@ extern void  yyerror(char *);
 extern int   yylex();
 %}
 
+%token SQLBEGIN
+%token SQLCOMMIT
 %token SELECT
 %token UPDATE
 %token FROM
@@ -50,17 +52,47 @@ extern int   yylex();
 
 %%
 
-sql:
-		select_statement
+
+command:
+		{ YYABORT; }   
+	|	begin_statement
+	|	commit_statement
+	|	select_statement
 	|	update_statement
 	|	function_call
 	;
 
 
+begin_statement:
+		SQLBEGIN ';'
+		{	cmd.command = RTA_BEGIN;
+			YYACCEPT;
+		}
+	|	SQLBEGIN
+		{	cmd.command = RTA_BEGIN;
+			YYACCEPT;
+		}
+	;
+
+commit_statement:
+		SQLCOMMIT ';'
+		{	cmd.command = RTA_COMMIT;
+			YYACCEPT;
+		}
+	|	SQLCOMMIT
+		{	cmd.command = RTA_COMMIT;
+			YYACCEPT;
+		}
+	;
+
 select_statement:
-		SELECT column_list FROM NAME where_clause limit_clause
+		SELECT column_list FROM table_name where_clause limit_clause ';'
 		{	cmd.command = RTA_SELECT;
-			cmd.tbl = $4;
+			YYACCEPT;
+		}
+	|	SELECT column_list FROM table_name where_clause limit_clause
+		{	cmd.command = RTA_SELECT;
+			YYACCEPT;
 		}
 	;
 
@@ -76,6 +108,17 @@ column_list:
 				/* too many columns in list */
 				send_error(LOC, E_BADPARSE);
 			}
+		}
+	;
+
+table_name:
+		NAME
+		{
+			cmd.tbl = $1;
+		}
+	|	NAME "." NAME
+		{
+			cmd.tbl = $3;
 		}
 	;
 
@@ -129,7 +172,11 @@ limit_clause:
 
 
 update_statement:
-		UPDATE NAME SET set_list where_clause limit_clause
+		UPDATE NAME SET set_list where_clause limit_clause ';'
+		{	cmd.command = RTA_UPDATE;
+			cmd.tbl     = $2;
+		}
+	|	UPDATE NAME SET set_list where_clause limit_clause
 		{	cmd.command = RTA_UPDATE;
 			cmd.tbl     = $2;
 		}
@@ -158,9 +205,15 @@ literal:
 
 
 function_call:
-		SELECT NAME '(' ')'
+		SELECT NAME '(' ')' ';'
 		{	cmd.command = RTA_CALL;
 			cmd.tbl = $2;
+			YYACCEPT;
+		}
+	|	SELECT NAME '(' ')'
+		{	cmd.command = RTA_CALL;
+			cmd.tbl = $2;
+			YYACCEPT;
 		}
 	;
 

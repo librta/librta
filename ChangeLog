@@ -1,0 +1,13 @@
+2003-04-18  Bob Smith
+
+        * Version 0.5.1.   Added BEGIN and COMMIT to the SQL commands
+        recognized in order to allow login from Posgres 7.3.X clients.
+        The 7.3 Postgres login uses a transaction as part of the login.
+        The commands, while not causing an error, DO NOTHING.  There
+        is no attempt in the code to implement transactions.
+
+2003-02-19  Bob Smith
+
+        * Version 0.5.0.   Initial release.
+
+

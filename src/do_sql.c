@@ -89,6 +89,14 @@ do_sql(char *buf,
       do_call(buf, nbuf);
       break;
 
+    case RTA_BEGIN:
+      do_begin(buf, nbuf);
+      break;
+
+    case RTA_COMMIT:
+      do_commit(buf, nbuf);
+      break;
+
     default:
       syslog(LOG_ERR, "DB error: no SQL cmd\n");
       break;
@@ -641,7 +649,6 @@ do_select(char *buf,
   }
   ad_str(&buf, "CSELECT");
   *buf++ = 0x00;
-  *buf++ = 'Z';                 /* Ready */
   *nbuf -= (int) (buf - startbuf);
 
   /* Log SQL if trace is on */
@@ -975,7 +982,6 @@ do_update(char *buf,
   tmark = buf + 1;              /* Save status for trace */
   buf += n;
   *buf++ = 0x00;
-  *buf++ = 'Z';                 /* Ready */
   *nbuf -= (int) (buf - startbuf);
 
   /* Log SQL if trace is on */
@@ -1034,10 +1040,6 @@ do_call(char *buf,
     /* Tell of completed response */
     ad_str(&buf, "CSELECT");
     *buf++ = (char) 0;
-
-    /* Ready for next request */
-    *buf++ = 'Z';               /* Ready */
-
     *nbuf -= (int) (buf - startbuf);
   }
   else
@@ -1047,6 +1049,65 @@ do_call(char *buf,
     send_error(LOC, E_BADPARSE);
     return;
   }
+}
+
+/***************************************************************
+ * do_begin(): - Execute the SQL begin command
+ *
+ * Input:        A buffer to store the output
+ *               The number of free bytes in the buffer
+ * Output:       The number of free bytes in the buffer
+ * Effects:      Nothing.  This command is ignored.
+ ***************************************************************/
+void
+do_begin(char *buf,
+        int *nbuf)
+{
+  char *startbuf;      /* used to compute response length */
+
+  if (*nbuf < 50)
+  {
+    rtastat.nrtaerr++;
+    if (rtadbg.rtaerr)
+      rtalog(LOC, "%s %d: not enough buffer space\n");
+    return;
+  }
+  startbuf = buf;
+
+  /* Tell of completed response */
+  ad_str(&buf, "CBEGIN");
+  *buf++ = (char) 0;
+  *nbuf -= (int) (buf - startbuf);
+}
+
+
+/***************************************************************
+ * do_commit(): - Execute the SQL commit command
+ *
+ * Input:        A buffer to store the output
+ *               The number of free bytes in the buffer
+ * Output:       The number of free bytes in the buffer
+ * Effects:      Nothing.  This command is ignored.
+ ***************************************************************/
+void
+do_commit(char *buf,
+        int *nbuf)
+{
+  char *startbuf;      /* used to compute response length */
+
+  if (*nbuf < 50)
+  {
+    rtastat.nrtaerr++;
+    if (rtadbg.rtaerr)
+      rtalog(LOC, "%s %d: not enough buffer space\n");
+    return;
+  }
+  startbuf = buf;
+
+  /* Tell of completed response */
+  ad_str(&buf, "CCOMMIT");
+  *buf++ = (char) 0;
+  *nbuf -= (int) (buf - startbuf);
 }
 
 /***************************************************************

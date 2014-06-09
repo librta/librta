@@ -8,8 +8,8 @@
 
 CC = gcc
 OPT =  -fPIC -c -I.
-#DEBUG = -g -DDEBUG -DYYDEBUG -ggdb -Wall
-DEBUG = -g -DYYDEBUG -ggdb -Wall
+DEBUG = -g -DDEBUG -DYYDEBUG -ggdb -Wall
+#DEBUG = -g -DYYDEBUG -ggdb -Wall
 CFLAGS = $(OPT) $(DEBUG)
 OBJS   = api.o token.o parse.tab.o do_sql.o rtatables.o
 
@@ -23,7 +23,7 @@ librtadb.so.1: $(OBJS)
 token.o: parse.tab.c do_sql.h
 
 parse.tab.c: do_sql.h
-	yacc -d -bparse parse.y
+	yacc -dv -bparse parse.y
 
 api.o: api.c rta.h do_sql.h
 

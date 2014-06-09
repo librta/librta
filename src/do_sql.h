@@ -12,6 +12,8 @@
 #define RTA_SELECT    0
 #define RTA_UPDATE    1
 #define RTA_CALL      2
+#define RTA_BEGIN     3
+#define RTA_COMMIT    4
 
     /* types of relations allowed in WHERE */
 #define RTA_EQ        0
@@ -140,6 +142,10 @@ int   send_row_description(char *,
 void  do_select(char *,
                 int *);
 void  do_call(char *,
+              int *);
+void  do_begin(char *,
+              int *);
+void  do_commit(char *,
               int *);
 void  ad_str(char **,
              char *);
