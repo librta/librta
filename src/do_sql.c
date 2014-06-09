@@ -1533,6 +1533,7 @@ do_delete(char *buf, int *nbuf)
   int      rx;         /* Row indeX in for() loop */
   int      wx;         /* Where clause indeX in for loop */
   void    *pr;         /* Pointer to the row in the table/column */
+  void    *newpr;      /* Pointer to the next row in the table/column */
   void    *pd;         /* Pointer to the Data in the table/column */
   llong cmp;           /* has actual relation of col and val */
   int      dor;        /* DO Row == 1 if we should delete row */
@@ -1549,11 +1550,10 @@ do_delete(char *buf, int *nbuf)
      WHERE condition.  If a row matches we call the delete callback */
   sr = rta_cmd.ptbl->rowlen;
   rx = 0;
-  if (rta_cmd.ptbl->iterator)
+  if (rta_cmd.ptbl->iterator) 
     pr = (rta_cmd.ptbl->iterator) ((void *) NULL, rta_cmd.ptbl->it_info, rx);
   else
     pr = rta_cmd.ptbl->address;
-
   /* for each row ..... */
   while (pr) {
     dor = 1;
@@ -1626,6 +1626,21 @@ do_delete(char *buf, int *nbuf)
         break;
       }
     }
+
+    /* In the next step we may delete the row (which frees the memory
+       for it).  We'd better get the address of the _next_ row before
+       we delete this one. */
+    rx++;
+    if (rta_cmd.ptbl->iterator)
+      newpr = (rta_cmd.ptbl->iterator) (pr, rta_cmd.ptbl->it_info, rx);
+    else {
+      if (rx >= rta_cmd.ptbl->nrows)
+        newpr = (void *) NULL;
+      else
+        newpr = (char *)rta_cmd.ptbl->address + (rx * sr);
+    }
+
+
     if (dor && rta_cmd.offset)
       rta_cmd.offset--;
     else if (dor) {             /* DO Row */
@@ -1641,15 +1656,7 @@ do_delete(char *buf, int *nbuf)
       rta_cmd.limit--;       /* decrement row limit count */
       nrd++;
     }
-    rx++;
-    if (rta_cmd.ptbl->iterator)
-      pr = (rta_cmd.ptbl->iterator) (pr, rta_cmd.ptbl->it_info, rx);
-    else {
-      if (rx >= rta_cmd.ptbl->nrows)
-        pr = (void *) NULL;
-      else
-        pr = (char *)rta_cmd.ptbl->address + (rx * sr);
-    }
+    pr = newpr;
   }
 
   /* Save the table if any column is marked as DISKSAVE */

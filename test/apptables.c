@@ -24,7 +24,6 @@
 
 extern UI ui[];
 extern struct MyData mydata[];
-extern DEMOLIST demotbl[];
 extern int  add_demolist(char *tbl, char *sql, void *pr);
 extern void del_demolist(char *tbl, char *sql, void *pr);
 extern int  compute_cdur(char *tbl, char *col, char *sql, void *pr, int rowid);
@@ -240,7 +239,7 @@ RTA_COLDEF   ConnCols[] = {
     double dldouble;    // A double precision floating point number
  *  } DEMOLIST;
  * The following array of RTA_COLDEF describes this structure with
- * one RTA_COLDEF for each element in the UI strucure.
+ * one RTA_COLDEF for each element in the DEMOLIST strucure.
  **************************************************************/
 RTA_COLDEF   dlcolumns[] = {
   {
