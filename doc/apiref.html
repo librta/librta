@@ -331,9 +331,6 @@ thing to include here.</td></tr></table>
  <p>Here is a summary of the few routines in the RTA API:</p>
 <table summary="list of API subroutines">
 <tr>
-<td>rta_init()</td>
-<td>initialize internal tables</td></tr>
-<tr>
 <td>dbcommand()</td>
 <td>process data stream from Postgres clients</td></tr>
 <tr>
@@ -358,15 +355,6 @@ thing to include here.</td></tr></table>
 <br>
 <br>
  
-<p><b>rta_init() - Initialize internal tables</b><br>
- Initialize all RTA internal variables and tables. It has no
-calling parameters and returns void.</p>
-<pre>
-void
-rta_init();
-</pre>
-<br>
-<br>
 <p><b>dbcommand() - Depacketize and execute Postgres
 commands</b><br>
  The main application accepts TCP connections from Postgres clients
@@ -757,7 +745,8 @@ characters in length.</td></tr></table>
  
 <p>The rta_stat table contains usage and error statistics which
 might be of interest to developers. All fields are of type long,
-are read-only, and are set to zero by rta_init(). The columns of
+are read-only, and are set to zero the first time a table is 
+added with rta_add_table().  The columns of
 rta_stats are:</p>
 <table summary="">
 <tr>
@@ -883,7 +872,8 @@ detected.</p>
 <p>As mentioned above, read callbacks are executed before a column
 value is used and write callbacks are called after all columns have
 been updated. Both read and write callbacks return nothing (are of
-type void) and have the same calling parameters:</p>
+type void). Read callbacks have the following calling parameters:</p>
+
 <table summary="" align="center" width="90%" cellspacing="1">
 <tr>
 <td valign="top">char *tblname</td>
@@ -908,9 +898,45 @@ or written</td></tr></table>
 sums and averages; things that aren't worth the effort to compute
 continuously if it's possible to compute it just when it is
 used.</p>
+<br>
 <p>Write callbacks can form the real engine driving the
 application. These are most applicable when tied to configuration
 changes. Write callbacks are also a useful place to log
 configuration changes.</p>
+<p>
+Write callbacks have the same parameters as read callbacks with
+the addition of a pointer to a copy of the row before it was
+modified.  Access to a copy of the unmodified row is useful
+to detect actual changes and not just updates with the same
+value.  </p>
+<p>
+Write callbacks are passed the following parameters:</p>
+
+<table summary="" align="center" width="90%" cellspacing="1">
+<tr>
+<td valign="top">char *tblname</td>
+<td>&nbsp;&nbsp;the name of the table referenced</td></tr>
+<tr>
+<td valign="top">char *colname</td>
+<td>&nbsp;&nbsp;the name of the column referenced</td></tr>
+<tr>
+<td valign="top">char *sqlcmd</td>
+<td>&nbsp;&nbsp;the text of the SQL command</td></tr>
+<tr>
+<td valign="top">void *pr</td>
+<td>&nbsp;&nbsp;pointer to the row being read or written</td></tr>
+<tr>
+<td valign="top">int&nbsp;&nbsp;&nbsp;&nbsp; rowid</td>
+<td>&nbsp;&nbsp;the zero-indexed row number of the row being read
+or written</td></tr>
+<tr>
+<td valign="top">void *poldrow</td>
+<td>&nbsp;&nbsp;pointer to a copy of the row before any changes</td></tr>
+</table>
+<br>
+<br>
+ 
 </body>
 </html>
+
+

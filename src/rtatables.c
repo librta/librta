@@ -25,10 +25,8 @@
 #include "do_sql.h"             /* for struct Sql_Cmd */
 
 /* Forward reference for read callbacks and iterators */
-void     restart_syslog(char *, char *, char *, int);
+void     restart_syslog();
 void    *get_next_sysrow(void *, void *, int);
-
-
 
 /***************************************************************
  * We define a table which contains the column definitions of
@@ -190,7 +188,7 @@ COLDEF   rta_tablesCols[] = {
       RTA_READONLY,    /* Flags for read-only/disksave */
       (void (*)()) 0,  /* called before read */
       (void (*)()) 0,  /* called after write */
-      "The name of the table.  This must be unique in the system. "
+    "The name of the table.  This must be unique in the system. "
       " Table names can be at most MXTBLNAME characters in length."
       "  See rta.h for details.  Note that some table names are "
       "reserved for internal use."},
@@ -203,7 +201,7 @@ COLDEF   rta_tablesCols[] = {
       RTA_READONLY,    /* Flags for read-only/disksave */
       (void (*)()) 0,  /* called before read */
       (void (*)()) 0,  /* called after write */
-      "The start address of the array of structs that makes up "
+    "The start address of the array of structs that makes up "
       "the table."},
   {
       "rta_tables",             /* table name */
@@ -214,7 +212,7 @@ COLDEF   rta_tablesCols[] = {
       RTA_READONLY,    /* Flags for read-only/disksave */
       (void (*)()) 0,  /* called before read */
       (void (*)()) 0,  /* called after write */
-      "The length of each struct in the array of structs that "
+    "The length of each struct in the array of structs that "
       "makes up the table."},
   {
       "rta_tables",             /* table name */
@@ -225,32 +223,32 @@ COLDEF   rta_tablesCols[] = {
       RTA_READONLY,    /* Flags for read-only/disksave */
       (void (*)()) 0,  /* called before read */
       (void (*)()) 0,  /* called after write */
-      "The number of rows in the table."},
+    "The number of rows in the table."},
   {
       "rta_tables",             /* table name */
       "iterator",               /* column name */
       RTA_PTR,                  /* type of data */
       sizeof(void *),           /* #bytes in col data */
       offsetof(TBLDEF, iterator), /* offset 2 col strt */
-      RTA_READONLY,             /* Flags for read-only/disksave */
-      (void (*)()) 0,           /* called before read */
-      (void (*)()) 0,           /* called after write */
-      "The iterator is a function that, given a pointer to a "
+      RTA_READONLY,    /* Flags for read-only/disksave */
+      (void (*)()) 0,  /* called before read */
+      (void (*)()) 0,  /* called after write */
+    "The iterator is a function that, given a pointer to a "
       "row, returns a pointer to the next row.  When passed "
       "a NULL as input, the function returns a pointer to the "
       "first row of the table.  The function return a NULL when "
       "asked for the row after the last row.  The function is "
-      "useful to walk through the rows of a linked list." },
+      "useful to walk through the rows of a linked list."},
   {
       "rta_tables",             /* table name */
       "it_info",                /* column name */
       RTA_PTR,                  /* type of data */
       sizeof(void *),           /* #bytes in col data */
       offsetof(TBLDEF, it_info), /* offset 2 col strt */
-      RTA_READONLY,             /* Flags for read-only/disksave */
-      (void (*)()) 0,           /* called before read */
-      (void (*)()) 0,           /* called after write */
-      "This is a pointer to any kind of information that the "
+      RTA_READONLY,    /* Flags for read-only/disksave */
+      (void (*)()) 0,  /* called before read */
+      (void (*)()) 0,  /* called after write */
+    "This is a pointer to any kind of information that the "
       "caller wants returned with each iterator call.  For "
       "example, you may wish to have one iterator function "
       "for all of your linked lists.  You could pass in "
@@ -265,7 +263,7 @@ COLDEF   rta_tablesCols[] = {
       RTA_READONLY,    /* Flags for read-only/disksave */
       (void (*)()) 0,  /* called before read */
       (void (*)()) 0,  /* called after write */
-      "A pointer to an array of COLDEF structures.  There is one "
+    "A pointer to an array of COLDEF structures.  There is one "
       "COLDEF for each column in the table."},
   {
       "rta_tables",             /* table name */
@@ -276,7 +274,7 @@ COLDEF   rta_tablesCols[] = {
       RTA_READONLY,    /* Flags for read-only/disksave */
       (void (*)()) 0,  /* called before read */
       (void (*)()) 0,  /* called after write */
-      "The number of columns in the table."},
+    "The number of columns in the table."},
   {
       "rta_tables",             /* table name */
       "savefile",               /* column name */
@@ -286,7 +284,7 @@ COLDEF   rta_tablesCols[] = {
       RTA_READONLY,    /* Flags for read-only/disksave */
       (void (*)()) 0,  /* called before read */
       (void (*)()) 0,  /* called after write */
-      "The name of the file with the non-volatile contents of "
+    "The name of the file with the non-volatile contents of "
       "the table.  This file is read when the table is "
       "initialized and is written any time a column with the "
       "non-volatile flag set is modified."},
@@ -299,7 +297,7 @@ COLDEF   rta_tablesCols[] = {
       RTA_READONLY,    /* Flags for read-only/disksave */
       (void (*)()) 0,  /* called before read */
       (void (*)()) 0,  /* called after write */
-      "A description of the table."},
+    "A description of the table."},
 };
 
 /* Define the table */
@@ -327,7 +325,7 @@ TBLDEF   rta_tablesTable = {
  * Output:       Pointer to next row or NULL if at end of list
  * Effects:      None
  **************************************************************/
-void *
+void    *
 get_next_sysrow(void *pui, void *it_info, int rowid)
 {
   extern TBLDEF *Tbl[];
@@ -335,21 +333,18 @@ get_next_sysrow(void *pui, void *it_info, int rowid)
   extern int Ntbl;
   extern int Ncol;
 
-  /* The tables for tables and columns contain pointers to the
-     actual TBLDEF and COLDEF structures.  This saves memory
-     and makes it easy for a program to change parts of the
-     table or column definition when needed.  So this routine
-     just return the Tbl or Col value.
-   */
-  if (((int) it_info == RTA_TABLES) && (rowid +1 <Ntbl))
-    return((void *) Tbl[rowid + 1]);
-  if (((int) it_info == RTA_COLUMNS) && (rowid +1 <Ncol))
-    return((void *) Col[rowid + 1]);
+  /* The tables for tables and columns contain pointers to the actual
+     TBLDEF and COLDEF structures.  This saves memory and makes it easy 
+     for a program to change parts of the table or column definition
+     when needed.  So this routine just return the Tbl or Col value. */
+  if (((int) it_info == RTA_TABLES) && (rowid + 1 < Ntbl))
+    return ((void *) Tbl[rowid + 1]);
+  if (((int) it_info == RTA_COLUMNS) && (rowid + 1 < Ncol))
+    return ((void *) Col[rowid + 1]);
 
   /* Must be at end of list */
-  return((void *) NULL);
+  return ((void *) NULL);
 }
-
 
 /***************************************************************
  *     The rta_dbg table controls which errors generate
@@ -482,19 +477,21 @@ COLDEF   rta_dbgCols[] = {
  * Input:        Name of the table 
  *               Name of the column
  *               Text of the SQL command itself
+ *               Pointer to row of data
+ *               Pointer to copy of old row
  *               Index of row used (zero indexed)
  * Output:       
  * Effects:      No side effects.
  **************************************************************/
 void
-restart_syslog(char *tblname, char *colname, char *sqlcmd, int rowid)
+restart_syslog(char *tblname, char *colname, char *sqlcmd,
+               void *prow, void *poldrow,  int rowid)
 {
   extern struct EpgDbg rtadbg;
 
   closelog();
 
-  if (rtadbg.target == 1 || rtadbg.target == 3)
-  {
+  if (rtadbg.target == 1 || rtadbg.target == 3) {
     openlog(rtadbg.ident, LOG_ODELAY | LOG_PID, rtadbg.facility);
   }
 

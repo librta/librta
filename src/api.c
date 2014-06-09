@@ -24,9 +24,12 @@
 /* Tbl and Col contain pointers to table and column
  * definitions of all tables and columns in * the system.
  * Ntbl and Ncol are the number of tables and columns in each
- * list.  These are used often enough that they are globals. */
+ * list.  These are used often enough that they are globals.
+ * Ntbl starts out with a -1 flag to indicate that we are not
+ * initialized.  */
+ 
 TBLDEF  *Tbl[MX_TBL];
-int      Ntbl;
+int      Ntbl = -1;
 COLDEF  *Col[MX_COL];
 int      Ncol;
 
@@ -48,8 +51,7 @@ rta_init()
   extern TBLDEF rta_statTable;
   extern void restart_syslog();
 
-  for (i = 0; i < MX_TBL; i++)
-  {
+  for (i = 0; i < MX_TBL; i++) {
     Tbl[i] = (TBLDEF *) 0;
   }
   Ntbl = 0;
@@ -60,7 +62,8 @@ rta_init()
   (void) rta_add_table(&rta_dbgTable);
   (void) rta_add_table(&rta_statTable);
 
-  restart_syslog((char *) 0, (char *) 0, (char *) 0, 0);
+  restart_syslog((char *) 0, (char *) 0, (char *) 0, (void *) 0,
+                 (void *) 0, 0);
 }
 
 /***************************************************************
@@ -86,9 +89,12 @@ rta_add_table(TBLDEF *ptbl)
   extern TBLDEF rta_columnsTable;
   int      i, j;       /* a loop index */
 
+  /* Initialize the RTA tables if this is the first call to add_table */
+  if (Ntbl == -1)
+    rta_init();
+
   /* Error if at Ntbl limit */
-  if (Ntbl == MX_TBL)
-  {
+  if (Ntbl == MX_TBL) {
     rtastat.nrtaerr++;
     if (rtadbg.rtaerr)
       rtalog(LOC, Er_Max_Tbls);
@@ -97,10 +103,8 @@ rta_add_table(TBLDEF *ptbl)
 
   /* verify that table name is unique */
   i = 0;
-  while (i < Ntbl)
-  {
-    if (!strncmp(ptbl->name, Tbl[i]->name, MXTBLNAME))
-    {
+  while (i < Ntbl) {
+    if (!strncmp(ptbl->name, Tbl[i]->name, MXTBLNAME)) {
       rtastat.nrtaerr++;
       if (rtadbg.rtaerr)
         rtalog(LOC, Er_Tbl_Dup, ptbl->name);
@@ -110,8 +114,7 @@ rta_add_table(TBLDEF *ptbl)
   }
 
   /* verify lenght of table name */
-  if (strlen(ptbl->name) > MXTBLNAME)
-  {
+  if (strlen(ptbl->name) > MXTBLNAME) {
     rtastat.nrtaerr++;
     if (rtadbg.rtaerr)
       rtalog(LOC, Er_Tname_Big, ptbl->name);
@@ -119,8 +122,7 @@ rta_add_table(TBLDEF *ptbl)
   }
 
   /* verify savefile name is a valid pointer */
-  if (ptbl->savefile == (char *) 0)
-  {
+  if (ptbl->savefile == (char *) 0) {
     rtastat.nrtaerr++;
     if (rtadbg.rtaerr)
       rtalog(LOC, Er_Col_Type, "savefile");
@@ -128,8 +130,7 @@ rta_add_table(TBLDEF *ptbl)
   }
 
   /* Check the upper bound on # columns / table */
-  if (ptbl->ncol > NCMDCOLS)
-  {
+  if (ptbl->ncol > NCMDCOLS) {
     rtastat.nrtaerr++;
     if (rtadbg.rtaerr)
       rtalog(LOC, Er_Cmd_Cols, ptbl->name);
@@ -137,12 +138,9 @@ rta_add_table(TBLDEF *ptbl)
   }
 
   /* verify that column names are unique within table */
-  for (i = 0; i < ptbl->ncol; i++)
-  {
-    for (j = 0; j < i; j++)
-    {
-      if (!strncmp(ptbl->cols[i].name, ptbl->cols[j].name, MXCOLNAME))
-      {
+  for (i = 0; i < ptbl->ncol; i++) {
+    for (j = 0; j < i; j++) {
+      if (!strncmp(ptbl->cols[i].name, ptbl->cols[j].name, MXCOLNAME)) {
         rtastat.nrtaerr++;
         if (rtadbg.rtaerr)
           rtalog(LOC, Er_Col_Dup, ptbl->cols[i].name);
@@ -151,43 +149,43 @@ rta_add_table(TBLDEF *ptbl)
     }
   }
 
-  /* verify column name length, help length, data type, and flag
-     contents */
-  for (i = 0; i < ptbl->ncol; i++)
-  {
-    if (strlen(ptbl->cols[i].name) > MXCOLNAME)
-    {
+  /* verify column name length, help length, data type, flag contents,
+     and that column table name is valid */
+  for (i = 0; i < ptbl->ncol; i++) {
+    if (strlen(ptbl->cols[i].name) > MXCOLNAME) {
       rtastat.nrtaerr++;
       if (rtadbg.rtaerr)
         rtalog(LOC, Er_Cname_Big, ptbl->cols[i].name);
       return (RTA_ERROR);
     }
-    if (strlen(ptbl->cols[i].help) > MXHELPSTR)
-    {
+    if (strlen(ptbl->cols[i].help) > MXHELPSTR) {
       rtastat.nrtaerr++;
       if (rtadbg.rtaerr)
         rtalog(LOC, Er_Hname_Big, ptbl->cols[i].name);
       return (RTA_ERROR);
     }
-    if (ptbl->cols[i].type > MXCOLTYPE)
-    {
+    if (ptbl->cols[i].type > MXCOLTYPE) {
       rtastat.nrtaerr++;
       if (rtadbg.rtaerr)
         rtalog(LOC, Er_Col_Type, ptbl->cols[i].name);
       return (RTA_ERROR);
     }
-    if (ptbl->cols[i].flags > RTA_DISKSAVE + RTA_READONLY)
-    {
+    if (ptbl->cols[i].flags > RTA_DISKSAVE + RTA_READONLY) {
       rtastat.nrtaerr++;
       if (rtadbg.rtaerr)
         rtalog(LOC, Er_Col_Flag, ptbl->cols[i].name);
       return (RTA_ERROR);
     }
+    if (strcmp(ptbl->cols[i].table, ptbl->name)) {
+      rtastat.nrtaerr++;
+      if (rtadbg.rtaerr)
+        rtalog(LOC, Er_Col_Name, ptbl->cols[i].name);
+      return (RTA_ERROR);
+    }
   }
 
   /* Verify that we can add the columns */
-  if ((Ncol + ptbl->ncol) >= MX_COL)
-  {
+  if ((Ncol + ptbl->ncol) >= MX_COL) {
     rtastat.nrtaerr++;
     if (rtadbg.rtaerr)
       rtalog(LOC, Er_Max_Cols);
@@ -199,8 +197,7 @@ rta_add_table(TBLDEF *ptbl)
   Tbl[0]->nrows = Ntbl;
 
   /* Add columns to list of column pointers */
-  for (i = 0; i < ptbl->ncol; i++)
-  {
+  for (i = 0; i < ptbl->ncol; i++) {
     Col[Ncol++] = &(ptbl->cols[i]);
   }
   rta_columnsTable.nrows += ptbl->ncol;
@@ -248,44 +245,36 @@ dbcommand(char *buf, int *nin, char *out, int *nout)
   int      length;     /* lenght of the packet if old protocol */
 
   /* startup or cancel packet if first byte is zero */
-  if ((int) buf[0] == 0)
-  {
-    /* get length.  Enough bytes for a length?  if not,
-       consume no input, write no output */
-    if (*nin < 4)
-    {
+  if ((int) buf[0] == 0) {
+    /* get length.  Enough bytes for a length? if not, consume no
+       input, write no output */
+    if (*nin < 4) {
       return (RTA_NOCMD);
     }
-    length = (int) ((unsigned int)(0xff & buf[3]) +
-                   ((unsigned int)(0xff & buf[2]) << 8) +
-                   ((unsigned int)(0xff & buf[1]) << 16));
+    length = (int) ((unsigned int) (0xff & buf[3]) +
+      ((unsigned int) (0xff & buf[2]) << 8) +
+      ((unsigned int) (0xff & buf[1]) << 16));
 
     /* Is the whole packet here? If not, consume no input, write no
        output */
-    if (*nin < length)
-    {
+    if (*nin < length) {
       return (RTA_NOCMD);
     }
 
-    /* Look for a start-up request packet.  Do a sanity check
-       since the minimum startup packet is 13 bytes (4 length,
-       4 protocol, 'user', and a null). */
-    if (length < 13)          /* unknown, ignore, (log?) */
-    {
+    /* Look for a start-up request packet.  Do a sanity check since the 
+       minimum startup packet is 13 bytes (4 length, 4 protocol,
+       'user', and a null). */
+    if (length < 13) {          /* unknown, ignore, (log?) */
       *nin -= length;
       return (RTA_SUCCESS);
     }
 
     /* A start-up packet if 0300 in the protocol field */
-    if (buf[4] == 0 &&
-        buf[5] == 3 &&
-        buf[6] == 0 &&
-        buf[7] == 0 )
-    {
-      /* Currently we do not authenticate the user.  
-         If you want to add real authentication, this is the
-         place to add it.  */
+    if (buf[4] == 0 && buf[5] == 3 && buf[6] == 0 && buf[7] == 0) {
+      /* Currently we do not authenticate the user. If you want to
+         add real authentication, this is the place to add it.  */
 
+      /* *INDENT-OFF* */
       /* This is the canned response we send on all start-ups.
          See the Postgres protocol specification for details.
          'R', int32(length), int32(0)
@@ -313,15 +302,15 @@ dbcommand(char *buf, int *nin, char *out, int *nout)
             0x6e,0x00,0x70,0x6f,0x73,0x74,0x67,0x72,0x65,0x73,0x00,
         'K',0x00,0x00,0x00,0x0c,0x00,0x00,0x36,0x94,0x56,0xf4,0x8d,0x68,
         'Z',0x00,0x00,0x00,0x05,0x49};
+      /* *INDENT-ON* */
 
       /* Verify that the buffer has enough room for the response */
-      if (*nout < 164)
-      { 
+      if (*nout < 164) {
         rtastat.nsqlerr++;
         if (rtadbg.sqlerr)
           rtalog(LOC, Er_No_Space);
 
-        return(RTA_NOBUF);
+        return (RTA_NOBUF);
       }
 
       *nin -= length;
@@ -330,50 +319,44 @@ dbcommand(char *buf, int *nin, char *out, int *nout)
       rtastat.nauth++;
       return (RTA_SUCCESS);
     }
-    else if (length == 16)      /* a cancel request */
-    {
+    else if (length == 16) {    /* a cancel request */
       /* ignore the request for now */
       *nin -= length;
       return (RTA_SUCCESS);
     }
-    else                        /* unknown, ignore, (log?) */
-    {
+    else {                      /* unknown, ignore, (log?) */
+
       *nin -= length;
       return (RTA_SUCCESS);
     }
   }
-  else if (buf[0] == 'Q')       /* a query request */
-  {
-    /* the Postgres 0300 protocol has a 32 bit length after
-       the 1 byte command.  Verify that we have enough bytes
-       to get the lentgh */
+  else if (buf[0] == 'Q') {     /* a query request */
+    /* the Postgres 0300 protocol has a 32 bit length after the 1 byte
+       command.  Verify that we have enough bytes to get the lentgh */
 
-    if (*nin < 5)
-    {
+    if (*nin < 5) {
       return (RTA_NOCMD);
     }
 
-    /* Get length and verify that we have all the bytes.
-       Note the quiet assummption that the length is 24 bits. */
-    length = (int) ((unsigned int)(0xff & buf[4]) +
-                   ((unsigned int)(0xff & buf[3]) << 8) +
-                   ((unsigned int)(0xff & buf[2]) << 16));
+    /* Get length and verify that we have all the bytes. Note the quiet 
+       assummption that the length is 24 bits. */
+    length = (int) ((unsigned int) (0xff & buf[4]) +
+      ((unsigned int) (0xff & buf[3]) << 8) +
+      ((unsigned int) (0xff & buf[2]) << 16));
 
     /* add one to account for the 'Q' */
     length++;
-    if (*nin < length)
-    {
+    if (*nin < length) {
       return (RTA_NOCMD);
     }
 
-    /* Got a complete command; do it. (buf[5] since the SQL
-       follows the 'Q' and length) */
+    /* Got a complete command; do it. (buf[5] since the SQL follows the 
+       'Q' and length) */
     SQL_string(&buf[5], out, nout);
     *nin -= length;             /* to swallow the cmd */
     return (RTA_SUCCESS);
   }
-  else if (buf[0] == 'X')       /* a terminate request */
-  {
+  else if (buf[0] == 'X') {     /* a terminate request */
     return (RTA_CLOSE);
   }
 
@@ -409,21 +392,28 @@ rta_save(TBLDEF *ptbl, char *fname)
   int      did_header; /* == 1 if printed UPDATE part */
   int      did_1_col;  /* == 1 if at least one col printed */
 
+  /* Do a sanity check on the lengths of the paths involved */
+  if ((strlen(fname) > PATH_MAX -1) ||
+      (strlen(dirname(path)) + strlen("/tmpXXXXXX") > PATH_MAX -1)) {
+    rtastat.nsyserr++;
+    if (rtadbg.syserr)
+      rtalog(LOC, Er_No_Save, tfile);
+    return (RTA_ERROR);
+  }
+
   /* Open a temp file in the same directory as the users target file */
-  (void) strncpy(path, fname, PATH_MAX);
-  (void) strncpy(tfile, dirname(path), PATH_MAX);
+  (void) strcpy(path, fname);
+  (void) strcpy(tfile, dirname(path));
   (void) strcat(tfile, "/tmpXXXXXX");
   fd = mkstemp(tfile);
-  if (fd < 0)
-  {
+  if (fd < 0) {
     rtastat.nsyserr++;
     if (rtadbg.syserr)
       rtalog(LOC, Er_No_Save, tfile);
     return (RTA_ERROR);
   }
   ftmp = fdopen(fd, "w");
-  if (ftmp == (FILE *) 0)
-  {
+  if (ftmp == (FILE *) 0) {
     rtastat.nsyserr++;
     if (rtadbg.syserr)
       rtalog(LOC, Er_No_Save, tfile);
@@ -434,23 +424,20 @@ rta_save(TBLDEF *ptbl, char *fname)
   /* Get row length and a pointer to the first row */
   sr = ptbl->rowlen;
   rx = 0;
-  if (ptbl->iterator) 
+  if (ptbl->iterator)
     pr = (ptbl->iterator) ((void *) NULL, ptbl->it_info, rx);
   else
     pr = ptbl->address;
 
   /* for each row ..... */
-  while (pr)
-  {
+  while (pr) {
     did_header = 0;
     did_1_col = 0;
-    for (cx = 0; cx < ptbl->ncol; cx++)
-    {
-      if ((!ptbl->cols[cx].flags & RTA_DISKSAVE) ||
-          (ptbl->cols[cx].flags & RTA_READONLY))
+    for (cx = 0; cx < ptbl->ncol; cx++) {
+      if ((!(ptbl->cols[cx].flags & RTA_DISKSAVE)) ||
+        (ptbl->cols[cx].flags & RTA_READONLY))
         continue;
-      if (!did_header)
-      {
+      if (!did_header) {
         fprintf(ftmp, "UPDATE %s SET", ptbl->name);
         did_header = 1;
       }
@@ -461,8 +448,7 @@ rta_save(TBLDEF *ptbl, char *fname)
 
       /* compute pointer to actual data */
       pd = pr + ptbl->cols[cx].offset;
-      switch ((ptbl->cols[cx]).type)
-      {
+      switch ((ptbl->cols[cx]).type) {
         case RTA_STR:
           if (memchr((char *) pd, '"', ptbl->cols[cx].length))
             fprintf(ftmp, "= \'%s\'", (char *) pd);
@@ -504,7 +490,7 @@ rta_save(TBLDEF *ptbl, char *fname)
     if (did_header)
       fprintf(ftmp, " LIMIT 1 OFFSET %d\n", rx);
     rx++;
-    if (ptbl->iterator) 
+    if (ptbl->iterator)
       pr = (ptbl->iterator) (pr, ptbl->it_info, rx);
     else {
       if (rx >= ptbl->nrows)
@@ -522,8 +508,7 @@ rta_save(TBLDEF *ptbl, char *fname)
      our effort to put the temp file in the same directory as the
      target file.) */
   (void) fclose(ftmp);
-  if (rename(tfile, fname) != 0)
-  {
+  if (rename(tfile, fname) != 0) {
     rtastat.nsyserr++;
     if (rtadbg.syserr)
       rtalog(LOC, Er_No_Save, fname);
@@ -558,8 +543,7 @@ rta_load(TBLDEF *ptbl, char *fname)
      save file name, if any, in order to prevent the system from trying 
      to save the table before we are done loading it. */
   fp = fopen(fname, "r");
-  if (fp == (FILE *) 0)
-  {
+  if (fp == (FILE *) 0) {
     rtastat.nsyserr++;
     if (rtadbg.syserr)
       rtalog(LOC, Er_No_Load, fname);
@@ -571,16 +555,14 @@ rta_load(TBLDEF *ptbl, char *fname)
   ptbl->savefile = (char *) 0;
 
   /* process each line in the file */
-  while (fgets(line, MX_LN_SZ, fp))
-  {
+  while (fgets(line, MX_LN_SZ, fp)) {
     /* A comment if first word is not "UPDATE " */
     if (strncmp(line, "UPDATE ", 7))
       continue;
 
     nreply = MX_LN_SZ;
     SQL_string(line, reply, &nreply);
-    if (!strncmp(line, "UPDATE 1", 8))
-    {
+    if (!strncmp(line, "UPDATE 1", 8)) {
       /* SQL command failed! Report error */
       rtastat.nsyserr++;
       if (rtadbg.syserr)

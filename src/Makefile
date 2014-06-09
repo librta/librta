@@ -54,9 +54,6 @@ librtafs.so.2: $(FSOBJS) librtadb.so.2
 	ln -sf librtafs.so.2.0 librtafs.so
 	ar -rcs librtafs.a $(FSOBJS)
 
-install: librtadb.so.2
-	mv -f librta* /usr/lib
-
 token.o: parse.tab.c do_sql.h
 
 parse.tab.c: parse.y do_sql.h
@@ -71,10 +68,10 @@ rtatables.o: rtatables.c do_sql.h rta.h
 standard: clean
 	for i in *.h *.c ; \
 	do \
-	 indent  -bad -bap -nbbb -bli0 -cdw -cli2 -cbi0 -saf -nut \
+	 indent  -bad -bap -nbbb -br -cdw -cli2 -cbi0 -saf -nut \
 		-sai -saw -di9 -nbc -bfda -bls -lp -ci2 -i2 -nbbo -l72 \
 		-fca -nbfda -nbfde -nlp -bbo -sob -cd24 -ts0 -npcs -nut \
-		-T TBLDEF -T COLDEF -T PRXPORT $$i ; \
+		-T TBLDEF -T COLDEF $$i ; \
 	 rm $$i~ ; \
 	done
 

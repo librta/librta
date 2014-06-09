@@ -24,7 +24,7 @@
 extern UI ui[];
 extern struct MyData mydata[];
 extern void compute_cdur(char *tbl, char *col, char *sql, void *pr, int rowid);
-extern void reverse_str(char *tbl, char *col, char *sql, void *pr, int rowid);
+extern void reverse_str();
 extern void *get_next_conn(void *prow, void *it_info, int rowid);
 
 /***************************************************************
@@ -37,9 +37,9 @@ COLDEF   mycolumns[] = {
       RTA_INT,                  /* it is an integer */
       sizeof(int),              /* number of bytes */
       offsetof(struct MyData, myint), /* location in struct */
-      RTA_DISKSAVE,               /* no flags */
-      (void (*)()) 0,  /* called before read */
-      (void (*)()) 0,  /* called after write */
+      RTA_DISKSAVE,             /* save to disk */
+      (void (*)()) 0,           /* called before read */
+      (void (*)()) 0,           /* called after write */
     "A sample integer in a table"},
   {
       "mytable",                /* the table name */
@@ -47,9 +47,9 @@ COLDEF   mycolumns[] = {
       RTA_FLOAT,                /* it is a float */
       sizeof(float),            /* number of bytes */
       offsetof(struct MyData, myfloat), /* location in struct */
-      RTA_DISKSAVE,               /* no flags */
-      (void (*)()) 0,  /* called before read */
-      (void (*)()) 0,  /* called after write */
+      0,                        /* no flags */
+      (void (*)()) 0,           /* called before read */
+      (void (*)()) 0,           /* called after write */
     "A sample float in a table"},
   {
       "mytable",                /* the table name */
@@ -57,9 +57,9 @@ COLDEF   mycolumns[] = {
       RTA_STR,                  /* it is a string */
       NOTE_LEN,                 /* number of bytes */
       offsetof(struct MyData, notes), /* location in struct */
-      RTA_DISKSAVE,               /* no flags */
-      (void (*)()) 0,  /* called before read */
-      reverse_str,     /* called after write */
+      RTA_DISKSAVE,             /* save to disk */
+      (void (*)()) 0,           /* called before read */
+      reverse_str,              /* called after write */
     "A sample note string in a table"},
   {
       "mytable",                /* the table name */
@@ -67,9 +67,9 @@ COLDEF   mycolumns[] = {
       RTA_STR,                  /* it is a string */
       NOTE_LEN,                 /* number of bytes */
       offsetof(struct MyData, seton), /* location in struct */
-      RTA_READONLY,    /* a read-only column */
-      (void (*)()) 0,  /* called before read */
-      (void (*)()) 0,  /* called after write */
+      RTA_READONLY,             /* a read-only column */
+      (void (*)()) 0,           /* called before read */
+      (void (*)()) 0,           /* called after write */
     "Sample of a field computed by a write callback.  Seton"
       " is the reverse of the 'notes' field."},
 };

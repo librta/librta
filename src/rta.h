@@ -177,7 +177,8 @@ typedef struct
   int      type;
 
           /** The number of bytes in the string if the above
-           * type is RTA_STR or RTA_PSTR. */
+           * type is RTA_STR or RTA_PSTR.  The length includes
+           * the null at the end of the string.  */
   int      length;
 
           /** Number of bytes from the start of the structure to
@@ -207,13 +208,14 @@ typedef struct
            * read so the following would produce two calls:
            * SELECT intime FROM inns WHERE intime >= 100;   */
   void     (*readcb) (char *tbl, char *column, char *SQL, void *pr,
-                      int row_num);
+    int row_num);
 
           /** Write callback.  This routine is called after an
            * UPDATE in which the column is written. Input values
            * include the table name, the column name, the SQL
-           * command, a pointer to the row affected, and the (zero
-           * indexed) row number of the modified row.  See the
+           * command, a pointer to the row affected, the (zero
+           * indexed) row number of the modified row, and a pointer
+           * to a copy of the row before any modifications.  See the
            * callback section below.
            * This routine is called only once after all column
            * updates have occurred.  For example, if there were
@@ -225,7 +227,7 @@ typedef struct
            *     "192.168.1.10" WHERE name = "eth1";
            * The callback is called for each row modified. */
   void     (*writecb) (char *tbl, char *column, char *SQL, void *pr,
-                       int row_num);
+                       int row_num,  void *poldrow);
 
           /** A brief description of the column.  This should
            * include the meaning of the data in the column, the
@@ -315,7 +317,7 @@ typedef struct
          * Your iterator should return a pointer to the first
          * row when the input is NULL and should return a NULL
          * when asked for the row after the last row. */
-  void *   (*iterator) (void *cur_row, void *it_info, int rowid);
+  void    *(*iterator) (void *cur_row, void *it_info, int rowid);
 
         /** A pointer to any kind of information that the 
          * caller wants returned with each iterator call.  
@@ -355,9 +357,8 @@ TBLDEF;
 /***************************************************************
  * - Subroutines
  * Here is a summary of the few routines in the rta API:
- *    rta_init()      - initialize internal tables
  *    dbcommand()     - I/F to Postgres clients
- *    egp_add_table() - add a table and its columns to the DB
+ *    rta_add_table() - add a table and its columns to the DB
  *    SQL_string()    - execute an SQL statement in the DB
  *    rta_save()      - save a table to a file
  *    rta_load()      - load a table from a file
@@ -425,15 +426,6 @@ int      dbcommand(char *, int *, char *, int *);
  *         RTA_ERROR     - error
  **************************************************************/
 int      rta_add_table(TBLDEF *);
-
-/** ************************************************************
- * rta_init():  - Initialize all internal variables and tables
- * This may be called more than once.
- * 
- * Input:  None
- * Return: None
- **************************************************************/
-void     rta_init();
 
 /** ************************************************************
  * SQL_string():  - Execute single SQL command
@@ -637,7 +629,7 @@ void     do_rtafs();
  *  rta_tables:      - a table of all tables in the DB
  *  rta_columns:     - a table of all columns in the DB
  *  rta_logconfig:   - controls what gets logged from rta
- *  egp_stats:       - simple usage and error statistics
+ *  rta_stats:       - simple usage and error statistics
  *
  *     The rta_tables table gives SQL access to all internal and
  * registered tables.  The data in the table is exactly that of
@@ -731,8 +723,8 @@ void     do_rtafs();
  *
  *     The rta_stat table contains usage and error statistics
  * which might be of interest to developers.  All fields are
- * of type long, are read-only, and are set to zero by
- * rta_init().  The columns of rta_stats are:
+ * of type long, are read-only, and are set to zero by the 
+ * first call to rta_add_table.  The columns of rta_stats are:
  *     nsyserr    - count of failed OS calls. 
  *     nrtaerr    - count of internal rta failures.
  *     nsqlerr    - count of SQL failures.
@@ -784,7 +776,7 @@ void     do_rtafs();
  *     You are welcome to modify syslogd in order to do post
  * processing such as generating SNMP traps off these debug
  * messages.  All error messages of this type are send to
- * syslog() as:    "egp[PID]: FILE LINE#: error_message",
+ * syslog() as:    "rta[PID]: FILE LINE#: error_message",
  * where PID, FILE, and LINE# are replaced by the process ID,
  * the source file name, and the line number where the error
  * was detected.
@@ -808,6 +800,7 @@ void     do_rtafs();
 #define Er_Col_Dup      "%s %d: Table already has column named: %s\n"
 #define Er_Col_Type     "%s %d: Column contains an unknown data type: %s\n"
 #define Er_Col_Flag     "%s %d: Column contains unknown flag data: %s\n"
+#define Er_Col_Name     "%s %d: Incorrect table in column definition: %s\n"
 #define Er_Cmd_Cols     "%s %d: Too many columns in table: %s\n"
 #define Er_No_Space     "%s %d: Not enough buffer space\n"
 
@@ -825,8 +818,8 @@ void     do_rtafs();
  *     As mentioned above, read callbacks are executed before a
  * column value is used and write callbacks are called after all
  * columns have been updated.  Both read and write callbacks
- * return nothing (are of type void) and have the same calling
- * parameters:
+ * return nothing (are of type void).  Read callbacks  have the
+ * following calling parameters:
  *   - char *tblname:  the name of the table referenced
  *   - char *colname:  the name of the column referenced
  *   - char *sqlcmd:   the text of the SQL command 
@@ -841,7 +834,21 @@ void     do_rtafs();
  *     Write callbacks can form the real engine driving the
  * application.  These are most applicable when tied to 
  * configuration changes.   Write callbacks are also a useful 
- * place to log configuration changes.
+ * place to log configuration changes.  Write callbacks have
+ * the same parameters as read callbacks with the addition of
+ * a pointer to a copy of the row before it was modified.
+ * Access to a copy of the unmodified row is useful to detect
+ * actual changes and not just updates with the same value.
+ *     The parameters to a write callback are:
+ *   - char *tblname:  the name of the table referenced
+ *   - char *colname:  the name of the column referenced
+ *   - char *sqlcmd:   the text of the SQL command 
+ *   - void *pr;       points to affected row in table
+ *   - int   rowid:    the zero-indexed row number of the row
+ *                     being read or written
+ *   - void *poldrow;  pointer to a copy of the row before any
+ *                     changes were made.
+ *
  **************************************************************/
 
 /***************************************************************

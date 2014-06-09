@@ -1,3 +1,21 @@
+2004-02-26 Bob Smith
+        * Version 0.7.1. Replace "epg" with "rta" in all documents.
+          Verify that the name in a column definition matches the
+        name of the table it is defined with.
+          Fixed a bug in which write callbacks were always passed
+        a column name of NULL.
+          Removed rta_init() from API.  It is not needed and it's
+        safer to do the init on the first call to rta_add_table().
+          Added another parameter to the write callback which points
+        to a copy of the unmodified row.  The malloc(), memcpy(),
+        and free() slows the system slightly but the ability to do
+        edge detection is worth the extra CPU time.
+          The length of a string field now includes space for a
+        null at the end of the string.  This bug could be a source
+        of a buffer overflow.
+          Fixed a bug in selecting which columns to save to disk
+        for non-volatile tables.
+
 2004-01-03 Bob Smith
         * Version 0.7.0.   Added a callback function, called an
         'iterator', which advances a row pointer from one row to
@@ -29,7 +47,7 @@
         system.
            This version also fixes a memory leak which occurred when
         the Yacc parser detected an SQL syntax error.  The amount of
-        leaked memory was about equal to the lenghts of the table and
+        leaked memory was about equal to the lengths of the table and
         columns names in the query.
 
 2003-04-18  Bob Smith

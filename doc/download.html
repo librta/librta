@@ -33,11 +33,37 @@ h3 {font-family: sans-serif}
 <h2>Download</h2> 
 <p>
 Most recent Linux distributions are using PosgreSQL 7.3, so
-you probably want rta-0.6.1.
+you probably want rta-0.6.1.</p>
+<p>Note also that the RTA file system interface uses the
+Fuse-1.0 package not the newer Fuse-1.1 version.  This will
+be fixed in a later release.
 
 <p>
 <table cellpadding=5 cellspacing=1 width="75%" border=1> 
 <tr><th>Version</th><th>Change Log</th></tr>
+
+<tr valign="top"><td><a href=rta-0.7.1.tgz>rta-0.7.1.tgz</td>
+<td>2004-02-26<br>
+        Replace "epg" with "rta" in all documents.
+          Verify that the name in a column definition matches the
+        name of the table it is defined with.
+          Fixed a bug in which write callbacks were always passed
+        a column name of NULL.
+          Removed rta_init() from API.  It is not needed and it's
+        safer to do the init on the first call to rta_add_table().
+          The length of RTA strings now includes the terminating
+        null.  Previously all characters in the string could be
+        used for characters.
+          Added another parameter to the write callback which points
+        to a copy of the unmodified row.  Managing this copy 
+        slows the system slightly but the ability to do
+        edge detection is worth the extra CPU time.
+        The changes in the calling parameters of the write callback
+        makes this release incompatible with earlier releases.
+          Fixed a bug in selecting which columns to save to disk
+        for non-volatile tables.
+
+</td></tr>
 
 <tr valign="top"><td><a href=rta-0.7.0.tgz>rta-0.7.0.tgz</td>
 <td>2004-01-03<br>
@@ -45,7 +71,7 @@ you probably want rta-0.6.1.
         to this addition all tables had to be linear arrays
         of structs.  The iterator function makes it possible
         to have linked lists or other more complex data
-        sturctures appear as if they were in a Postgres data
+        structures appear as if they were in a Postgres data
         base.  <br>
           This change modifies the API slightly and this
         version is not backward compatible with earlier
@@ -82,7 +108,7 @@ you probably want rta-0.6.1.
         system.<br>
            This version also fixes a memory leak which occurred when
         the Yacc parser detected an SQL syntax error.  The amount of
-        leaked memory was about equal to the lenghts of the table and
+        leaked memory was about equal to the lengths of the table and
         columns names in the query.
 
 </td></tr>
@@ -103,3 +129,4 @@ Initial release.
 </p>
 </body>
 </html>
+

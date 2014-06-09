@@ -54,8 +54,7 @@ extern struct EpgDbg rtadbg;
 void
 do_sql(char *buf, int *nbuf)
 {
-  switch (cmd.command)
-  {
+  switch (cmd.command) {
     case RTA_SELECT:
       verify_table_name(buf, nbuf);
       if (cmd.err)
@@ -115,16 +114,13 @@ verify_table_name(char *buf, int *nbuf)
   int      i;          /* temp integers */
 
   /* Verify that the table exists */
-  for (i = 0; i < Ntbl; i++)
-  {
+  for (i = 0; i < Ntbl; i++) {
     if ((Tbl[i] != (TBLDEF *) 0) &&
-      (!strncmp(cmd.tbl, Tbl[i]->name, MXTBLNAME)))
-    {
+      (!strncmp(cmd.tbl, Tbl[i]->name, MXTBLNAME))) {
       break;
     }
   }
-  if ((Tbl[i] == (TBLDEF *) 0) || (i == Ntbl))
-  {
+  if ((Tbl[i] == (TBLDEF *) 0) || (i == Ntbl)) {
     send_error(LOC, E_NOTABLE, cmd.tbl);
     return;
   }
@@ -163,16 +159,13 @@ verify_select_list(char *buf, int *nbuf)
      '*', then for each column in the table, free any memory in
      cmd.cols, get the size of the column name, allocate memeory, copy
      the column name, and put the pointer into cmd.cols.  */
-  if (cmd.cols[0][0] == '*')
-  {
+  if (cmd.cols[0][0] == '*') {
     /* they are asking for the full column list */
-    for (i = 0; i < ncols; i++)
-    {
+    for (i = 0; i < ncols; i++) {
       if (cmd.cols[i])
         free(cmd.cols[i]);
       cmd.cols[i] = malloc(strlen(coldefs[i].name) + 1);
-      if (cmd.cols[i] == (void *) 0)
-      {
+      if (cmd.cols[i] == (void *) 0) {
         rtastat.nsyserr++;
         if (rtadbg.syserr)
           rtalog(LOC, Er_No_Mem);
@@ -192,25 +185,20 @@ verify_select_list(char *buf, int *nbuf)
   /* OK, scan the columns definitions to verify that the columns in the 
      command are really columns in the table. Scan is ...for each col
      in select list ... */
-  for (j = 0; j < NCMDCOLS; j++)
-  {
-    if (cmd.cols[j] == (char *) 0)
-    {
+  for (j = 0; j < NCMDCOLS; j++) {
+    if (cmd.cols[j] == (char *) 0) {
       return;                   /* select list is OK */
     }
 
     /* Scan is ...for each column definition ... */
-    for (i = 0; i < ncols; i++)
-    {
+    for (i = 0; i < ncols; i++) {
       /* Is this column in the table of interest? */
-      if (!strncmp(cmd.cols[j], coldefs[i].name, MXCOLNAME))
-      {
+      if (!strncmp(cmd.cols[j], coldefs[i].name, MXCOLNAME)) {
         /* Save pointer to the column in COLDEFS */
         cmd.pcol[j] = &(coldefs[i]);
 
         /* Compute length of output line */
-        switch (coldefs[i].type)
-        {
+        switch (coldefs[i].type) {
           case RTA_STR:
           case RTA_PSTR:
             cmd.nlineout += coldefs[i].length;
@@ -235,8 +223,7 @@ verify_select_list(char *buf, int *nbuf)
     }
 
     /* We scanned column defs.  Error if not found */
-    if (i == ncols)
-    {
+    if (i == ncols) {
       send_error(LOC, E_NOCOLUMN, cmd.cols[j]);
       return;
     }
@@ -275,24 +262,19 @@ verify_where_list(char *buf, int *nbuf)
   /* scan the columns definitions to verify that the columns in the
      command are really columns in the table. Scan is ...for each col
      in where list ... */
-  for (j = 0; j < NCMDCOLS; j++)
-  {
-    if (cmd.whrcols[j] == (char *) 0)
-    {
+  for (j = 0; j < NCMDCOLS; j++) {
+    if (cmd.whrcols[j] == (char *) 0) {
       return;
     }
 
     /* Scan is ...for each column definition ... */
-    for (i = 0; i < ncols; i++)
-    {
+    for (i = 0; i < ncols; i++) {
       /* we are on a column def for the right table */
-      if (!strncmp(cmd.whrcols[j], coldefs[i].name, MXCOLNAME))
-      {
+      if (!strncmp(cmd.whrcols[j], coldefs[i].name, MXCOLNAME)) {
         /* column is valid, now check data type.  Must be string or
            num, if num, need val */
         if ((coldefs[i].type == RTA_STR) ||
-          (coldefs[i].type == RTA_PSTR) ||
-          ((coldefs[i].type == RTA_INT)
+          (coldefs[i].type == RTA_PSTR) || ((coldefs[i].type == RTA_INT)
             && (sscanf(cmd.whrvals[j], "%d", &(cmd.whrints[j])) == 1))
           || ((coldefs[i].type == RTA_PINT)
             && (sscanf(cmd.whrvals[j], "%d", &(cmd.whrints[j])) == 1))
@@ -305,8 +287,7 @@ verify_where_list(char *buf, int *nbuf)
           || ((coldefs[i].type == RTA_FLOAT)
             && (sscanf(cmd.whrvals[j], "%f", &(cmd.whrflot[j])) == 1))
           || ((coldefs[i].type == RTA_PFLOAT)
-            && (sscanf(cmd.whrvals[j], "%f", &(cmd.whrflot[j])) == 1)))
-        {
+            && (sscanf(cmd.whrvals[j], "%f", &(cmd.whrflot[j])) == 1))) {
           /* Save WHERE column pointer for later use */
           cmd.pwhr[j] = &(coldefs[i]);
           break;
@@ -319,8 +300,7 @@ verify_where_list(char *buf, int *nbuf)
     }
 
     /* We scanned column defs.  Error if not found */
-    if (i == ncols)
-    {
+    if (i == ncols) {
       send_error(LOC, E_NOCOLUMN, cmd.whrcols[j]);
       return;
     }
@@ -359,16 +339,13 @@ verify_update_list(char *buf, int *nbuf)
   /* scan the columns definitions to verify that the columns in the
      command are really columns in the table. Scan is ...for each col
      in update list ... */
-  for (j = 0; j < NCMDCOLS; j++)
-  {
-    if (cmd.cols[j] == (char *) 0)
-    {
+  for (j = 0; j < NCMDCOLS; j++) {
+    if (cmd.cols[j] == (char *) 0) {
       return;
     }
 
     /* Scan is ...for each column definition ... */
-    for (i = 0; i < ncols; i++)
-    {
+    for (i = 0; i < ncols; i++) {
       if (strncmp(cmd.cols[j], coldefs[i].name, MXCOLNAME))
         continue;
 
@@ -376,18 +353,17 @@ verify_update_list(char *buf, int *nbuf)
       cmd.pcol[j] = &(coldefs[i]);
 
       /* Verify that column is not read-only */
-      if (coldefs[i].flags & RTA_READONLY)
-      {
+      if (coldefs[i].flags & RTA_READONLY) {
         send_error(LOC, E_NOWRITE, coldefs[i].name);
         return;
       }
 
-      /* Column exists and is not read-only. * Now check data type.  If 
-         a string, check the * string length */
-      if ((coldefs[i].type == RTA_STR) || (coldefs[i].type == RTA_PSTR))
-      {
-        if (strlen(cmd.updvals[j]) <= coldefs[i].length)
-        {
+      /* Column exists and is not read-only. Now check data type.  If 
+         a string, check the string length.  We do a '-1' to be sure
+         there is room for a null at the end of the string.   */
+      if ((coldefs[i].type == RTA_STR) || (coldefs[i].type == RTA_PSTR)) {
+if (strlen(cmd.updvals[j]) <= coldefs[i].length) {
+        // xxxxxxxx  if (strlen(cmd.updvals[j]) <= coldefs[i].length -1) {
           break;
         }
         send_error(LOC, E_BIGSTR, coldefs[i].name);
@@ -408,8 +384,7 @@ verify_update_list(char *buf, int *nbuf)
         || ((coldefs[i].type == RTA_FLOAT)
           && (sscanf(cmd.updvals[j], "%f", &(cmd.updflot[j])) == 1))
         || ((coldefs[i].type == RTA_PFLOAT)
-          && (sscanf(cmd.updvals[j], "%f", &(cmd.updflot[j])) == 1)))
-      {
+          && (sscanf(cmd.updvals[j], "%f", &(cmd.updflot[j])) == 1))) {
         break;
       }
 
@@ -419,8 +394,7 @@ verify_update_list(char *buf, int *nbuf)
     }
 
     /* We scanned column defs.  Error if not found */
-    if (i == ncols)
-    {
+    if (i == ncols) {
       send_error(LOC, E_NOCOLUMN, cmd.cols[j]);
       return;
     }
@@ -463,21 +437,18 @@ do_select(char *buf, int *nbuf)
      the selected columns and build a reply with the requested data */
   sr = cmd.ptbl->rowlen;
   rx = 0;
-  if (cmd.ptbl->iterator) 
+  if (cmd.ptbl->iterator)
     pr = (cmd.ptbl->iterator) ((void *) NULL, cmd.ptbl->it_info, rx);
   else
     pr = cmd.ptbl->address;
 
   /* for each row ..... */
-  while (pr)
-  {
+  while (pr) {
     dor = 1;
-    for (wx = 0; wx < cmd.nwhrcols; wx++)
-    {
+    for (wx = 0; wx < cmd.nwhrcols; wx++) {
       /* execute read callback (if defined) on row */
       /* the call back is expected to fill in the data */
-      if (cmd.pwhr[wx]->readcb)
-      {
+      if (cmd.pwhr[wx]->readcb) {
         (cmd.pwhr[wx]->readcb) (cmd.tbl, cmd.whrcols[wx],
           cmd.sqlcmd, pr, rx);
       }
@@ -486,8 +457,7 @@ do_select(char *buf, int *nbuf)
       pd = pr + cmd.pwhr[wx]->offset;
 
       /* do comparison based on column data type */
-      switch (cmd.pwhr[wx]->type)
-      {
+      switch (cmd.pwhr[wx]->type) {
         case RTA_STR:
           cmp = strncmp((char *) pd, cmd.whrvals[wx],
             cmd.pwhr[wx]->length);
@@ -528,26 +498,26 @@ do_select(char *buf, int *nbuf)
           ((cmp < 0) && (cmd.whrrel[wx] == RTA_LE ||
               cmd.whrrel[wx] == RTA_LT)) ||
           ((cmp > 0) && (cmd.whrrel[wx] == RTA_GE ||
-              cmd.whrrel[wx] == RTA_GT))))
-      {
+              cmd.whrrel[wx] == RTA_GT)))) {
         dor = 0;
         break;
       }
     }
     if (dor && cmd.offset)
-        cmd.offset--;
-    else if (dor)
-    {
-      /* if we get here, we've passed the WHERE clause and OFFSET 
+      cmd.offset--;
+    else if (dor) {
+      /* if we get here, we've passed the WHERE clause and OFFSET
          filtering.  Check the LIMIT filter */
-      if (npr >= cmd.limit)
-      {
+      if (npr >= cmd.limit) {
         break;
       }
 
-      /* Verify that the buffer has enough room for this * row. */
-      if (*nbuf - ((int) (buf - startbuf)) - cmd.nlineout < 100)
-      {                         /* 100 for CSELECT and margin */
+      /* Verify that the buffer has enough room for this row.  Note
+         that we've been adding the maximum field length for each
+         column into nlineout so that it now contains a worst case
+         line length for this table/row.  */
+      if (*nbuf - ((int) (buf - startbuf)) - cmd.nlineout < 100) {
+      /* 100 for CSELECT and margin */
         send_error(LOC, E_FULLBUF);
         return;
       }
@@ -559,22 +529,19 @@ do_select(char *buf, int *nbuf)
       buf += 4;                 /* Response length goes here */
       ad_int2(&buf, cmd.ncols); /* # of cols in response */
 
-      for (cx = 0; cx < cmd.ncols; cx++)
-      {
+      for (cx = 0; cx < cmd.ncols; cx++) {
         /* execute column read callback (if defined). callback will
            fill in the data if needed */
-        if (cmd.pcol[cx]->readcb)
-        {
+        if (cmd.pcol[cx]->readcb) {
           (cmd.pcol[cx]->readcb) (cmd.tbl,
             cmd.pcol[cx]->name, cmd.sqlcmd, pr, rx);
         }
 
         /* compute pointer to actual data */
         pd = pr + cmd.pcol[cx]->offset;
-        switch ((cmd.pcol[cx])->type)
-        {
+        switch ((cmd.pcol[cx])->type) {
           case RTA_STR:
-            /* send 4 byte length.  Include the lenght */
+            /* send 4 byte length.  Include the length */
             ad_int4(&buf, strlen(pd));
             ad_str(&buf, pd);   /* send the response */
             break;
@@ -585,12 +552,12 @@ do_select(char *buf, int *nbuf)
             break;
           case RTA_INT:
             n = sprintf((buf + 4), "%d", *((int *) pd));
-            ad_int4(&buf, n); /* send length */
+            ad_int4(&buf, n);   /* send length */
             buf += n;
             break;
           case RTA_PINT:
             n = sprintf((buf + 4), "%d", **((int **) pd));
-            ad_int4(&buf, n); /* send length */
+            ad_int4(&buf, n);   /* send length */
             buf += n;
             break;
           case RTA_LONG:
@@ -605,7 +572,7 @@ do_select(char *buf, int *nbuf)
             break;
           case RTA_PTR:
             n = sprintf((buf + 4), "%d", *((int *) pd));
-            ad_int4(&buf, n); /* send length */
+            ad_int4(&buf, n);   /* send length */
             buf += n;
             break;
           case RTA_FLOAT:
@@ -621,11 +588,11 @@ do_select(char *buf, int *nbuf)
         }
       }
       /* now fill in 'D' response length */
-      ad_int4(&lenloc, (int)(buf - lenloc));
+      ad_int4(&lenloc, (int) (buf - lenloc));
       npr++;
     }
     rx++;
-    if (cmd.ptbl->iterator) 
+    if (cmd.ptbl->iterator)
       pr = (cmd.ptbl->iterator) (pr, cmd.ptbl->it_info, rx);
     else {
       if (rx >= cmd.ptbl->nrows)
@@ -636,7 +603,7 @@ do_select(char *buf, int *nbuf)
   }
   /* Add 'C', length(11), 'SELECT', NULL to output */
   *buf++ = 'C';
-  ad_int4(&buf, 11);                /* 11= 4+strlen(SELECT)+1 */
+  ad_int4(&buf, 11);            /* 11= 4+strlen(SELECT)+1 */
   ad_str(&buf, "SELECT");
   *buf++ = 0x00;
 
@@ -669,14 +636,13 @@ send_row_description(char *buf, int *nbuf)
 
   startbuf = buf;
 
-  /* Verify that the buffer has enough room for this reply.
-     (See the Postgres protocol description for an understanding 
-     of the next two lines.) */
-  size = 7;                    /* sizeof 'T', length, and int2 */
+  /* Verify that the buffer has enough room for this reply. (See the
+     Postgres protocol description for an understanding of the next
+     two lines.) */
+  size = 7;                     /* sizeof 'T', length, and int2 */
   size += cmd.ncols * (MXCOLNAME + 1 + 4 + 2 + 4 + 2 + 4 + 2);
 
-  if (*nbuf - size < 100)
-  {                             /* 100 just for safety */
+  if (*nbuf - size < 100) {     /* 100 just for safety */
     send_error(LOC, E_FULLBUF);
     return ((int) (cmd.out - startbuf)); /* ignored */
   }
@@ -686,8 +652,7 @@ send_row_description(char *buf, int *nbuf)
   buf += 4;                     /* put pkt length here later */
   ad_int2(&buf, cmd.ncols);     /* num fields */
 
-  for (i = 0; i < cmd.ncols; i++)
-  {
+  for (i = 0; i < cmd.ncols; i++) {
     ad_str(&buf, cmd.cols[i]);  /* column name */
     *buf++ = (char) 0;          /* send the NULL */
 
@@ -701,8 +666,7 @@ send_row_description(char *buf, int *nbuf)
     ad_int4(&buf, (cmd.itbl * NCMDCOLS) + i);
 
     /* set size/modifier based on type */
-    switch ((cmd.pcol[i])->type)
-    {
+    switch ((cmd.pcol[i])->type) {
       case RTA_STR:
       case RTA_PSTR:
         ad_int2(&buf, -1);      /* length */
@@ -732,7 +696,7 @@ send_row_description(char *buf, int *nbuf)
     /* Add the format type.  0==text format */
     ad_int2(&buf, 0);
   }
-  size = (int) (buf - startbuf);    /* actual response size */
+  size = (int) (buf - startbuf); /* actual response size */
   *nbuf -= size;
 
   /* store packet length -1 (the 'T' is not included *) */
@@ -764,10 +728,10 @@ send_error(char *filename, int lineno, char *fmt, char *arg)
   if (rtadbg.sqlerr)
     rtalog(filename, lineno, Er_Bad_SQL, cmd.sqlcmd);
 
-  /* Make sure we have enough space for the output.  Current
-     #defines limit the maximum message to less than 100 bytes */
+  /* Make sure we have enough space for the output.  Current #defines
+     limit the maximum message to less than 100 bytes */
   if (*cmd.nout < 100) {
-    return;     /* not much else we can do...   */
+    return;                     /* not much else we can do...  */
   }
 
   /* We want to overwrite any output so far.  We do this by */
@@ -775,11 +739,10 @@ send_error(char *filename, int lineno, char *fmt, char *arg)
   cmd.out = cmd.errout;         /* Reset any output so far */
   *(cmd.nout) = cmd.nerrout;
 
-  /* The format of the error message is 'E', int32 for length,
-     a series of parameters including 'S'everity, error 'C'ode,
-     and 'M'essage.  Parameters are delimited with nulls and 
-     there is an extra null at the end to indicate that there
-     are no more parameters.  . */
+  /* The format of the error message is 'E', int32 for length, a series 
+     of parameters including 'S'everity, error 'C'ode, and 'M'essage.
+     Parameters are delimited with nulls and there is an extra null at 
+     the end to indicate that there are no more parameters.  . */
 
   *cmd.out++ = 'E';
   lenptr = cmd.out;             /* msg length goes here */
@@ -792,10 +755,10 @@ send_error(char *filename, int lineno, char *fmt, char *arg)
   cnt = snprintf(cmd.out, *(cmd.nout), fmt, arg);
   cmd.out += cnt;
   cmd.out++;                    /* to include the NULL */
-  *cmd.out++ = (char) 0;          /* terminate param list */
-  len = (int)(cmd.out - cmd.errout) - 1; /* -1 to exclude E */
+  *cmd.out++ = (char) 0;        /* terminate param list */
+  len = (int) (cmd.out - cmd.errout) - 1; /* -1 to exclude E */
   ad_int4(&lenptr, len);
-  *cmd.nout -= (int)(cmd.out - cmd.errout);
+  *cmd.nout -= (int) (cmd.out - cmd.errout);
 
   return;
 }
@@ -818,6 +781,7 @@ do_update(char *buf, int *nbuf)
   int      wx;         /* Where clause indeX in for loop */
   void    *pr;         /* Pointer to the row in the table/column */
   void    *pd;         /* Pointer to the Data in the table/column */
+  void    *poldrow;    /* Pointer to copy of row before update */
   long long cmp;       /* has actual relation of col and val */
   int      dor;        /* DO Row == 1 if we should update row */
   char    *startbuf;   /* used to compute response length */
@@ -834,21 +798,18 @@ do_update(char *buf, int *nbuf)
      columns and call any write callbacks */
   sr = cmd.ptbl->rowlen;
   rx = 0;
-  if (cmd.ptbl->iterator) 
+  if (cmd.ptbl->iterator)
     pr = (cmd.ptbl->iterator) ((void *) NULL, cmd.ptbl->it_info, rx);
   else
     pr = cmd.ptbl->address;
 
   /* for each row ..... */
-  while (pr)
-  {
+  while (pr) {
     dor = 1;
-    for (wx = 0; wx < cmd.nwhrcols; wx++)
-    {
+    for (wx = 0; wx < cmd.nwhrcols; wx++) {
       /* The WHERE clause ...... execute read callback (if defined) on
          row * the call back is expected to fill in the data */
-      if (cmd.pwhr[wx]->readcb)
-      {
+      if (cmd.pwhr[wx]->readcb) {
         (cmd.pwhr[wx]->readcb) (cmd.tbl, cmd.whrcols[wx],
           cmd.sqlcmd, pr, rx);
       }
@@ -857,8 +818,7 @@ do_update(char *buf, int *nbuf)
       pd = pr + cmd.pwhr[wx]->offset;
 
       /* do comparison based on column data type */
-      switch (cmd.pwhr[wx]->type)
-      {
+      switch (cmd.pwhr[wx]->type) {
         case RTA_STR:
           cmp = strncmp((char *) pd, cmd.whrvals[wx],
             cmd.pwhr[wx]->length);
@@ -898,32 +858,38 @@ do_update(char *buf, int *nbuf)
           ((cmp < 0) && (cmd.whrrel[wx] == RTA_LE ||
               cmd.whrrel[wx] == RTA_LT)) ||
           ((cmp > 0) && (cmd.whrrel[wx] == RTA_GE ||
-              cmd.whrrel[wx] == RTA_GT))))
-      {
+              cmd.whrrel[wx] == RTA_GT)))) {
         dor = 0;
         break;
       }
     }
     if (dor && cmd.offset)
-        cmd.offset--;
-    else if (dor)
-    {                           /* DO Row */
+      cmd.offset--;
+    else if (dor) {             /* DO Row */
       /* if we get here, we've passed the WHERE clause and the OFFSET.
          Check for LIMIT filtering */
-      if (cmd.limit <= 0)
-      {
+      if (cmd.limit <= 0) {
         break;
       }
 
       /* At this point we have a row which passed the * WHERE clause,
          is greater than OFFSET and less * than LIMIT. So update it! */
-      for (cx = 0; cx < cmd.ncols; cx++)
-      {
+
+      /* Save the data from the old row for use in the write callback */
+      poldrow = malloc(cmd.ptbl->rowlen);
+      if (poldrow)
+        memcpy(poldrow, pr, cmd.ptbl->rowlen);
+      else {
+        rtalog(LOC, Er_No_Mem);
+        return;
+      }
+
+      /* Scan the columns doing updates as needed */
+      for (cx = 0; cx < cmd.ncols; cx++) {
         /* compute pointer to actual data */
         pd = pr + cmd.pcol[cx]->offset;
 
-        switch ((cmd.pcol[cx])->type)
-        {
+        switch ((cmd.pcol[cx])->type) {
           case RTA_STR:
             strncpy((char *) pd, cmd.updvals[cx], cmd.pcol[cx]->length);
             break;
@@ -960,21 +926,21 @@ do_update(char *buf, int *nbuf)
 
       /* We call the write callbacks after all of the * columns have
          been updated.  */
-      for (cx = 0; cx < cmd.ncols; cx++)
-      {
+      for (cx = 0; cx < cmd.ncols; cx++) {
         /* execute write callback (if defined) on row. callback will
            fill in the data if needed */
-        if (cmd.pcol[cx]->writecb)
-        {
-          (cmd.pcol[cx]->writecb) (cmd.tbl,
-            cmd.whrcols[wx], cmd.sqlcmd, pr, rx);
+        if (cmd.pcol[cx]->writecb) {
+          (cmd.pcol[cx]->writecb) (cmd.tbl, cmd.pcol[cx]->name,
+           cmd.sqlcmd, pr, rx, poldrow);
         }
       }
-      cmd.limit--;
+      if (poldrow)       /* free the image of the last row */
+        free(poldrow);
+      cmd.limit--;       /* decrement row limit count */
       nru++;
     }
     rx++;
-    if (cmd.ptbl->iterator) 
+    if (cmd.ptbl->iterator)
       pr = (cmd.ptbl->iterator) (pr, cmd.ptbl->it_info, rx);
     else {
       if (rx >= cmd.ptbl->nrows)
@@ -990,7 +956,7 @@ do_update(char *buf, int *nbuf)
 
   /* Send the update complete message */
   *buf++ = 'C';
-  tmark = buf;                /* Save length location */
+  tmark = buf;                  /* Save length location */
   buf += 4;
   ad_str(&buf, "UPDATE");
   n = sprintf(buf, " %d", nru); /* # rows affected */
@@ -1004,7 +970,6 @@ do_update(char *buf, int *nbuf)
   if (rtadbg.trace)
     rtalog(LOC, Er_Trace_SQL, cmd.sqlcmd, (tmark + 7));
 }
-
 
 /***************************************************************
  * ad_str(): - Add a string to the output buffer.  Includes a
@@ -1071,8 +1036,8 @@ ad_int4(char **pbuf, int inint)
 void
 rtalog(char *fname,    /* error detected in file... */
   int linen,           /* error detected at line # */
-  char *format, ...)   /* printf format string */
-{
+  char *format, ...)
+{                               /* printf format string */
   extern struct EpgDbg rtadbg;
   va_list  ap;
   char    *s1;         /* first optional argument */
@@ -1085,11 +1050,11 @@ rtalog(char *fname,    /* error detected in file... */
   /* Get the optional parameters if any */
   va_start(ap, format);
   sptr = strstr(format, "%s");
-  if (sptr)
-  {
+  if (sptr) {
     s1 = va_arg(ap, char *);
 
     sptr++;
+/* BOB: should the next line be 'if(*sptr)'?  */
     if (sptr)
       s2 = va_arg(ap, char *);
   }

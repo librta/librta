@@ -31,6 +31,19 @@ h3 {font-family: sans-serif}
  <h2>Run Time Access</h2></td>
 </tr></table>
 <h2>Live Demonstration</h2> 
+<h3>- Virtual File System</h3>
+<p>RTA provides a /proc-like access to your program's tables as well
+as PostgreSQL-like access.  In our demo application we have mounted
+the RTA virtual file system under the root of Apache.  This lets you
+browse the application's tables as directories and files visible
+with your web browser.  Click on the link below to give it a try.
+<ul>
+<li><a href=http://www.runtimeaccess.com/app>
+http://www.runtimeaccess.com/app</a></li>
+</ul>
+</p>
+<br>
+<br>
 <h3>- Table Editor</h3>
 <p>RTA comes with a <i>table editor</i> which lets you view
 and edit any of the tables in your RTA program.  The table
@@ -63,20 +76,6 @@ on your system you can access our demo application directly with</p>
      SELECT name FROM rta_tables;
      \q
 </pre>
-<br>
-<br>
-<h3>- Virtual File System</h3>
-<p>RTA provides a /proc-like access to your program's tables as well
-as PostgreSQL-like access.  In our demo application we have mounted
-the RTA virtual file system under the root of Apache.  This lets you
-browse the application's tables as directories and files visible
-with your web browser.  Click on the link below to give it a try.
-<ul>
-<li><a href=http://www.runtimeaccess.com/app>
-http://www.runtimeaccess.com/app</a></li>
-</ul>
-</p>
-<br>
 <br>
 <br>
 </body>

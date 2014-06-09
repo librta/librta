@@ -111,8 +111,7 @@ rta_getattr(const char *path, struct stat *stbuf)
 
   memset(stbuf, 0, sizeof(struct stat));
 
-  switch (rf.rt)
-  {
+  switch (rf.rt) {
     case 0:                    /* / */
       stbuf->st_mode = S_IFDIR | 0555;
       stbuf->st_nlink = 2 + Ntbl; /* "." ".." and tables */
@@ -128,7 +127,8 @@ rta_getattr(const char *path, struct stat *stbuf)
       /* If an iterator is defined we must 'hand count' the rows */
       if (Tbl[rf.t]->iterator) {
         nr = 0;
-        pr = (Tbl[rf.t]->iterator) ((void *) NULL, Tbl[rf.t]->it_info, nr);
+        pr =
+          (Tbl[rf.t]->iterator) ((void *) NULL, Tbl[rf.t]->it_info, nr);
         while (pr) {
           nr++;
           pr = (Tbl[rf.t]->iterator) (pr, Tbl[rf.t]->it_info, nr);
@@ -145,19 +145,16 @@ rta_getattr(const char *path, struct stat *stbuf)
       /* default is maximum size */
       stbuf->st_size = getrwsz(rf.t);
       tbuf = malloc(stbuf->st_size + 2);
-      if (tbuf == (char *) NULL)
-      {
+      if (tbuf == (char *) NULL) {
         rtastat.nsyserr++;
         if (rtadbg.syserr)
           rtalog(LOC, Er_No_Mem);
         break;
       }
       out = 0;
-      for (c = 0; c < Tbl[rf.t]->ncol; c++)
-      {
+      for (c = 0; c < Tbl[rf.t]->ncol; c++) {
         /* add comma */
-        if (c != 0)
-        {
+        if (c != 0) {
           tbuf[out++] = ',';
           tbuf[out++] = ' ';
         }
@@ -169,10 +166,8 @@ rta_getattr(const char *path, struct stat *stbuf)
         free(tbuf);
       /* mode = RO if all columns are RO */
       stbuf->st_mode = S_IFREG | 0444;
-      for (c = 0; c < Tbl[rf.t]->ncol; c++)
-      {
-        if (!(Tbl[rf.t]->cols[c].flags & RTA_READONLY))
-        {
+      for (c = 0; c < Tbl[rf.t]->ncol; c++) {
+        if (!(Tbl[rf.t]->cols[c].flags & RTA_READONLY)) {
           stbuf->st_mode |= 0644;
           break;
         }
@@ -183,7 +178,8 @@ rta_getattr(const char *path, struct stat *stbuf)
       stbuf->st_mode = S_IFDIR | 0555;
       if (Tbl[rf.t]->iterator) {
         nr = 0;
-        pr = (Tbl[rf.t]->iterator) ((void *) NULL, Tbl[rf.t]->it_info, nr);
+        pr =
+          (Tbl[rf.t]->iterator) ((void *) NULL, Tbl[rf.t]->it_info, nr);
         while (pr) {
           nr++;
           pr = (Tbl[rf.t]->iterator) (pr, Tbl[rf.t]->it_info, nr);
@@ -204,8 +200,7 @@ rta_getattr(const char *path, struct stat *stbuf)
       /* default is maximum size */
       stbuf->st_size = getcolsz(rf.c);
       tbuf = malloc(stbuf->st_size + 2);
-      if (tbuf == (char *) NULL)
-      {
+      if (tbuf == (char *) NULL) {
         rtastat.nsyserr++;
         if (rtadbg.syserr)
           rtalog(LOC, Er_No_Mem);
@@ -260,13 +255,11 @@ rta_getdir(const char *path, fuse_dirh_t h, fuse_dirfil_t filler)
   if (rta_parse_path(&rf, path) != RTA_SUCCESS)
     return (-ENOENT);
 
-  switch (rf.rt)
-  {
+  switch (rf.rt) {
     case 0:                    /* / */
       filler(h, ".", 0);
       filler(h, "..", 0);
-      for (i = 0; i < Ntbl; i++)
-      {
+      for (i = 0; i < Ntbl; i++) {
         filler(h, Tbl[i]->name, 0);
       }
       break;
@@ -275,8 +268,7 @@ rta_getdir(const char *path, fuse_dirh_t h, fuse_dirfil_t filler)
       filler(h, ".", 0);
       filler(h, "..", 0);
       filler(h, "ROWS", 0);
-      for (i = 0; i < Tbl[rf.t]->ncol; i++)
-      {
+      for (i = 0; i < Tbl[rf.t]->ncol; i++) {
         filler(h, Tbl[rf.t]->cols[i].name, 0);
       }
       break;
@@ -288,14 +280,14 @@ rta_getdir(const char *path, fuse_dirh_t h, fuse_dirfil_t filler)
       /* Manually count rows if an iterator is defined */
       if (Tbl[rf.t]->iterator) {
         nr = 0;
-        pr = (Tbl[rf.t]->iterator) ((void *) NULL, Tbl[rf.t]->it_info, nr);
+        pr =
+          (Tbl[rf.t]->iterator) ((void *) NULL, Tbl[rf.t]->it_info, nr);
         while (pr) {
           nr++;
           pr = (Tbl[rf.t]->iterator) (pr, Tbl[rf.t]->it_info, nr);
         }
       }
-      for (i = 0; i < nr; i++)
-      {
+      for (i = 0; i < nr; i++) {
         sprintf(rowstr, "%04d", i);
         filler(h, rowstr, 0);
       }
@@ -312,14 +304,14 @@ rta_getdir(const char *path, fuse_dirh_t h, fuse_dirfil_t filler)
       /* Manually count rows if an iterator is defined */
       if (Tbl[rf.t]->iterator) {
         nr = 0;
-        pr = (Tbl[rf.t]->iterator) ((void *) NULL, Tbl[rf.t]->it_info, nr);
+        pr =
+          (Tbl[rf.t]->iterator) ((void *) NULL, Tbl[rf.t]->it_info, nr);
         while (pr) {
           nr++;
           pr = (Tbl[rf.t]->iterator) (pr, Tbl[rf.t]->it_info, nr);
         }
       }
-      for (i = 0; i < nr; i++)
-      {
+      for (i = 0; i < nr; i++) {
         sprintf(rowstr, "%04d", i);
         filler(h, rowstr, 0);
       }
@@ -363,8 +355,7 @@ rta_open(const char *path, int flags)
   if (rta_parse_path(&rf, path) != RTA_SUCCESS)
     return (-ENOENT);
 
-  switch (rf.rt)
-  {
+  switch (rf.rt) {
     case 0:                    /* / */
     case 1:                    /* /(table) */
     case 2:                    /* /(table)/ROWS */
@@ -377,10 +368,8 @@ rta_open(const char *path, int flags)
 
     case 3:                    /* /(table)/ROWS/(row#) */
       /* return EACCES if all cols are RO and a WR open */
-      if ((flags & O_WRONLY) || (flags & O_RDWR))
-      {
-        for (c = 0; c < Tbl[rf.t]->ncol; c++)
-        {
+      if ((flags & O_WRONLY) || (flags & O_RDWR)) {
+        for (c = 0; c < Tbl[rf.t]->ncol; c++) {
           if (!(Tbl[rf.t]->cols[c].flags & RTA_READONLY))
             return (0);
         }
@@ -435,8 +424,7 @@ rta_read(const char *path, char *buf, size_t size, off_t offset)
   if (rta_parse_path(&rf, path) != RTA_SUCCESS)
     return (-ENOENT);
 
-  switch (rf.rt)
-  {
+  switch (rf.rt) {
     case 0:                    /* / */
       break;
 
@@ -450,8 +438,7 @@ rta_read(const char *path, char *buf, size_t size, off_t offset)
       /* Print row to temp buf */
       prtsize = getrwsz(rf.t);
       tbuf = malloc(prtsize + 2);
-      if (tbuf == (char *) NULL)
-      {
+      if (tbuf == (char *) NULL) {
         rtastat.nsyserr++;
         if (rtadbg.syserr)
           rtalog(LOC, Er_No_Mem);
@@ -459,11 +446,9 @@ rta_read(const char *path, char *buf, size_t size, off_t offset)
         break;
       }
       out = 0;
-      for (c = 0; c < Tbl[rf.t]->ncol; c++)
-      {
+      for (c = 0; c < Tbl[rf.t]->ncol; c++) {
         /* add comma */
-        if (c != 0)
-        {
+        if (c != 0) {
           tbuf[out++] = ',';
           tbuf[out++] = ' ';
         }
@@ -474,22 +459,18 @@ rta_read(const char *path, char *buf, size_t size, off_t offset)
       tbuf[out++] = '\n';
       tbuf[out] = (char) NULL;
       /* copy temp buf to buf using offset */
-      if (offset >= out)
-      {
+      if (offset >= out) {
         out = 0;                /* offset is past string length, return 
                                    nothing */
       }
-      else
-      {
-        for (j = 0, i = offset; (i < out && i < size); j++, i++)
-        {
+      else {
+        for (j = 0, i = offset; (i < out && i < size); j++, i++) {
           buf[j] = tbuf[i];
         }
       }
       free(tbuf);
       /* If trace is on, build a pseudo-SQL command and log it */
-      if (rtadbg.trace)
-      {
+      if (rtadbg.trace) {
         (void) sprintf(sql, Getstr1, rf.tbl, rf.r);
         rtalog(LOC, Er_Trace_SQL, sql, "1");
       }
@@ -503,8 +484,7 @@ rta_read(const char *path, char *buf, size_t size, off_t offset)
       /* Print column to temp buf */
       prtsize = getcolsz(rf.c);
       tbuf = malloc(prtsize + 2);
-      if (tbuf == (char *) NULL)
-      {
+      if (tbuf == (char *) NULL) {
         rtastat.nsyserr++;
         if (rtadbg.syserr)
           rtalog(LOC, Er_No_Mem);
@@ -516,22 +496,18 @@ rta_read(const char *path, char *buf, size_t size, off_t offset)
       tbuf[out++] = '\n';
       tbuf[out] = (char) NULL;
       /* copy temp buf to buf using offset */
-      if (offset >= out)
-      {
+      if (offset >= out) {
         out = 0;                /* offset is past string length, return 
                                    nothing */
       }
-      else
-      {
-        for (j = 0, i = offset; (i < out && i < size); j++, i++)
-        {
+      else {
+        for (j = 0, i = offset; (i < out && i < size); j++, i++) {
           buf[j] = tbuf[i];
         }
       }
       free(tbuf);
       /* If trace is on, build a pseudo-SQL command and log it */
-      if (rtadbg.trace)
-      {
+      if (rtadbg.trace) {
         (void) sprintf(sql, Getstr2, rf.col, rf.tbl, rf.r);
         rtalog(LOC, Er_Trace_SQL, sql, "1");
       }
@@ -580,8 +556,7 @@ rta_write(const char *path, const char *buf, size_t size, off_t offset)
   if (rta_parse_path(&rf, path) != RTA_SUCCESS)
     return (-ENOENT);
 
-  switch (rf.rt)
-  {
+  switch (rf.rt) {
     case 0:                    /* / */
       break;
 
@@ -592,8 +567,7 @@ rta_write(const char *path, const char *buf, size_t size, off_t offset)
       break;
 
     case 3:                    /* /(table)/ROWS/(row#) */
-      if (offset != 0)
-      {
+      if (offset != 0) {
         rtastat.nrtaerr++;
         if (rtadbg.rtaerr)
           rtalog(LOC, Er_No_Space);
@@ -614,8 +588,7 @@ rta_write(const char *path, const char *buf, size_t size, off_t offset)
       break;
 
     case 5:                    /* /(table)/(column)/(row#) */
-      if (offset != 0)
-      {
+      if (offset != 0) {
         rtastat.nrtaerr++;
         if (rtadbg.rtaerr)
           rtalog(LOC, Er_No_Space);
@@ -625,8 +598,7 @@ rta_write(const char *path, const char *buf, size_t size, off_t offset)
       sqlsize = (int) size + strlen(Setstr1) + strlen(Setstr2)
         + MXTBLNAME + MXCOLNAME + 1;
       tbuf = malloc(sqlsize);
-      if (tbuf == (char *) NULL)
-      {
+      if (tbuf == (char *) NULL) {
         rtastat.nsyserr++;
         if (rtadbg.syserr)
           rtalog(LOC, Er_No_Mem);
@@ -706,8 +678,7 @@ release:NULL
 static void
 exit_handler()
 {
-  if (fuse != NULL)
-  {
+  if (fuse != NULL) {
     close(fuse_fd);
     fuse_unmount(save_mpt);
     exit(0);
@@ -732,16 +703,14 @@ set_signal_handlers()
 
   if (sigaction(SIGHUP, &sa, NULL) == -1 ||
     sigaction(SIGINT, &sa, NULL) == -1 ||
-    sigaction(SIGTERM, &sa, NULL) == -1)
-  {
+    sigaction(SIGTERM, &sa, NULL) == -1) {
     perror("Cannot set exit signal handlers");
     exit(1);
   }
 
   sa.sa_handler = SIG_IGN;
 
-  if (sigaction(SIGPIPE, &sa, NULL) == -1)
-  {
+  if (sigaction(SIGPIPE, &sa, NULL) == -1) {
     perror("Cannot set ignored signals");
     exit(1);
   }
@@ -848,16 +817,14 @@ rta_parse_path(RTAFILE * pfs, const char *path)
     i++;
 
   /* if next char is null, we have just '/' as path */
-  if (path[i] == (char) NULL)
-  {
+  if (path[i] == (char) NULL) {
     pfs->rt = 0;
     return (RTA_SUCCESS);
   }
 
   /* Not '/' or null, so must be a table name */
   j = 0;
-  while (path[i] != '/' && path[i] != (char) NULL && j < MXTBLNAME)
-  {
+  while (path[i] != '/' && path[i] != (char) NULL && j < MXTBLNAME) {
     pfs->tbl[j] = path[i];
     j++;
     i++;
@@ -865,8 +832,7 @@ rta_parse_path(RTAFILE * pfs, const char *path)
   pfs->tbl[j] = (char) NULL;
 
   /* OK, we have a table name, look up table ID */
-  for (j = 0; j < Ntbl; j++)
-  {
+  for (j = 0; j < Ntbl; j++) {
     if (!strncmp(pfs->tbl, Tbl[j]->name, MXTBLNAME))
       break;
   }
@@ -879,8 +845,7 @@ rta_parse_path(RTAFILE * pfs, const char *path)
     i++;
 
   /* if next is null, we have '/(table)' as path */
-  if (path[i] == (char) NULL)
-  {
+  if (path[i] == (char) NULL) {
     pfs->rt = 1;
     return (RTA_SUCCESS);
   }
@@ -888,8 +853,7 @@ rta_parse_path(RTAFILE * pfs, const char *path)
   /* To get here, must be a column name or "ROWS" */
   /* Put column name in structure */
   j = 0;
-  while (path[i] != '/' && path[i] != (char) NULL && j < MXCOLNAME)
-  {
+  while (path[i] != '/' && path[i] != (char) NULL && j < MXCOLNAME) {
     pfs->col[j] = path[i];
     j++;
     i++;
@@ -897,16 +861,14 @@ rta_parse_path(RTAFILE * pfs, const char *path)
   pfs->col[j] = (char) NULL;
 
   /* Look for ..../ROWS/(row#) */
-  if (!strncmp(pfs->col, "ROWS", MXCOLNAME))
-  {
+  if (!strncmp(pfs->col, "ROWS", MXCOLNAME)) {
     /* In a ROWS/(row#) ptype */
     /* skip over '/' characters */
     while (path[i] == '/')
       i++;
 
     /* if null, path must be /table/ROWS/ */
-    if (path[i] == (char) NULL)
-    {
+    if (path[i] == (char) NULL) {
       pfs->rt = 2;
       return (RTA_SUCCESS);
     }
@@ -917,7 +879,9 @@ rta_parse_path(RTAFILE * pfs, const char *path)
     /* Manually count rows if an iterator is defined */
     if (Tbl[pfs->t]->iterator) {
       nr = 0;
-      pr = (Tbl[pfs->t]->iterator) ((void *) NULL, Tbl[pfs->t]->it_info, nr);
+      pr =
+        (Tbl[pfs->t]->iterator) ((void *) NULL, Tbl[pfs->t]->it_info,
+        nr);
       while (pr) {
         nr++;
         pr = (Tbl[pfs->t]->iterator) (pr, Tbl[pfs->t]->it_info, nr);
@@ -925,8 +889,7 @@ rta_parse_path(RTAFILE * pfs, const char *path)
     }
     if ((sscanf(pfs->leaf, "%d", &(pfs->r)) != 1) || (pfs->r >= nr))
       return (RTA_ERROR);
-    else
-    {
+    else {
       pfs->rt = 3;
       return (RTA_SUCCESS);
     }
@@ -934,8 +897,7 @@ rta_parse_path(RTAFILE * pfs, const char *path)
 
   /* OK, we have a col, and it's not ROWS */
   /* Look up col ID, Only look at cols for found table */
-  for (j = 0; j < Ncol; j++)
-  {
+  for (j = 0; j < Ncol; j++) {
     if (!strncmp(pfs->col, Col[j]->name, MXCOLNAME) &&
       (!strncmp(Col[j]->table, pfs->tbl, MXTBLNAME)))
       break;
@@ -950,8 +912,7 @@ rta_parse_path(RTAFILE * pfs, const char *path)
     i++;
 
   /* Look for null to terminate /table/column */
-  if (path[i] == (char) NULL)
-  {
+  if (path[i] == (char) NULL) {
     pfs->rt = 4;
     return (RTA_SUCCESS);
   }
@@ -963,7 +924,8 @@ rta_parse_path(RTAFILE * pfs, const char *path)
   /* Manually count rows if an iterator is defined */
   if (Tbl[pfs->t]->iterator) {
     nr = 0;
-    pr = (Tbl[pfs->t]->iterator) ((void *) NULL, Tbl[pfs->t]->it_info, nr);
+    pr =
+      (Tbl[pfs->t]->iterator) ((void *) NULL, Tbl[pfs->t]->it_info, nr);
     while (pr) {
       nr++;
       pr = (Tbl[pfs->t]->iterator) (pr, Tbl[pfs->t]->it_info, nr);
@@ -971,8 +933,7 @@ rta_parse_path(RTAFILE * pfs, const char *path)
   }
   if ((sscanf(pfs->leaf, "%d", &(pfs->r)) != 1) || (pfs->r >= nr))
     return (RTA_ERROR);
-  else
-  {
+  else {
     pfs->rt = 5;
     return (RTA_SUCCESS);
   }
@@ -993,11 +954,9 @@ getrwsz(int t)
   int      sum = 0;    /* return value = #bytes */
   int      c;          /* column index in table */
 
-  for (c = 0; c < Tbl[t]->ncol; c++)
-  {
+  for (c = 0; c < Tbl[t]->ncol; c++) {
     /* Switch on column type to get print string length */
-    switch (Tbl[t]->cols[c].type)
-    {
+    switch (Tbl[t]->cols[c].type) {
       case RTA_STR:
       case RTA_PSTR:
         sum = sum + Tbl[t]->cols[c].length;
@@ -1061,8 +1020,7 @@ prtsetrow(char **xbuf, RTAFILE * prf, char *buf, int size)
 
   /* allocate memory for the copy of buf.  +1 for a null */
   pcb = malloc(size + 1);
-  if (pcb == (char *) NULL)
-  {
+  if (pcb == (char *) NULL) {
     rtastat.nsyserr++;
     if (rtadbg.syserr)
       rtalog(LOC, Er_No_Mem);
@@ -1076,14 +1034,12 @@ prtsetrow(char **xbuf, RTAFILE * prf, char *buf, int size)
   /* Walk pcb recording the start of fields are replacing */
   /* with NULLs */
   i = 0;
-  for (c = 0; c < Tbl[prf->t]->ncol; c++)
-  {
+  for (c = 0; c < Tbl[prf->t]->ncol; c++) {
     /* record start of new field */
     flds[c] = &(pcb[i]);
 
     /* detect error of no string */
-    if (i >= size)
-    {
+    if (i >= size) {
       /* BOB: log this */
       free(pcb);
       return (-EIO);
@@ -1092,8 +1048,7 @@ prtsetrow(char **xbuf, RTAFILE * prf, char *buf, int size)
     /* The columns are arranged in the order they appear in */
     /* the COLDEF table in the TBLDEF.  Scan to end of field */
     pc = &(Tbl[prf->t]->cols[c]);
-    if ((pc->type == RTA_STR) || (pc->type == RTA_PSTR))
-    {
+    if ((pc->type == RTA_STR) || (pc->type == RTA_PSTR)) {
       /* We have a string type.  Detect quote type, ' or ". */
       while ((pcb[i] != '\'') && (pcb[i] != '"') &&
         (pcb[i] != (char) NULL))
@@ -1119,8 +1074,7 @@ prtsetrow(char **xbuf, RTAFILE * prf, char *buf, int size)
     1 + (int) size + strlen(Setstr2) + strlen(Setstr3) + MXTBLNAME +
     Tbl[prf->t]->ncol * (2 + MXCOLNAME + strlen(Setstr4));
   tbuf = malloc(sqlsize);
-  if (tbuf == (char *) NULL)
-  {
+  if (tbuf == (char *) NULL) {
     free(pcb);
     rtastat.nsyserr++;
     if (rtadbg.syserr)
@@ -1134,8 +1088,7 @@ prtsetrow(char **xbuf, RTAFILE * prf, char *buf, int size)
   out = sprintf(tbuf, Setstr3, prf->tbl);
 
   /* Now add each writable column */
-  for (c = 0; c < Tbl[prf->t]->ncol; c++)
-  {
+  for (c = 0; c < Tbl[prf->t]->ncol; c++) {
     pc = &(Tbl[prf->t]->cols[c]);
     if (pc->flags & RTA_READONLY)
       continue;                 /* No read-only columns */
@@ -1164,8 +1117,7 @@ prtsetrow(char **xbuf, RTAFILE * prf, char *buf, int size)
 static int
 getcolsz(int c)
 {
-  switch (Col[c]->type)
-  {
+  switch (Col[c]->type) {
     case RTA_STR:
     case RTA_PSTR:
       return (Col[c]->length);
@@ -1231,19 +1183,16 @@ sprtcol(int t, int r, COLDEF *pc, char *buf, int nbuf, int quot)
 
   /* execute read callback (if defined) on row */
   /* the call back is expected to fill in the data */
-  if (pc->readcb)
-  {
+  if (pc->readcb) {
     (pc->readcb) (Tbl[t]->name, pc->name, "", pr, r);
   }
 
   /* Print is based on data type.  */
-  switch (pc->type)
-  {
+  switch (pc->type) {
     case RTA_STR:
       if (quot == NOQUOT)
         out = sprintf(buf, "%s", (char *) pd);
-      else
-      {
+      else {
         if (memchr((char *) pd, '"', pc->length))
           out = sprintf(buf, "\'%s\'", (char *) pd);
         else
@@ -1254,8 +1203,7 @@ sprtcol(int t, int r, COLDEF *pc, char *buf, int nbuf, int quot)
     case RTA_PSTR:
       if (quot == NOQUOT)
         out = sprintf(buf, "%s", *(char **) pd);
-      else
-      {
+      else {
         if (memchr((char *) pd, '"', pc->length))
           out = sprintf(buf, "\'%s\'", *(char **) pd);
         else

@@ -37,7 +37,7 @@
 #include <errno.h>
 #include "app.h"
 
-#define  DB_PORT    7777
+#define  DB_PORT    7778
 
 void     accept_ui_session(int srvfd);
 void     compute_cdur(char *tbl, char *col, char *sql, void *pr, int rowid);
@@ -45,7 +45,8 @@ void     handle_ui_output(UI *pui);
 void     handle_ui_request(UI *pui);
 void     init_ui();
 int      listen_on_port(int port);
-void     reverse_str(char *tbl, char *col, char *sql, void *pr, int rowid);
+void     reverse_str(char *tbl, char *col, char *sql, void *pr, int rowid,
+                     void *por);
 void    *get_next_conn(void *prow, void *it_data, int rowid);
 extern TBLDEF UITables[];
 extern int nuitables;
@@ -75,9 +76,6 @@ main()
   UI      *nextpui;    /* points to next UI in list */
 
 
-
-  /* Init the DB interface */
-  rta_init();
 
   /* Comment out the following if you are not using the fuse */
   /* package. */
@@ -212,7 +210,6 @@ accept_ui_session(int srvfd)
 
     /* oldest conn is one at head of linked list.  Close it and
        promote next oldest to the top of the linked list.  */
-printf("At %d closing %d\n", __LINE__, pui->fd);
     close(ConnHead->fd);
     pui = ConnHead->nextconn;  
     free(ConnHead);
@@ -280,10 +277,8 @@ printf("At %d closing %d\n", __LINE__, pui->fd);
 void
 compute_cdur(char *tbl, char *col, char *sql, void *pr, int rowid)
 {
-printf("prow=%08x, rowid=%d\n", (int)pr,rowid);
-fflush(0);
-if(pr)
-  ((UI *)pr)->cdur = ((int) time((time_t *) 0)) - ((UI *)pr)->ctm;
+  if(pr)
+    ((UI *)pr)->cdur = ((int) time((time_t *) 0)) - ((UI *)pr)->ctm;
 }
 
 /***************************************************************
@@ -455,12 +450,13 @@ listen_on_port(int port)
  *               char *col   -- the column modified
  *               char *sql   -- actual SQL of the command
  *               void *pr    -- points to row 
+ *               void *por   -- points to copy of row before update
  *               int  rowid  -- row number of row modified
  * Output:       none
  * Effects:      Puts the reverse of 'notes' into 'seton'
  ***************************************************************/
 void
-reverse_str(char *tbl, char *col, char *sql, void *pr, int rowid)
+reverse_str(char *tbl, char *col, char *sql, void *pr, int rowid, void *por)
 {
   int      i, j;       /* loop counters */
 
