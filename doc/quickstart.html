@@ -2,6 +2,7 @@
 "http://www.w3.org/TR/REC-html401/loose.dtd">
 <html lang="en">
 <head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
 <title>RTA: Embedded DB API</title>
 <style type="text/css">
 p {font-size: medium;}
@@ -16,7 +17,7 @@ h3 {font-family: sans-serif}
 <body>
 <table width="100%" summary="" align="center" bgcolor="#dcefff">
 <tr>
-<td valign="top" align="left" width=40%>
+<td valign="top" align="left" width="40%">
 <ul>
  <li><a href="index.html">Introduction</a></li>
  <li><a href="FAQ.html">FAQ</a></li>
@@ -41,16 +42,21 @@ package and librtafs to give a virtual file system interface to
 the application.</p>
 
 <ul compact type="circle">
-<li><a href="#app">Problem Statement</a></li>
-<li><a href="#tbl">Table Definitions</a></li>
-<li><a href="#db">Database Interface</a></li>
-<ul><li><a href="#dbcode">C Code</a></li>
-    <li><a href="#dbbuild">Build and Link</a></li>
-    <li><a href="#dbtest">Test</a></li></ul>
-<li><a href="#fs">File System Interface</a></li>
-<ul><li><a href="#fscode">C Code</a></li>
-    <li><a href="#fsbuild">Build and Link</a></li>
-    <li><a href="#fstest">Test</a></li></ul></ul>
+<li><a href="#app">Problem Statement</a>
+<li><a href="#tbl">Table Definitions</a>
+<li><a href="#db">Database Interface</a>
+    <ul>
+    <li><a href="#dbcode">C Code</a>
+    <li><a href="#dbbuild">Build and Link</a>
+    <li><a href="#dbtest">Test</a>
+    </ul>
+<li><a href="#fs">File System Interface</a>
+    <ul>
+    <li><a href="#fscode">C Code</a>
+    <li><a href="#fsbuild">Build and Link</a>
+    <li><a href="#fstest">Test</a>
+    </ul>
+    </ul>
 <br>
 <br>
  
@@ -316,9 +322,10 @@ and do a make.  </p>
 <a href=myappdb.c>here</a>).  Place the file
 in the test directory.  Build it with the
 command:
+</p>
 <pre>
     # gcc myappdb.c -o myappdb -L../src -lrtadb
-</pre></p>
+</pre>
 <p>Note that we are telling the application that the
 library it needs is in the sibling <tt>src</tt>
 directory.</p>
@@ -480,7 +487,7 @@ included in this listing.  The file system package is built on top
 of the database package and we still use the calls to rta_init()
 and rta_add_table().  The two new calls are to rtafs_init() and
 do_rtafs().</p>
-<code><pre>
+<code>
 int main()
 {
     fd_set   rfds;       /* read bit masks for select statement */
@@ -497,7 +504,7 @@ int main()
 
     /* init the rta package and tell it about mydata */
     rta_init();
-    if (rta_add_table(&mytbldef) != RTA_SUCCESS) {
+    if (rta_add_table(&amp;mytbldef) != RTA_SUCCESS) {
         fprintf(stderr, "Table definition error!\n");
         exit(1);
     }
@@ -507,17 +514,17 @@ int main()
 
     /* Loop forever processing file system requests */
     while (1) {
-        FD_ZERO(&rfds);
-        FD_SET(fsfd, &rfds);
-        (void) select(fsfd + 1, &rfds, (fd_set *) 0, (fd_set *) 0,
+        FD_ZERO(&amp;rfds);
+        FD_SET(fsfd, &amp;rfds);
+        (void) select(fsfd + 1, &amp;rfds, (fd_set *) 0, (fd_set *) 0,
                 (struct timeval *) 0);
-        if ((fsfd &gt; 0) && (FD_ISSET(fsfd, &rfds)))
+        if ((fsfd &gt; 0) &amp;&amp; (FD_ISSET(fsfd, &amp;rfds)))
         {
           do_rtafs();
         }
     }
 }
-</pre></code>
+</code>
 <p>We use a select() to detect arrival of a file system command
 and use do_rtafs() to do the read and execution of the command.
 You can use routines in the FUSE package directly if you want
@@ -535,45 +542,45 @@ has the same UID and GID as the user running the program.
 to do that we need the FUSE package installed.  FUSE is available
 from:<br> &nbsp;&nbsp; &nbsp;&nbsp;
 <a href="http://prdownloads.sourceforge.net/avf/fuse-1.0.tar.gz">
-http://prdownloads.sourceforge.net/avf/fuse-1.0.tar.gz
-</pre></a></p>
+http://prdownloads.sourceforge.net/avf/fuse-1.0.tar.gz</a></p>
 <p>FUSE uses the usual download, <tt>./configure</tt>,
 <tt>make</tt>, <tt>make install</tt> commands, and it requires that
 the kernel sources be installed prior to its build.  Once FUSE is
 built, install the kernel module, fuse.o, and test your installation by
 trying several of the programs in the <tt>example</tt> directory.</p>
 <p>Once FUSE is installed and verified, you can build the librtafs
-library.
+library.</p>
 <pre>    # tar -xzf rta-0.7.0.tgz
     # cd rta-0.7.0
     # cd src
     # make librtafs.so.2
-</pre></p>
+</pre>
 <p>Copy the myappfs.c program to the <tt>test</tt> directory and compile
-it with the command:
+it with the command:</p>
 <pre>
     # gcc myappfs.c -o myappfs -L../src -lrtadb -lrtafs
-</pre></p>
+</pre>
 <p>As before, make sure sure the RTA libraries are installed
 in one of the system library directories or explicitly tell
 the system to look for the libraries in the <tt>src</tt> directory:
 <pre>
     # export LD_LIBRARY_PATH=/home/rta-0.7.0/src
 </pre>
-<p>Make sure that <tt>/tmp/mydir</tt> exists and run the program.
+<p>Make sure that <tt>/tmp/mydir</tt> exists and run the program.</p>
 <pre>
     # mkdir /tmp/mydir
-    # ./myappfs &
-</pre></p><br>
+    # ./myappfs &amp;
+</pre>
+<br>
 <h4><a name="fstest">Test</a></h4>
 <p>If all has gone well you should be able to see the application
-mounted on /tmp/mydir:
+mounted on /tmp/mydir:</p>
 <pre>     # mount
     /proc/fs/fuse/dev on /tmp/mydir type fuse (rw,nosuid,nodev,user=bsmith)
-</pre></p>
+</pre>
 <p>An <tt>ls /tmp/mydir/*</tt> should show all of the tables
 as directories with all of the columns as subdirectories
-within each table directory.
+within each table directory.</p>
 <pre>    # ls /tmp/mydir/*
 
     /tmp/mydir/mytable:
@@ -593,37 +600,44 @@ within each table directory.
     /tmp/mydir/rta_tables:
     address/  help/  ncol/   rowlen/  savefile/
     cols/     name/  nrows/  ROWS/
-</pre></p>
+</pre>
 <p>Remember that in each column directory is a file for each
 row in the table.  The rows are just numbered starting with
-zero.
+zero.</p>
 <pre>    # ls /tmp/mydir/mytable/notes
     0000  0002  0004  0006  0008  0010  0012  0014  0016  0018
     0001  0003  0005  0007  0009  0011  0013  0015  0017  0019
-</pre></p>
+</pre>
 <p>The <tt>ROWS</tt> directory also has a file for each row
 in the table.  A cat of one of the <tt>ROWS</tt> files
 displays the whole row with commas separating the columns
-and with strings enclosed in quotes.
+and with strings enclosed in quotes.</p>
 <pre>    # cat /tmp/mydir/mytable/ROWS/0000
     0, 0.000000, "", ""
-</pre></p>
+</pre>
 <p>Either <tt>cat</tt> or <tt>echo</tt> can change a column
 or a row.
-<pre>    # echo "Babylon 5" > /tmp/mydir/mytable/notes/0000
+<pre>    # echo "Babylon 5" &gt; /tmp/mydir/mytable/notes/0000
 </pre>
 <p>There is no way to update the whole table at once, but
-it is pretty easy to update each row, one at a time.
+it is pretty easy to update each row, one at a time.</p>
 <pre>    # for i in /tmp/mydir/mytable/notes/*
     do
-        date > $i
+        date &gt; $i
     done
-</pre></p>
+</pre>
 <p>When updating a whole row, you may need to use single
-quotes to surround strings.
-<pre>    # echo "44, 12.345, 'Hi Mom!', ''" > /tmp/mydir/mytable/ROWS/0000
-</pre></p>
+quotes to surround strings.</p>
+<pre>    # echo "44, 12.345, 'Hi Mom!', ''" &gt; /tmp/mydir/mytable/ROWS/0000
+</pre>
 <br>
 <br>
+
+<p>
+      <a href="http://validator.w3.org/check/referer"><img border="0"
+          src="http://www.w3.org/Icons/valid-html401"
+          alt="Valid HTML 4.01!" height="31" width="88"></a>
+</p>
+
 </body>
 </html>

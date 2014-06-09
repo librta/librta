@@ -85,25 +85,25 @@ rta_init()
 int
 rta_config_dir(char *configdir)
 {
-  struct stat statbuf;      // to verify input is a directory
-  int         len;          // length of the path
+  struct stat statbuf;      /* to verify input is a directory */
+  int         len;          /* length of the path */
 
   /* Initialize the RTA tables if this is the first call to add_table */
   if (Ntbl == -1)
     rta_init();
 
   /* Perform some sanity checks */
-  if (!stat(configdir, &statbuf) && S_ISDIR(statbuf.st_mode) &&
-    (ConfigDir = strdup(configdir))) {
-    len = strlen(ConfigDir);
-    if (len != 1 && ConfigDir[len -1] == '/')
-      ConfigDir[len - 1] = (char) 0;
-
-    return(0);
+  if (!stat(configdir, &statbuf) && S_ISDIR(statbuf.st_mode)) {
+    ConfigDir = strdup(configdir);
+    if (ConfigDir) {
+      len = strlen(ConfigDir);
+      if (len != 1 && ConfigDir[len -1] == '/') {
+        ConfigDir[len - 1] = (char) 0;
+      }
+      return(0);
+    }
   }
-  else {
-    return(-1);
-  }
+  return(-1);
 }
 
 /***************************************************************
@@ -316,6 +316,20 @@ dbcommand(char *buf, int *nin, char *out, int *nout)
       return (RTA_NOCMD);
     }
 
+    /* The first packet can be a request for an SSL connection.
+       Look for this and return an 'N' to indicate that we do not
+       support SSL.  The packet is '00 00 00 08 04 d2 16 2f'.  Note
+       that '04 d2' and '16 2f' are 1234 and 5678 respectively. */
+    if (length == 8 &&
+        buf[4] == (char) 0x04 && buf[5] == (char) 0xd2 &&
+        buf[6] == (char) 0x16 && buf[7] == (char) 0x2f) {
+      *out = 'N';
+      out++;
+      *nout -= 1;
+      *nin -= length;
+      return (RTA_SUCCESS);
+    }
+
     /* Look for a start-up request packet.  Do a sanity check since the 
        minimum startup packet is 13 bytes (4 length, 4 protocol,
        'user', and a null). */
@@ -341,7 +355,7 @@ dbcommand(char *buf, int *nin, char *out, int *nout)
          'K', int32(length), int32(pid of backend), int32(secret key)
          'Z', int32(length), 'I'   */
 
-      char reply[164] = {
+      unsigned char reply[164] = {
         'R',0x00,0x00,0x00,0x08,0x00,0x00,0x00,0x00,
         'S',0x00,0x00,0x00,0x1e,0x63,0x6c,0x69,0x65,0x6e,0x74,0x5f,0x65,
             0x6e,0x63,0x6f,0x64,0x69,0x6e,0x67,0x00,0x53,0x51,0x4c,0x5f,
@@ -516,7 +530,7 @@ rta_save(TBLDEF *ptbl, char *fname)
         fprintf(ftmp, ", %s ", ptbl->cols[cx].name);
 
       /* compute pointer to actual data */
-      pd = pr + ptbl->cols[cx].offset;
+      pd = (char *)pr + ptbl->cols[cx].offset;
       switch ((ptbl->cols[cx]).type) {
         case RTA_STR:
           if (memchr((char *) pd, '"', ptbl->cols[cx].length))
@@ -537,10 +551,10 @@ rta_save(TBLDEF *ptbl, char *fname)
           fprintf(ftmp, "= %d", **((int **) pd));
           break;
         case RTA_LONG:
-          fprintf(ftmp, "= %lld", *((long long *) pd));
+          fprintf(ftmp, "= %lld", *((llong *) pd));
           break;
         case RTA_PLONG:
-          fprintf(ftmp, "= %lld", **((long long **) pd));
+          fprintf(ftmp, "= %lld", **((llong **) pd));
           break;
         case RTA_PTR:
 
@@ -565,7 +579,7 @@ rta_save(TBLDEF *ptbl, char *fname)
       if (rx >= ptbl->nrows)
         pr = (void *) NULL;
       else
-        pr = ptbl->address + (rx * sr);
+        pr = (char *)ptbl->address + (rx * sr);
     }
   }
 
@@ -630,7 +644,7 @@ rta_load(TBLDEF *ptbl, char *fname)
     strcat(path, fname);
   }
 
-  /* Open a temp file in the same directory as the users target file */
+  /* Open the savefile of SQL UPDATE statements */
   fp = fopen(path, "r");
   if (fp == (FILE *) 0) {
     rtastat.nsyserr++;

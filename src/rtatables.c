@@ -529,12 +529,12 @@ TBLDEF   rta_dbgTable = {
 
 /* Allocate and initialize the table */
 struct RtaStat rtastat = {
-  (long long) 0,                /* count of failed OS calls. */
-  (long long) 0,                /* count of internal rta failures. */
-  (long long) 0,                /* count of SQL failures. */
-  (long long) 0,                /* count of authorizations. */
-  (long long) 0,                /* count of UPDATE requests */
-  (long long) 0,                /* count of SELECT requests */
+  (llong) 0,                    /* count of failed OS calls. */
+  (llong) 0,                    /* count of internal rta failures. */
+  (llong) 0,                    /* count of SQL failures. */
+  (llong) 0,                    /* count of authorizations. */
+  (llong) 0,                    /* count of UPDATE requests */
+  (llong) 0,                    /* count of SELECT requests */
 };
 
 /* Define the table columns */
@@ -543,7 +543,7 @@ COLDEF   rta_statCols[] = {
       "rta_stat",               /* table name */
       "nsyserr",                /* column name */
       RTA_LONG,                 /* type of data */
-      sizeof(long long),        /* #bytes in col data */
+      sizeof(llong),            /* #bytes in col data */
       offsetof(struct RtaStat, nsyserr), /* offset 2 col strt */
       RTA_READONLY,    /* Flags for read-only/disksave */
       (void (*)()) 0,  /* called before read */
@@ -553,7 +553,7 @@ COLDEF   rta_statCols[] = {
       "rta_stat",               /* table name */
       "nrtaerr",                /* column name */
       RTA_LONG,                 /* type of data */
-      sizeof(long long),        /* #bytes in col data */
+      sizeof(llong),            /* #bytes in col data */
       offsetof(struct RtaStat, nrtaerr), /* offset 2 col strt */
       RTA_READONLY,    /* Flags for read-only/disksave */
       (void (*)()) 0,  /* called before read */
@@ -563,7 +563,7 @@ COLDEF   rta_statCols[] = {
       "rta_stat",               /* table name */
       "nsqlerr",                /* column name */
       RTA_LONG,                 /* type of data */
-      sizeof(long long),        /* #bytes in col data */
+      sizeof(llong),            /* #bytes in col data */
       offsetof(struct RtaStat, nsqlerr), /* offset 2 col strt */
       RTA_READONLY,    /* Flags for read-only/disksave */
       (void (*)()) 0,  /* called before read */
@@ -573,7 +573,7 @@ COLDEF   rta_statCols[] = {
       "rta_stat",               /* table name */
       "nauth",                  /* column name */
       RTA_LONG,                 /* type of data */
-      sizeof(long long),        /* #bytes in col data */
+      sizeof(llong),            /* #bytes in col data */
       offsetof(struct RtaStat, nauth), /* offset 2 col strt */
       RTA_READONLY,    /* Flags for read-only/disksave */
       (void (*)()) 0,  /* called before read */
@@ -584,7 +584,7 @@ COLDEF   rta_statCols[] = {
       "rta_stat",               /* table name */
       "nselect",                /* column name */
       RTA_LONG,                 /* type of data */
-      sizeof(long long),        /* #bytes in col data */
+      sizeof(llong),            /* #bytes in col data */
       offsetof(struct RtaStat, nselect), /* offset 2 col strt */
       RTA_READONLY,    /* Flags for read-only/disksave */
       (void (*)()) 0,  /* called before read */
@@ -594,7 +594,7 @@ COLDEF   rta_statCols[] = {
       "rta_stat",               /* table name */
       "nupdate",                /* column name */
       RTA_LONG,                 /* type of data */
-      sizeof(long long),        /* #bytes in col data */
+      sizeof(llong),            /* #bytes in col data */
       offsetof(struct RtaStat, nupdate), /* offset 2 col strt */
       RTA_READONLY,    /* Flags for read-only/disksave */
       (void (*)()) 0,  /* called before read */

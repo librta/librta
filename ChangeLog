@@ -1,6 +1,27 @@
+2004-07-26  Bob Smith                 Version 1.0.1/0.7.3
+    - Added support for the new psql client protocol in which
+      the very first packet from the client is a request for an
+      SSL encrypted session.  We reply with an 'N' to indicate
+      that SSL sessions are not yet supported.  Modified api.c.
+    - Fixed a bug in the SQL parser by running flex and yacc
+      under Linux (Mdk9.2) and saving the resultant .c file.
+      Modified parse.c and parse.h. (1.0.1 only.  0.7.3 still
+      uses parse.y as the input file.)
+    - Added 0.7.3 which is a pure Makefile based version of RTA.
+      It has the same code base as 1.0.1 but does not use automake.
+    - Removed empd from the distribution.
+
+
+2004-04-20  Graham Phillips			  Version 1.0.0.
+      Added autoconf support.  Ported rta to Windows.  User may run
+      './configure' and 'make' on Linux and Windows platforms.  Added
+      strndup(), dirname() and mkstemp() for platforms that don't have
+      these methods.  
+
+
 2004-03-07 Bob Smith                              Version 0.7.2. 
-    - Added a prototype deamon based on RTA.  The daemon is
-      called 'empty deamon' or empd.  This addition prompted
+    - Added a prototype daemon based on RTA.  The daemon is
+      called 'empty daemon' or empd.  This addition prompted
       the addition of rta_config_dir below.
     - Fixed a bug in the iterator for the rta_tables table.
     - Fixed various typo and spelling errors.
@@ -74,7 +95,7 @@
 
 2003-04-18  Bob Smith                             Version 0.5.1.
     - Added BEGIN and COMMIT to the SQL commands recognized in
-      order to allow login from Posgres 7.3.X clients.  The 7.3
+      order to allow login from Postgres 7.3.X clients.  The 7.3
       Postgres login uses a transaction as part of the login.
       The commands, while not causing an error, DO NOTHING.  There
       is no attempt in the code to implement transactions.
@@ -82,5 +103,3 @@
 
 2003-02-19  Bob Smith                             Version 0.5.0.
     - Initial release.
-
-

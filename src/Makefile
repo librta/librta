@@ -43,15 +43,11 @@ all: librtadb.so.2 librtafs.so.2
 librtadb.so.2: $(OBJS)
 	gcc -ggdb -Wall -shared -Wl,-soname,librtadb.so.2 \
 		-o librtadb.so.2.0  $(OBJS) $(LIBS) -lc
-	ln -sf librtadb.so.2.0 librtadb.so.2
-	ln -sf librtadb.so.2.0 librtadb.so
 	ar -rcs librtadb.a $(OBJS)
 
 librtafs.so.2: $(FSOBJS) librtadb.so.2
 	gcc -ggdb -Wall -shared -Wl,-soname,librtafs.so.2 \
 		-o librtafs.so.2.0  $(FSOBJS) $(FSLIBS) -lc
-	ln -sf librtafs.so.2.0 librtafs.so.2
-	ln -sf librtafs.so.2.0 librtafs.so
 	ar -rcs librtafs.a $(FSOBJS)
 
 token.o: parse.tab.c do_sql.h
@@ -76,8 +72,12 @@ standard: clean
 	done
 
 install:	
-	cp lib* /usr/local/lib
-	cp rta.h /usr/local/include
+	/usr/bin/install -m 644 librta* /usr/local/lib;
+	/usr/bin/install -m 644 rta.h /usr/local/include
+	ln -sf /usr/local/lib/librtafs.so.2.0 /usr/local/lib/librtafs.so.2
+	ln -sf /usr/local/lib/librtafs.so.2.0 /usr/local/lib/librtafs.so
+	ln -sf /usr/local/lib/librtadb.so.2.0 /usr/local/lib/librtadb.so.2
+	ln -sf /usr/local/lib/librtadb.so.2.0 /usr/local/lib/librtadb.so
 
 clean: 
 	rm -rf *.o parse.tab.? token.c lib* parse.output parse.save

@@ -1,9 +1,9 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
-"http://www.w3.org/TR/REC-html401/loose.dtd">
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/REC-html401/loose.dtd">
 <html lang="en">
 <head>
-<title>RTA: Embedded DB API</title>
-<style type="text/css">
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <title>RTA: Embedded DB API</title>
+  <style type="text/css">
 p {font-size: medium;}
 th {font-size: medium;}
 td {font-size: medium;}
@@ -11,74 +11,81 @@ pre {font-size: medium;}
 h1 {font-family: sans-serif}
 h2 {font-family: sans-serif}
 h3 {font-family: sans-serif}
-</style>
+  </style>
 </head>
 <body>
 <table width="100%" summary="" align="center" bgcolor="#dcefff">
-<tr>
-<td valign="top" align="left" width=40%>
-<ul>
- <li><a href="index.html">Introduction</a></li>
- <li><a href="FAQ.html">FAQ</a></li>
- <li><a href="apiref.html">API Spec</a></li>
- <li><a href="download.html">Download</a></li>
- <li><a href="quickstart.html">Quick Start</a></li>
- <li><a href="livedemo.html">Live Demo</a></li>
- <li><a href="contact.html">Contact Info</a></li>
-</ul>
-</td>
-<td align="left" valign=middle>
- <h2>Run Time Access</h2></td>
-</tr></table>
-<h2>Frequently Asked Questions</h2> 
+  <tbody>
+    <tr>
+      <td valign="top" align="left" width="40%">
+      <ul>
+        <li><a href="index.html">Introduction</a></li>
+        <li><a href="FAQ.html">FAQ</a></li>
+        <li><a href="apiref.html">API Spec</a></li>
+        <li><a href="download.html">Download</a></li>
+        <li><a href="quickstart.html">Quick Start</a></li>
+        <li><a href="livedemo.html">Live Demo</a></li>
+        <li><a href="contact.html">Contact Info</a></li>
+      </ul>
+      </td>
+      <td align="left" valign="middle">
+      <h2>Run Time Access</h2>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<h2>Frequently Asked Questions</h2>
 <h3>General questions</h3>
-<ul compact type="circle">
-<li><a href="#q01">What is RTA?</a></li>
-<li><a href="#q02">What is the purpose of RTA?</a></li>
-<li><a href="#q03">So, is this a database, or what?</a></li>
-<li><a href="#q04">Is this like the /proc filesystem?</a></li>
-<li><a href="#q05">Why PostgreSQL?</a></li>
-<li><a href="#q06">What SQL commands are implemented?</a></li>
-<li><a href="#q07">What SQL/Postgres commands are not
+<ul compact="compact" type="circle">
+  <li><a href="#q01">What is RTA?</a></li>
+  <li><a href="#q02">What is the purpose of RTA?</a></li>
+  <li><a href="#q03">So, is this a database, or what?</a></li>
+  <li><a href="#q04">Is this like the /proc filesystem?</a></li>
+  <li><a href="#q05">Why PostgreSQL?</a></li>
+  <li><a href="#q06">What SQL commands are implemented?</a></li>
+  <li><a href="#q07">What SQL/Postgres commands are not
 implemented?</a></li>
-<li><a href="#q08">Why such a small subset of SQL?</a></li>
-<li><a href="#q16">What file system commands are in RTA?</a></b><br>
-<li><a href="#q09">Who should not use RTA?</a></li>
-<li><a href="#q10">How big is it?</a></li>
-<li><a href="#q11">Do I need to know SQL to use RTA?</a></li>
-<li><a href="#q12">How difficult is it to learn and use RTA?</a></li>
-<li><a href="#q13">How do I report bugs?</a></li>
-<li><a href="#q14">Where can I get help?</a></li>
-<li><a href="#q15">Can I send you money?</a></li></ul>
+  <li><a href="#q08">Why such a small subset of SQL?</a></li>
+  <li><a href="#q16">What file system commands are in RTA?</a><br>
+  </li>
+  <li><a href="#q09">Who should not use RTA?</a></li>
+  <li><a href="#q10">How big is it?</a></li>
+  <li><a href="#q11">Do I need to know SQL to use RTA?</a></li>
+  <li><a href="#q12">How difficult is it to learn and use RTA?</a></li>
+  <li><a href="#q13">How do I report bugs?</a></li>
+  <li><a href="#q14">Where can I get help?</a></li>
+  <li><a href="#q15">Can I send you money?</a></li>
+</ul>
 <h3>Building, modifying, and understanding RTA</h3>
-<ul compact type="circle">
-<li><a href="#p13">What do I need to do to use RTA in my
+<ul compact="compact" type="circle">
+  <li><a href="#p13">What do I need to do to use RTA in my
 program?</a></li>
-<li><a href="#p14">Why is there no "./configure" file?</a></li>
-<li><a href="#p15">What libraries, tools and include files are
+  <li><a href="#p15">What libraries, tools and include files are
 needed?</a></li>
-<li><a href="#p16">Do I need the Postgres libraries?</a></li>
-<li><a href="#p17">Can I link to it statically?</a></li>
-<li><a href="#p18">What has it been tested on?</a></li>
-<li><a href="#p19">Can I add my own data type?</a></li>
-<li><a href="#p20">Why are there "magic" numbers in the
+  <li><a href="#p16">Do I need the Postgres libraries?</a></li>
+  <li><a href="#p17">Can I link to it statically?</a></li>
+  <li><a href="#p18">What has it been tested on?</a></li>
+  <li><a href="#p19">Can I add my own data type?</a></li>
+  <li><a href="#p20">Why are there "magic" numbers in the
 code?</a></li>
-<li><a href="#p21">Why are the pseudo-tables arrays of
+  <li><a href="#p21">Why are the pseudo-tables arrays of
 pointers?</a></li>
-<li><a href="#p22">Why do I get segmentation violations?</a></li>
-<li><a href="#p23">How can I change the size of a table?</a></li>
-<li><a href="#p24">Why use native data type instead of INT4 and
+  <li><a href="#p22">Why do I get segmentation violations?</a></li>
+  <li><a href="#p23">How can I change the size of a table?</a></li>
+  <li><a href="#p24">Why use native data type instead of INT4 and
 INT8?</a></li>
-<li><a href="#p25">Why do I get: "error while loading shared libraries:
+  <li><a href="#p25">Why do I get: "error while loading shared
+libraries:
 librtadb.so.2:"</a></li>
-<li><a href="#p26">How big should I make the output buffer for
+  <li><a href="#p26">How big should I make the output buffer for
 dbcommand()?</a></li>
-<li><a href="#p27">Why must a write() have all data in a single
+  <li><a href="#p27">Why must a write() have all data in a single
 buffer?</a></li>
-<li><a href="#p28">Can I export a simple variable?</a></li>
-<li><a href="#p29">Which is better, the file system or the database interface?</a></li>
-<li><a href="#p30">Is RTA thread safe?</a></li>
-<li><a href="#p31">What is in the To-Do list?</a></li>
+  <li><a href="#p28">Can I export a simple variable?</a></li>
+  <li><a href="#p29">Which is better, the file system or the database
+interface?</a></li>
+  <li><a href="#p30">Is RTA thread safe?</a></li>
+  <li><a href="#p31">What is in the To-Do list?</a></li>
 </ul>
 <hr>
 <h3>General questions</h3>
@@ -86,11 +93,10 @@ buffer?</a></li>
 RTA is a specialized memory resident database and virtual file
 system interface. It is not a stand-alone database server or
 file system but a library which attaches to a program and offers
-up the program's internal structures and arrays as database 
-tables or as files in a file system. The database interface 
-uses a subset of the Postgres protocol and is compatible with 
-the Postgres bindings for "C", PHP, and the Postgres command 
-line tool, psql.</p>
+up the program's internal structures and arrays as database tables or
+as files in a file system. The database interface uses a subset of the
+Postgres protocol and is compatible with the Postgres bindings for "C",
+PHP, and the Postgres command line tool, psql.</p>
 <p><b><a name="q02">What is the purpose of RTA?</a></b><br>
 It provides a means for external programs to view and edit the
 tables in your running program. This makes debugging easier and
@@ -113,7 +119,7 @@ and tech-writers for PostgreSQL.)</p>
 <p><b><a name="q06">What SQL commands are implemented?</a></b><br>
 Only two: SELECT and UPDATE, and even then it is only a subset of
 the usual SELECT and UPDATE. See rta.h for the syntax details of
-the commands.  RTA does not implement transactions.
+the commands. RTA does not implement transactions.
 </p>
 <p><b><a name="q07">What SQL/Postgres commands are not
 implemented?</a></b><br>
@@ -129,8 +135,9 @@ This is not a database; it is an API. SELECT and UPDATE are the
 minimum needed to read and edit the data in your running program.</p>
 <p><b><a name="q16">What file system commands are in RTA?</a></b><br>
 The read(), write(), and readdir() commands are implemented as is
-the stat() function.  Minimal stubs are provided for both open()
+the stat() function. Minimal stubs are provided for both open()
 and truncate().
+</p>
 <p><b><a name="q09">Who should not use RTA?</a></b><br>
 RTA is great if you have data already arranged as structs or as
 array of structs. It is a little more difficult to use if you have
@@ -141,19 +148,23 @@ not a good fit for a deeply nested tree structure of data.<br>
 It is also best for single process applications where the data is
 in one memory space. For instance, it might not be a good fit for
 Apache which forks several equal, independent processes.</p>
-<p><b><a name="q10">How big is it?</a></b><br> The stripped
+<p><b><a name="q10">How big is it?</a></b><br>
+The stripped
 shared-object SQL interface library (librtadb.so.2) is 45KB and
-the static (.a) library is 44KB.  The stripped virtual file system interface
-(librtafs.so.2) is 13KB and the static library is 11KB.  Note that
+the static (.a) library is 44KB. The stripped virtual file system
+interface
+(librtafs.so.2) is 13KB and the static library is 11KB. Note that
 to use the virtual file system interface you need to load the SQL
 interface as well.</p>
-<p><b><a name="q11">Do I need to know SQL to use RTA?</a></b><br> Not
+<p><b><a name="q11">Do I need to know SQL to use RTA?</a></b><br>
+Not
 really. There are only two commands and they match pretty well with
 the intuitive idea of "change this column in this table where ...".
 It is pretty simple.<br>
-Also, the librtafs library lets you avoid SQL entirely if you wish.  </p>
+Also, the librtafs library lets you avoid SQL entirely if you wish. </p>
 <p><b><a name="q12">How difficult is it to learn and use RTA?</a></b>
-<br>It is easy to learn. There are only two important data structures
+<br>
+It is easy to learn. There are only two important data structures
 (one to describe a table and one to describe a column) and only eight
 subroutines in the API. The tutorial elsewhere on this page should
 give you a pretty good idea of the simplicity of the approach.<br>
@@ -179,11 +190,7 @@ column of the table. The table description includes attributes of
 the table in general and a description of each column in the table.
 See the sample application and the API reference for more
 detail.<br>
-<br>
-<p><b><a name="p14">Why is there no "./configure" file?</a></b><br>
-We hope to add autoconf and a configure script in a later release.
-(Please let us know if you would like to help with this
-effort.)</p>
+</p>
 <p><b><a name="p15">What libraries, tools and include files are
 needed?</a></b><br>
 We use the following system include files: libgen.h, limits.h,
@@ -264,55 +271,53 @@ row. Be sure to use LIMIT and OFFSET to step through a big list of
 returned rows.</p>
 <p><b><a name="p27">Why must a write() have all data in a single
 buffer?</a></b><br>
-There are two reasons.  First, RTA requires a single write buffer
-in order to be sure that all table writes are atomic.  Without
+There are two reasons. First, RTA requires a single write buffer
+in order to be sure that all table writes are atomic. Without
 atomic table writes we could not guarantee table consistency.
 Second, the FUSE package, upon which the file system interface is
-based, does not implement or use file descriptors.  The write call
-has as input a path, buffer, count, and offset.  This leaves open
+based, does not implement or use file descriptors. The write call
+has as input a path, buffer, count, and offset. This leaves open
 the possibility that two programs writing to the same row or column
 could conflict and leave the table an inconsistent state.</p>
 <p><b><a name="p28">Can I export a simple variable?</a></b><br>
-Sure.  Just define a single column for your variable and a table
-with a single row.  You can make visible simple variables, 
-single structures, or arrays of structures.</p>
-
+Sure. Just define a single column for your variable and a table
+with a single row. You can make visible simple variables, single
+structures, or arrays of structures.</p>
 <p><b><a name="p29">Which is better, the file system or the database
 interface?</a></b><br>
-The database interface is better in most applications.  It is
-faster and it is atomic.  That is, a single statement can do an
-update based on the results of WHERE clause.  Our use of the
-file system interface has shown it to be a little fragile.  You
+The database interface is better in most applications. It is
+faster and it is atomic. That is, a single statement can do an
+update based on the results of WHERE clause. Our use of the
+file system interface has shown it to be a little fragile. You
 need to be careful to not leave a mounted file system when your
-program exits abnormally.  This means you need some supervisory
+program exits abnormally. This means you need some supervisory
 program to unmount the file system and possibly remove and
-re-install the fuse kernel module.  </p>
-
+re-install the fuse kernel module. </p>
 <p><b><a name="p30">Is RTA thread safe?</a></b><br>
-RTA is not currently thread safe.  Please contact the authors
-if this is very high on your wish list.  </p>
-
+RTA is not currently thread safe. Please contact the authors
+if this is very high on your wish list. </p>
 <p><b><a name="p31">What is in the To-Do list?</a></b><br>
 Please let the authors know what features you would like added
-or removed from Run Time Access.  No additional changes are
+or removed from Run Time Access. No additional changes are
 anticipated at this time, but the list of possible changes
-includes:
+includes:</p>
 <ul>
- <li> UTF-8 support</li>
- <li> printf format string in the column definition</li>
- <li> ability to register more than one trigger per column</li>
- <li> secure login maintaining Postgres compatibility</li>
- <li> IPC and support for shared tables in shared memory</li>
- <li> specify pre or post for the write callback</li>
- <li> table save callback (to save file to flash?)</li>
- <li> execution times for table access, update</li>
- <li> count(*) function</li>
- <li> model output buffer mgmt on zlib to allow output streams</li>
- <li> add a column data type of "table" to allow nested tables</li>
- <li> make it thread safe</li>
+  <li> UTF-8 support</li>
+  <li> printf format string in the column definition</li>
+  <li> ability to register more than one trigger per column</li>
+  <li> secure login maintaining Postgres compatibility</li>
+  <li> IPC and support for shared tables in shared memory</li>
+  <li> specify pre or post for the write callback</li>
+  <li> table save callback (to save file to flash?)</li>
+  <li> execution times for table access, update</li>
+  <li> count(*) function</li>
+  <li> model output buffer mgmt on zlib to allow output streams</li>
+  <li> add a column data type of "table" to allow nested tables</li>
+  <li> make it thread safe</li>
 </ul>
+<p> <a href="http://validator.w3.org/check/referer"><img border="0"
+ src="http://www.w3.org/Icons/valid-html401" alt="Valid HTML 4.01!"
+ height="31" width="88"></a>
 </p>
-
 </body>
 </html>
-

@@ -420,7 +420,7 @@ do_select(char *buf, int *nbuf)
   int      wx;         /* Where clause indeX in for loop */
   void    *pr;         /* Pointer to the row in the table/column */
   void    *pd;         /* Pointer to the Data in the table/column */
-  long long cmp;       /* has actual relation of col and val */
+  llong cmp;           /* has actual relation of col and val */
   int      dor;        /* DO Row == 1 if we should print row */
   int      npr = 0;    /* Number of output rows */
   char     nprstr[30]; /* string to hold ASCII of npr */
@@ -453,7 +453,7 @@ do_select(char *buf, int *nbuf)
       }
 
       /* compute pointer to actual data */
-      pd = pr + cmd.pwhr[wx]->offset;
+      pd = (char *)pr + cmd.pwhr[wx]->offset;
 
       /* do comparison based on column data type */
       switch (cmd.pwhr[wx]->type) {
@@ -472,10 +472,10 @@ do_select(char *buf, int *nbuf)
           cmp = **((int **) pd) - cmd.whrints[wx];
           break;
         case RTA_LONG:
-          cmp = *((long long *) pd) - cmd.whrlngs[wx];
+          cmp = *((llong *) pd) - cmd.whrlngs[wx];
           break;
         case RTA_PLONG:
-          cmp = **((long long **) pd) - cmd.whrlngs[wx];
+          cmp = **((llong **) pd) - cmd.whrlngs[wx];
           break;
         case RTA_PTR:
           cmp = *((int *) pd) - cmd.whrints[wx];
@@ -537,7 +537,7 @@ do_select(char *buf, int *nbuf)
         }
 
         /* compute pointer to actual data */
-        pd = pr + cmd.pcol[cx]->offset;
+        pd = (char *)pr + cmd.pcol[cx]->offset;
         switch ((cmd.pcol[cx])->type) {
           case RTA_STR:
             /* send 4 byte length.  Include the length */
@@ -560,12 +560,12 @@ do_select(char *buf, int *nbuf)
             buf += n;
             break;
           case RTA_LONG:
-            n = sprintf((buf + 4), "%lld", *((long long *) pd));
+            n = sprintf((buf + 4), "%lld", *((llong *) pd));
             ad_int4(&buf, n);
             buf += n;
             break;
           case RTA_PLONG:
-            n = sprintf((buf + 4), "%lld", **((long long **) pd));
+            n = sprintf((buf + 4), "%lld", **((llong **) pd));
             ad_int4(&buf, n);
             buf += n;
             break;
@@ -597,7 +597,7 @@ do_select(char *buf, int *nbuf)
       if (rx >= cmd.ptbl->nrows)
         pr = (void *) NULL;
       else
-        pr = cmd.ptbl->address + (rx * sr);
+        pr = (char *)cmd.ptbl->address + (rx * sr);
     }
   }
   /* Add 'C', length(11), 'SELECT', NULL to output */
@@ -678,7 +678,7 @@ send_row_description(char *buf, int *nbuf)
         break;
       case RTA_LONG:
       case RTA_PLONG:
-        ad_int2(&buf, sizeof(long long)); /* length */
+        ad_int2(&buf, sizeof(llong)); /* length */
         ad_int4(&buf, -1);      /* type modifier */
         break;
       case RTA_FLOAT:
@@ -781,7 +781,7 @@ do_update(char *buf, int *nbuf)
   void    *pr;         /* Pointer to the row in the table/column */
   void    *pd;         /* Pointer to the Data in the table/column */
   void    *poldrow;    /* Pointer to copy of row before update */
-  long long cmp;       /* has actual relation of col and val */
+  llong cmp;           /* has actual relation of col and val */
   int      dor;        /* DO Row == 1 if we should update row */
   char    *startbuf;   /* used to compute response length */
   int      cx;         /* Column index while building Data pkt */
@@ -814,7 +814,7 @@ do_update(char *buf, int *nbuf)
       }
 
       /* compute pointer to actual data */
-      pd = pr + cmd.pwhr[wx]->offset;
+      pd = (char *)pr + cmd.pwhr[wx]->offset;
 
       /* do comparison based on column data type */
       switch (cmd.pwhr[wx]->type) {
@@ -832,10 +832,10 @@ do_update(char *buf, int *nbuf)
           cmp = **((int **) pd) - cmd.whrints[wx];
           break;
         case RTA_LONG:
-          cmp = *((long long *) pd) - cmd.whrlngs[wx];
+          cmp = *((llong *) pd) - cmd.whrlngs[wx];
           break;
         case RTA_PLONG:
-          cmp = **((long long **) pd) - cmd.whrlngs[wx];
+          cmp = **((llong **) pd) - cmd.whrlngs[wx];
           break;
         case RTA_FLOAT:
           cmp = *((float *) pd) - cmd.whrflot[wx];
@@ -886,7 +886,7 @@ do_update(char *buf, int *nbuf)
       /* Scan the columns doing updates as needed */
       for (cx = 0; cx < cmd.ncols; cx++) {
         /* compute pointer to actual data */
-        pd = pr + cmd.pcol[cx]->offset;
+        pd = (char *)pr + cmd.pcol[cx]->offset;
 
         switch ((cmd.pcol[cx])->type) {
           case RTA_STR:
@@ -903,10 +903,10 @@ do_update(char *buf, int *nbuf)
             **((int **) pd) = cmd.updints[cx];
             break;
           case RTA_LONG:
-            *((long long *) pd) = cmd.updlngs[cx];
+            *((llong *) pd) = cmd.updlngs[cx];
             break;
           case RTA_PLONG:
-            **((long long **) pd) = cmd.updlngs[cx];
+            **((llong **) pd) = cmd.updlngs[cx];
             break;
           case RTA_PTR:
             /* works only if INT and PTR are same size */
@@ -945,7 +945,7 @@ do_update(char *buf, int *nbuf)
       if (rx >= cmd.ptbl->nrows)
         pr = (void *) NULL;
       else
-        pr = cmd.ptbl->address + (rx * sr);
+        pr = (char *)cmd.ptbl->address + (rx * sr);
     }
   }
 

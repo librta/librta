@@ -1220,11 +1220,11 @@ sprtcol(int t, int r, COLDEF *pc, char *buf, int nbuf, int quot)
       break;
 
     case RTA_LONG:
-      out = sprintf(buf, "%lld", *((long long *) pd));
+      out = sprintf(buf, "%lld", *((llong *) pd));
       break;
 
     case RTA_PLONG:
-      out = sprintf(buf, "%lld", **((long long **) pd));
+      out = sprintf(buf, "%lld", **((llong **) pd));
       break;
 
     case RTA_PTR:

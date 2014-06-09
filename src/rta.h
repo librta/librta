@@ -105,7 +105,7 @@
  **************************************************************/
 
 #ifndef RTA_H
-#define RTA_H 1
+#define RTA_H
 
 /***************************************************************
  * - Limits:
@@ -255,8 +255,9 @@ COLDEF;
 #define RTA_INT          2
 
         /** Long.  This is the compiler/architecture native
-         * long long.  On Linux/gcc/Pentium a long long is 64
-         * bits.  */
+         * long long.  On Linux/gcc/Pentium a llong is 64
+         * bits.  Define 'llong' to suit your needs.  */
+typedef long long llong;
 #define RTA_LONG         3
 
         /** Pointer to string.  Pointer to an array of char, or
@@ -587,12 +588,11 @@ void     do_rtafs();
  * overflow on the output buffer of dbcommand().  They are also
  * very useful for web based user interfaces in which viewing
  * the data a page-at-a-time is desirable.
- *     Column and table names are case sensitive.  If a column
- * or table name is one of the reserved words it must be placed
- * in quotes when used.  The reserved words are: AND, FROM, 
+ *     Column and table names are case sensitive and may not be
+ * one of the reserved words.  The reserved words are: AND, FROM, 
  * LIMIT, OFFSET, SELECT, SET, UPDATE, and WHERE.  Reserved 
  * words are *not* case sensitive.  You may use lower case
- * reserved words in your 
+ * reserved words in your SQL statements if you wish.
  *    Comparison operator in the WHERE clause include =, >=,
  * <=, >, and <.
  *    You can use a reserved word, like OFFSET, as a column name
@@ -600,7 +600,7 @@ void     do_rtafs();
  * SQL command (SELECT "offset" FROM tunings ...).   Strings 
  * may contain any of the !@#$%^&*()_+-={}[]\|:;<>?,./~`
  * characters.  If a string contains a double quote, use a 
- * single quote to wrap it (eg 'The sign say "Hi mom!"'), and
+ * single quote to wrap it (eg 'The sign says "Hi mom!"'), and
  * use double quotes to wrap string with embedded single quotes.
  *
  *     Examples:
@@ -664,6 +664,8 @@ void     do_rtafs();
  *     nrows     - number of rows in the table
  *     cols      - pointer to array of column definitions
  *     ncol      - number of columns in the table
+ *     iterator  - subroutine to advance from one row to next
+ *     it_info   - transparent data for the iterator
  *     savefile  - the file used to store non-volatile columns
  *     help      - a description of the table
  *

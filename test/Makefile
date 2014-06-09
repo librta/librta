@@ -23,7 +23,7 @@ APPOBJS   = appmain.o apptables.o
 default: app
 
 app: $(APPOBJS) 
-	$(CC) $(APPOBJS) -o $@ -L../src -lrtadb -lrtafs
+	$(CC) $(APPOBJS) -o $@ -L../src -lrtadb -lrtafs -lfuse
 
 app-static: $(APPOBJS) 
 	$(CC) $(APPOBJS) -o $@ ../src/librtadb.a ../src/librtafs.a \
