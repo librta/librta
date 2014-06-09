@@ -306,7 +306,7 @@ thing to include here.</td></tr></table>
 <td>dbcommand()</td>
 <td>process data stream from Postgres clients</td></tr>
 <tr>
-<td>egp_add_table()</td>
+<td>rta_add_table()</td>
 <td>add a table and its columns to the DB</td></tr>
 <tr>
 <td>SQL_string()</td>
@@ -363,6 +363,7 @@ dbcommand(char *cmd - the buffer with the Postgres packet
 Return: RTA_SUCCESS   - executed one command
         RTA_NOCMD     - input did not have a full cmd
         RTA_CLOSE     - client requests a orderly close
+        RTA_NOBUF     - insufficient space in output buffer
 </pre>
 <br>
 <br>
@@ -573,9 +574,6 @@ like 'LIMIT 1 OFFSET n' (n is zero-indexed).</p>
 <td>rta_columns:</td>
 <td>- a table of all columns in the DB</td></tr>
 <tr>
-<td>pg_user:</td>
-<td>- spoof of Postgres table needed to log on</td></tr>
-<tr>
 <td>rta_dbg:</td>
 <td>- controls what gets logged from rta</td></tr>
 <tr>
@@ -648,43 +646,6 @@ the generic table editor. The columns of rta_columns are:</p>
 <tr>
 <td>help</td>
 <td>- a description of the column</td></tr></table>
-<br>
-<br>
- 
-<p>The pg_user table is provided to complete the connection
-protocol between Postgres clients and the RTA package. It
-authenticates the connecting user. We spoof the protocol by using a
-read callback to add the user into the table before checking if the
-user is valid. In this way *any* user who connects is in the table
-and so is authenticated. (One future enhancement to RTA might be to
-do real Postgres style authentication.) The columns of pg_user
-are:</p>
-<table summary="">
-<tr>
-<td rowspan="8">&nbsp;&nbsp;&nbsp;</td>
-<td>usename</td>
-<td>- spoofed to match any requested name</td></tr>
-<tr>
-<td>usesysid</td>
-<td>- 100</td></tr>
-<tr>
-<td>usecreatedb</td>
-<td>- 'f'</td></tr>
-<tr>
-<td>usetrace</td>
-<td>- 'f'</td></tr>
-<tr>
-<td>usesuper</td>
-<td>- 'f'</td></tr>
-<tr>
-<td>usecatupd</td>
-<td>- 'f'</td></tr>
-<tr>
-<td>passwd</td>
-<td>- "******"</td></tr>
-<tr>
-<td>valuntil</td>
-<td>- ""</td></tr></table>
 <br>
 <br>
  
@@ -841,7 +802,7 @@ is LOG_USER but this can be changed by setting 'facility' in the
 rta_dbg table.</p>
 <p>You are welcome to modify syslogd in order to do post processing
 such as generating SNMP traps off these debug messages. All error
-messages of this type are send to syslog() as: "egp[PID]: FILE
+messages of this type are sent to syslog() as: "rta[PID]: FILE
 LINE#: error_message", where PID, FILE, and LINE# are replaced by
 the process ID, the source file name, and the line number where the
 error was detected.</p>

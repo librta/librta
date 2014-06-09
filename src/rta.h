@@ -381,6 +381,7 @@ TBLDEF;
  * Return: RTA_SUCCESS   - executed one command
  *         RTA_NOCMD     - input did not have a full cmd
  *         RTA_CLOSE     - client requests an orderly close
+ *         RTA_NOBUF     - insufficient output buffer space
  **************************************************************/
 int      dbcommand(char *, int *, char *, int *);
 
@@ -491,6 +492,9 @@ int      rta_load(TBLDEF *, char *);
 
     /* DB client requests a session close */
 #define RTA_CLOSE     (3)
+
+    /* Insufficient output buffer space */
+#define RTA_NOBUF     (4)
 
 /** ************************************************************
  * rtafs_init():  - Initialize the virtual file system interface
@@ -611,10 +615,9 @@ void     do_rtafs();
 
 /** ************************************************************
  * - Internal DB tables
- *     rta has five tables visible to the application:
+ *     rta has four tables visible to the application:
  *  rta_tables:      - a table of all tables in the DB
  *  rta_columns:     - a table of all columns in the DB
- *  pg_user:         - spoof of Postgres table needed to log on
  *  rta_logconfig:   - controls what gets logged from rta
  *  egp_stats:       - simple usage and error statistics
  *
@@ -648,23 +651,6 @@ void     do_rtafs();
  *     readcb    - pointer to subroutine called before reads
  *     writecb   - pointer to subroutine called after writes
  *     help      - a description of the column
- *
- *     The pg_user table is provided to complete the connection
- * protocol between Postgres clients and the rta package.  It
- * authenticates the connecting user.  We spoof the protocol by
- * using a read callback to add the user into the table before
- * checking if the user is valid.  In this way *any* user who
- * connects is in the table and so is authenticated.  (One
- * future enhancement to rta might be to do real Postgres style 
- * authentication.)   The columns of pg_user are:
- *     usename     - spoofed to match any requested name
- *     usesysid    - 100
- *     usecreatedb - 'f'
- *     usetrace    - 'f'
- *     usesuper    - 'f'
- *     usecatupd   - 'f'
- *     passwd      - "******"
- *     valuntil    - ""
  *
  *     The rta_dbgconfig table controls which errors generate
  * debug log messages.  See the logging section below for the

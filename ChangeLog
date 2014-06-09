@@ -1,3 +1,14 @@
+2003-12-16 Bob Smith
+        * Version 0.6.2.   Converted from PostgreSQL 7.3 protocol
+        to PostgreSQL 7.4 protocol.  Version 0.6.2 is *not*
+        compatible with the libraries or tools of PostgreSQL 7.3.
+        Changes include removing the BEGIN and COMMIT commands
+        and removing the pg_user table since these are no longer
+        required for connection set up.  The function command is
+        also removed.
+           dbcommand() now return RTA_NOBUF if there insufficient
+        room in the output buffer for even an error message.
+
 2003-08-26  Bob Smith
         * Version 0.6.1.   Change st_atim to st_atime in rtafs.c.
 

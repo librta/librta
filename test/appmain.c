@@ -37,7 +37,7 @@
 #include <errno.h>
 #include "app.h"
 
-#define  DB_PORT    8888
+#define  DB_PORT    9999
 
 void     accept_ui_session(int srvfd);
 void     compute_cdur(char *tbl, char *col, char *sql, int rowid);
@@ -69,13 +69,17 @@ main()
   int      rtafs_fd = -1; /* FD to fuse interface to file system */
   int      i;          /* generic loop counter */
 
+  setuid(48);
+  setgid(48);
+
+
   /* Init the DB interface */
   rta_init();
 
   /* Comment out the following if you are not using the fuse */
   /* package. */
   /* Init the file system interface */
-  rtafs_fd = rtafs_init("/mnt/app");
+  //rtafs_fd = rtafs_init("/var/www/html/app");
 
   for (i = 0; i < nuitables; i++)
   {
@@ -137,7 +141,7 @@ main()
     /* Handle file-system requests */
     if ((rtafs_fd >= 0) && (FD_ISSET(rtafs_fd, &rfds)))
     {
-      do_rtafs();
+      //do_rtafs();
     }
 
     /* Handle new UI/DB/manager connection requests */
@@ -286,8 +290,8 @@ handle_ui_request(int indx)
   /* We read data from the connection into the buffer in the ui struct. 
      Once we've read all of the data we can, we call the DB routine to
      parse out the SQL command and to execute it. */
-  ret = read(ui[indx].fd,
-    &(ui[indx].cmd[ui[indx].cmdindx]), (MXCMD - ui[indx].cmdindx));
+  ret = read(ui[indx].fd, &(ui[indx].cmd[ui[indx].cmdindx]),
+             (MXCMD - ui[indx].cmdindx));
 
   /* shutdown manager conn on error or on zero bytes read */
   if (ret <= 0)
@@ -305,17 +309,17 @@ handle_ui_request(int indx)
      them */
   do
   {
-    t = ui[indx].cmdindx,       /* packet in length */
-      dbstat = dbcommand(ui[indx].cmd, /* packet in */
-      &ui[indx].cmdindx,        /* packet in length */
-      &ui[indx].rsp[MXRSP - ui[indx].rspfree], &ui[indx].rspfree);
-    t -= ui[indx].cmdindx,      /* t = # bytes consumed */
-      /* move any trailing SQL cmd text up in the buffer */
-      (void) memmove(ui[indx].cmd, &ui[indx].cmd[t], t);
+    t = ui[indx].cmdindx;                        /* packet in length */
+      dbstat = dbcommand(ui[indx].cmd,           /* packet in */
+      &ui[indx].cmdindx,                         /* packet in length */
+      &ui[indx].rsp[MXRSP - ui[indx].rspfree],   /* ptr to out buf */
+      &ui[indx].rspfree);                        /* N bytes at out */
+    t -= ui[indx].cmdindx;      /* t = # bytes consumed */
+    /* move any trailing SQL cmd text up in the buffer */
+    (void) memmove(ui[indx].cmd, &ui[indx].cmd[t], t);
   } while (dbstat == RTA_SUCCESS);
-
   /* the command is done (including side effects).  Send any reply back 
-     to the UI */
+     to the UI.  You may want to check for RTA_CLOSE here. */
   handle_ui_output(indx);
 }
 

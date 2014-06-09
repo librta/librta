@@ -91,18 +91,6 @@ do_sql(char *buf, int *nbuf)
       rtastat.nupdate++;
       break;
 
-    case RTA_CALL:
-      do_call(buf, nbuf);
-      break;
-
-    case RTA_BEGIN:
-      do_begin(buf, nbuf);
-      break;
-
-    case RTA_COMMIT:
-      do_commit(buf, nbuf);
-      break;
-
     default:
       syslog(LOG_ERR, "DB error: no SQL cmd\n");
       break;
@@ -464,6 +452,7 @@ do_select(char *buf, int *nbuf)
   int      npr = 0;    /* Number of output rows */
   char     nprstr[30]; /* string to hold ASCII of npr */
   char    *startbuf;   /* used to compute response length */
+  char    *lenloc;     /* points to where 'D' pkt length goes */
   int      cx;         /* Column index while building Data pkt */
   int      n;          /* number of chars printed in sprintf() */
 
@@ -568,11 +557,10 @@ do_select(char *buf, int *nbuf)
       /* At this point we have a row which passed the * WHERE clause,
          is greater than OFFSET and less * than LIMIT. So send it! */
       *buf++ = 'D';             /* Data packet */
-      for (cx = (cmd.ncols - 1) / 8; cx >= 0; cx--)
-      {
-        /* No NULL responses in bit field for cols */
-        *buf++ = 0xFF;          /* Bit field, 1=non-NULL */
-      }
+      lenloc = buf;             /* Remember location for length */
+      buf += 4;                 /* Response length goes here */
+      ad_int2(&buf, cmd.ncols); /* # of cols in response */
+
       for (cx = 0; cx < cmd.ncols; cx++)
       {
         /* execute column read callback (if defined). callback will
@@ -594,62 +582,69 @@ do_select(char *buf, int *nbuf)
         {
           case RTA_STR:
             /* send 4 byte length.  Include the lenght */
-            ad_int4(&buf, 4 + strlen(pd));
+            ad_int4(&buf, strlen(pd));
             ad_str(&buf, pd);   /* send the response */
             break;
           case RTA_PSTR:
-            ad_int4(&buf, 4 + strlen(*(char **) pd));
+            ad_int4(&buf, strlen(*(char **) pd));
             /* send the response */
             ad_str(&buf, *(char **) pd);
             break;
           case RTA_INT:
             n = sprintf((buf + 4), "%d", *((int *) pd));
-            ad_int4(&buf, 4 + n); /* send length */
+            ad_int4(&buf, n); /* send length */
             buf += n;
             break;
           case RTA_PINT:
             n = sprintf((buf + 4), "%d", **((int **) pd));
-            ad_int4(&buf, 4 + n); /* send length */
+            ad_int4(&buf, n); /* send length */
             buf += n;
             break;
           case RTA_LONG:
             n = sprintf((buf + 4), "%lld", *((long long *) pd));
-            ad_int4(&buf, 4 + n);
+            ad_int4(&buf, n);
             buf += n;
             break;
           case RTA_PLONG:
             n = sprintf((buf + 4), "%lld", **((long long **) pd));
-            ad_int4(&buf, 4 + n);
+            ad_int4(&buf, n);
             buf += n;
             break;
           case RTA_PTR:
             n = sprintf((buf + 4), "%d", *((int *) pd));
-            ad_int4(&buf, 4 + n); /* send length */
+            ad_int4(&buf, n); /* send length */
             buf += n;
             break;
           case RTA_FLOAT:
             n = sprintf((buf + 4), "%20.10f", *((float *) pd));
-            ad_int4(&buf, 4 + n);
+            ad_int4(&buf, n);
             buf += n;
             break;
           case RTA_PFLOAT:
             n = sprintf((buf + 4), "%20.10f", **((float **) pd));
-            ad_int4(&buf, 4 + n);
+            ad_int4(&buf, n);
             buf += n;
             break;
         }
       }
+      /* now fill in 'D' response length */
+      ad_int4(&lenloc, (int)(buf - lenloc));
       npr++;
     }
   }
-  ad_str(&buf, "CSELECT");
+  /* Add 'C', length(11), 'SELECT', NULL to output */
+  *buf++ = 'C';
+  ad_int4(&buf, 11);                /* 11= 4+strlen(SELECT)+1 */
+  ad_str(&buf, "SELECT");
   *buf++ = 0x00;
+
   *nbuf -= (int) (buf - startbuf);
 
   /* Log SQL if trace is on */
-  (void) sprintf(nprstr, "%d", npr);
-  if (rtadbg.trace)
+  if (rtadbg.trace) {
+    (void) sprintf(nprstr, "%d", npr);
     rtalog(LOC, Er_Trace_SQL, cmd.sqlcmd, nprstr);
+  }
 }
 
 /***************************************************************
@@ -668,32 +663,37 @@ send_row_description(char *buf, int *nbuf)
 {
   char    *startbuf;   /* used to compute response length */
   int      i;          /* loop index */
-  int      size;       /* extimated size of response */
+  int      size;       /* extimated/actual size of response */
 
   startbuf = buf;
 
-  /* Verify that the buffer has enough room for this reply */
-  size = 7;                     /* sizeof "Pblank\0" */
-  size += 3;                    /* sizeof 'T' and int2 */
-  size += cmd.ncols * (MXCOLNAME + 1 + 4 + 2 + 4);
+  /* Verify that the buffer has enough room for this reply.
+     (See the Postgres protocol description for an understanding 
+     of the next two lines.) */
+  size = 7;                    /* sizeof 'T', length, and int2 */
+  size += cmd.ncols * (MXCOLNAME + 1 + 4 + 2 + 4 + 2 + 4 + 2);
+
   if (*nbuf - size < 100)
   {                             /* 100 just for safety */
     send_error(LOC, E_FULLBUF);
     return ((int) (cmd.out - startbuf)); /* ignored */
   }
 
-  /* Send the blank cursor response */
-  ad_str(&buf, "Pblank");
-  *buf++ = (char) 0;
-
   /* Send the row description header */
   *buf++ = 'T';                 /* row description */
+  buf += 4;                     /* put pkt length here later */
   ad_int2(&buf, cmd.ncols);     /* num fields */
 
   for (i = 0; i < cmd.ncols; i++)
   {
     ad_str(&buf, cmd.cols[i]);  /* column name */
     *buf++ = (char) 0;          /* send the NULL */
+
+    /* Add table index */
+    ad_int4(&buf, cmd.itbl);
+
+    /* Add the column index */
+    ad_int2(&buf, i);
 
     /* OIDs are tbl index times max col + col index */
     ad_int4(&buf, (cmd.itbl * NCMDCOLS) + i);
@@ -726,16 +726,23 @@ send_row_description(char *buf, int *nbuf)
         ad_int4(&buf, -1);      /* type modifier */
         break;
     }
+
+    /* Add the format type.  0==text format */
+    ad_int2(&buf, 0);
   }
-  *nbuf -= (int) (buf - startbuf);
-  return ((int) (buf - startbuf));
+  size = (int) (buf - startbuf);    /* actual response size */
+  *nbuf -= size;
+
+  /* store packet length -1 (the 'T' is not included *) */
+  startbuf++;                   /* skip over the 'T' */
+  ad_int4(&startbuf, (size - 1));
+
+  return (size);
 }
 
 /***************************************************************
  * send_error(): - Send an error message back to the requesting
  * program or process.  
- * The error output is of the form...
- * EERROR:  (some string to describe problem)(NULL)Z
  *
  * Input:        The file name and line number where the error
  *               was detected, and the format and optional
@@ -747,27 +754,47 @@ void
 send_error(char *filename, int lineno, char *fmt, char *arg)
 {
   int      cnt;        /* a byte count of printed chars */
+  int      len;        /* length of error message */
+  char    *lenptr;     /* where to put the length */
+
+  cmd.err = 1;
+  rtastat.nsqlerr++;
+  if (rtadbg.sqlerr)
+    rtalog(filename, lineno, Er_Bad_SQL, cmd.sqlcmd);
+
+  /* Make sure we have enough space for the output.  Current
+     #defines limit the maximum message to less than 100 bytes */
+  if (*cmd.nout < 100) {
+    return;     /* not much else we can do...   */
+  }
 
   /* We want to overwrite any output so far.  We do this by */
   /* pointing the output buffer back to its original value. */
   cmd.out = cmd.errout;         /* Reset any output so far */
   *(cmd.nout) = cmd.nerrout;
 
-  /* -2 below to allow room for null and 'Z' */
-  cnt = snprintf(cmd.out, (*(cmd.nout) - 2), fmt, arg);
+  /* The format of the error message is 'E', int32 for length,
+     a series of parameters including 'S'everity, error 'C'ode,
+     and 'M'essage.  Parameters are delimited with nulls and 
+     there is an extra null at the end to indicate that there
+     are no more parameters.  . */
 
-  /* Check for a truncated output. */
-  cnt = (cnt < *(cmd.nout)) ? cnt : *(cmd.nout);
-  *(cmd.nout) -= cnt;
+  *cmd.out++ = 'E';
+  lenptr = cmd.out;             /* msg length goes here */
+  cmd.out += 4;                 /* skip over length for now */
+  ad_str(&(cmd.out), "SERROR"); /* severity code */
+  *cmd.out++ = (char) 0;
+  ad_str(&(cmd.out), "C42601"); /* error code (syntax error) */
+  *cmd.out++ = (char) 0;
+  *cmd.out++ = 'M';
+  cnt = snprintf(cmd.out, *(cmd.nout), fmt, arg);
   cmd.out += cnt;
   cmd.out++;                    /* to include the NULL */
-  *cmd.out = 'Z';
-  cmd.out++;
-  *(cmd.nout) -= 2;
-  cmd.err = 1;
-  rtastat.nsqlerr++;
-  if (rtadbg.sqlerr)
-    rtalog(filename, lineno, Er_Bad_SQL, cmd.sqlcmd);
+  *cmd.out++ = (char) 0;          /* terminate param list */
+  len = (int)(cmd.out - cmd.errout) - 1; /* -1 to exclude E */
+  ad_int4(&lenptr, len);
+  *cmd.nout -= (int)(cmd.out - cmd.errout);
+
   return;
 }
 
@@ -956,138 +983,23 @@ do_update(char *buf, int *nbuf)
   if (svt && cmd.ptbl->savefile && strlen(cmd.ptbl->savefile))
     rta_save(cmd.ptbl, cmd.ptbl->savefile);
 
-  /* Send the blank cursor response */
-  ad_str(&buf, "Pblank");
-  *buf++ = (char) 0;
-
-  /* Send the row description header */
-  ad_str(&buf, "CUPDATE");
+  /* Send the update complete message */
+  *buf++ = 'C';
+  tmark = buf;                /* Save length location */
+  buf += 4;
+  ad_str(&buf, "UPDATE");
   n = sprintf(buf, " %d", nru); /* # rows affected */
-  tmark = buf + 1;              /* Save status for trace */
   buf += n;
   *buf++ = 0x00;
+  ad_int4(&tmark, (buf - tmark));
+
   *nbuf -= (int) (buf - startbuf);
 
-  /* Log SQL if trace is on */
+  /* Log SQL if trace is on.  (+7 skips over 'UPDATE ') */
   if (rtadbg.trace)
-    rtalog(LOC, Er_Trace_SQL, cmd.sqlcmd, tmark);
+    rtalog(LOC, Er_Trace_SQL, cmd.sqlcmd, (tmark + 7));
 }
 
-/***************************************************************
- * do_call(): - Execute the SQL function call in the sql_cmd
- * structure.
- *
- * Input:        A buffer to store the output
- *               The number of free bytes in the buffer
- * Output:       The number of free bytes in the buffer
- * Effects:      Maybe lots, depending on the function
- * Notes:        The function implementation probably belongs
- *               as part of the select statement.  A possible
- *               rewrite of this code might put it there.
- ***************************************************************/
-void
-do_call(char *buf, int *nbuf)
-{
-  char    *startbuf;   /* used to compute response length */
-
-  if (!strcmp(cmd.tbl, "getdatabaseencoding"))
-  {
-    if (*nbuf < 50)
-    {
-      rtastat.nrtaerr++;
-      if (rtadbg.rtaerr)
-        rtalog(LOC, "%s %d: not enough buffer space\n");
-      return;
-    }
-    startbuf = buf;
-
-    /* Send the blank cursor response */
-    ad_str(&buf, "Pblank");
-    *buf++ = (char) 0;
-
-    /* Send the query response */
-    *buf++ = 'T';               /* row description */
-    ad_int2(&buf, 1);           /* num fields */
-    ad_str(&buf, "getdatabaseencoding");
-    *buf++ = (char) 0;
-    ad_int4(&buf, 19);          /* OID of field */
-    ad_int2(&buf, 32);          /* type size */
-    ad_int4(&buf, -1);          /* type modifier */
-
-    /* Send the ASCII row */
-    *buf++ = 'D';               /* ASCII row */
-    *buf++ = (char) (1 << 7);   /* bit mask for rows present */
-    ad_int4(&buf, 13);          /* sizeof(int4)+strlen(field) */
-    ad_str(&buf, "SQL_ASCII");  /* 13=4+len("SQL_ASCII") */
-
-    /* Tell of completed response */
-    ad_str(&buf, "CSELECT");
-    *buf++ = (char) 0;
-    *nbuf -= (int) (buf - startbuf);
-  }
-  else
-  {
-    /* not recognized.  Return an error */
-    send_error(LOC, E_BADPARSE);
-    return;
-  }
-}
-
-/***************************************************************
- * do_begin(): - Execute the SQL begin command
- *
- * Input:        A buffer to store the output
- *               The number of free bytes in the buffer
- * Output:       The number of free bytes in the buffer
- * Effects:      Nothing.  This command is ignored.
- ***************************************************************/
-void
-do_begin(char *buf, int *nbuf)
-{
-  char    *startbuf;   /* used to compute response length */
-
-  if (*nbuf < 50)
-  {
-    rtastat.nrtaerr++;
-    if (rtadbg.rtaerr)
-      rtalog(LOC, "%s %d: not enough buffer space\n");
-    return;
-  }
-  startbuf = buf;
-
-  /* Tell of completed response */
-  ad_str(&buf, "CBEGIN");
-  *buf++ = (char) 0;
-  *nbuf -= (int) (buf - startbuf);
-}
-
-/***************************************************************
- * do_commit(): - Execute the SQL commit command
- *
- * Input:        A buffer to store the output
- *               The number of free bytes in the buffer
- * Output:       The number of free bytes in the buffer
- * Effects:      Nothing.  This command is ignored.
- ***************************************************************/
-void
-do_commit(char *buf, int *nbuf)
-{
-  char    *startbuf;   /* used to compute response length */
-
-  if (*nbuf < 50)
-  {
-    rtastat.nrtaerr++;
-    if (rtadbg.rtaerr)
-      rtalog(LOC, "%s %d: not enough buffer space\n");
-    return;
-  }
-  startbuf = buf;
-
-  /* Tell of completed response */
-  ad_str(&buf, "CCOMMIT");
-  *buf++ = (char) 0;
-  *nbuf -= (int) (buf - startbuf);
-}
 
 /***************************************************************
  * ad_str(): - Add a string to the output buffer.  Includes a

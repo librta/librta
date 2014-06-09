@@ -53,6 +53,9 @@ librtafs.so.1: $(FSOBJS) librtadb.so.1
 	ln -sf librtafs.so.1.0 librtafs.so
 	ar -rcs librtafs.a $(FSOBJS)
 
+install: librtadb.so.1
+	mv -f librta* /usr/lib
+
 token.o: parse.tab.c do_sql.h
 
 parse.tab.c: parse.y do_sql.h

@@ -38,8 +38,6 @@ extern void  yyerror(char *);
 extern int   yylex();
 %}
 
-%token SQLBEGIN
-%token SQLCOMMIT
 %token SELECT
 %token UPDATE
 %token FROM
@@ -68,35 +66,10 @@ extern int   yylex();
 
 command:
 		{ YYABORT; }   
-	|	begin_statement
-	|	commit_statement
 	|	select_statement
 	|	update_statement
-	|	function_call
 	;
 
-
-begin_statement:
-		SQLBEGIN ';'
-		{	cmd.command = RTA_BEGIN;
-			YYACCEPT;
-		}
-	|	SQLBEGIN
-		{	cmd.command = RTA_BEGIN;
-			YYACCEPT;
-		}
-	;
-
-commit_statement:
-		SQLCOMMIT ';'
-		{	cmd.command = RTA_COMMIT;
-			YYACCEPT;
-		}
-	|	SQLCOMMIT
-		{	cmd.command = RTA_COMMIT;
-			YYACCEPT;
-		}
-	;
 
 select_statement:
 		SELECT column_list FROM table_name where_clause limit_clause ';'
@@ -229,21 +202,6 @@ literal:
 	|	REALNUM
 	;
 
-
-function_call:
-		SELECT NAME '(' ')' ';'
-		{	cmd.command = RTA_CALL;
-			cmd.tbl = parsestr[(int) $2];
-			parsestr[(int) $2] = (char *) NULL;
-			YYACCEPT;
-		}
-	|	SELECT NAME '(' ')'
-		{	cmd.command = RTA_CALL;
-			cmd.tbl = parsestr[(int) $2];
-			parsestr[(int) $2] = (char *) NULL;
-			YYACCEPT;
-		}
-	;
 
 
 %%

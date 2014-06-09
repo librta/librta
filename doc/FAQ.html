@@ -110,17 +110,13 @@ and tech-writers for PostgreSQL.)</p>
 <p><b><a name="q06">What SQL commands are implemented?</a></b><br>
 Only two: SELECT and UPDATE, and even then it is only a subset of
 the usual SELECT and UPDATE. See rta.h for the syntax details of
-the commands.  RTA does not implement transactions but the commands
-BEGIN and COMMIT are recognized to the extent that they do cause an
-error.  (BEGIN and COMMIT are used as part of the Postgres client
-login.)</p>
+the commands.  RTA does not implement transactions.
+</p>
 <p><b><a name="q07">What SQL/Postgres commands are not
 implemented?</a></b><br>
 This is not a database. We do not implement INSERT or DELETE since
 tables are (for the most part) fixed in size. Nor do we have CREATE
-TABLE, ALTER TABLE, or DROP TABLE. The only PostgreSQL internal
-table we try to partially implement is "pg_user" which is part of
-the authentication process.<br>
+TABLE, ALTER TABLE, or DROP TABLE.<br>
 <br>
 Although "psql" will connect to a program with RTA, none of the psql
 backslash commands will work since we implement only one of the normal
@@ -143,7 +139,8 @@ It is also best for single process applications where the data is
 in one memory space. For instance, it might not be a good fit for
 Apache which forks several equal, independent processes.</p>
 <p><b><a name="q10">How big is it?</a></b><br> The stripped
-shared-object SQL interface library (librtadb.so.1) is 56KB and the static (.a) library is 46KB.  The stripped virtual file system interface
+shared-object SQL interface library (librtadb.so.1) is 52KB and
+the static (.a) library is 43KB.  The stripped virtual file system interface
 (librtafs.so.1) is 27KB and the static library is 9KB.  Note that
 to use the virtual file system interface you need to load the SQL
 interface as well.</p>
@@ -204,7 +201,8 @@ PostgreSQL libraries as appropriate.</p>
 Yes, You can link to the .a file or just include the .c files in
 the build of your application.</p>
 <p><b><a name="p18">What has it been tested on?</a></b><br>
-So far, Linux 2.4.18 from a Red Hat 8.0 installation.</p>
+It has been used successfully Red Hat 8.0 and 9.0,
+and on Mandrake 9.1 and 9.2 systems.</p>
 <p><b><a name="p19">Can I add my own data type?</a></b><br>
 Yes. You will need to modify the lex program to recognize the new
 data type as well as the .c files which print or compare its

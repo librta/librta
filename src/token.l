@@ -35,8 +35,6 @@ extern char *parsestr[];
 [Ss][Ee][Tt]				{ return(SET); }
 [Uu][Pp][Dd][Aa][Tt][Ee]	{ return(UPDATE); }
 [Ww][Hh][Ee][Rr][Ee]		{ return(WHERE); }
-[Bb][Ee][Gg][Ii][Nn]		{ return(SQLBEGIN); }
-[Cc][Oo][Mm][Mm][Ii][Tt]	{ return(SQLCOMMIT); }
 
 \"[A-Za-z][_A-Za-z0-9 \t]*\"	|
 \'[A-Za-z][_A-Za-z0-9 \t]*\'	{
@@ -144,6 +142,8 @@ void SQL_string(char *s, char *out, int *nout)
 {
     extern int yyparse();
     YY_BUFFER_STATE x;
+    int             i;
+
 
     dosql_init();
     cmd.out  = out;
@@ -172,10 +172,17 @@ void SQL_string(char *s, char *out, int *nout)
         }
         dosql_init();   /* free memory and re-init the cmd structure */
     }
+
     /* We are done processing the command and have assembled response */
     /* Tell the other end that we are ready for a new command.  */
-    out[cmd.nerrout - *nout] = 'Z';               /* Ready */
-    (*nout)--;
+    i = cmd.nerrout - *nout;
+    out[i++] = 'Z';               /* Ready */
+    out[i++] = 0;                 /* byte 4 of length */
+    out[i++] = 0;                 /* byte 3 of length */
+    out[i++] = 0;                 /* byte 2 of length */
+    out[i++] = 5;                 /* byte 1 of length */
+    out[i++] = 'I';               /* status of result */
+    *nout -= 6;
     yy_delete_buffer(x);
     return;
 }
@@ -185,19 +192,14 @@ void SQL_string(char *s, char *out, int *nout)
 
 #ifdef xxxx
 
-#ifdef DEBUG
     printf("N-out = %d\n", *cmd.nout);
     printf("Scanning ---%s---\n", s);
-#endif
 
-#ifdef DEBUG
         printf("Limit  = %d\n", cmd.limit);
         printf("Offset = %d\n", cmd.offset);
-#endif
 
 
-#ifdef DEBUG
-printf("Command = %d\n", cmd.command);
+        int i;
         for (i=0; i<cmd.ncols; i++)
              printf("   %s  %s\n",cmd.cols[i],cmd.updvals[i]);
         printf("Table = %s\n", cmd.tbl);
@@ -208,5 +210,4 @@ printf("Command = %d\n", cmd.command);
         printf("Offset = %d\n", cmd.offset);
         printf("N-out  = %d\n", *cmd.nout);
         printf("Error  = %d\n", cmd.err);
-#endif
 #endif

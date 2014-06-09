@@ -19,9 +19,6 @@
     /* types of SQL statements recognized */
 #define RTA_SELECT    0
 #define RTA_UPDATE    1
-#define RTA_CALL      2
-#define RTA_BEGIN     3
-#define RTA_COMMIT    4
 
     /* types of relations allowed in WHERE */
 #define RTA_EQ        0
@@ -32,12 +29,12 @@
 #define RTA_LE        5
 
     /* SQL errors to the front ends */
-#define E_NOTABLE  "EERROR:  Relation '%s' does not exist\n"
-#define E_NOCOLUMN  "EERROR:  Attribute '%s' not found\n"
-#define E_BADPARSE  "EERROR:  SQL parse error\n",""
-#define E_BIGSTR    "EERROR:  String too long for '%s'\n"
-#define E_NOWRITE   "EERROR:  Can not update read-only column '%s'\n"
-#define E_FULLBUF   "EERROR:  Output buffer full\n",""
+#define E_NOTABLE  "Relation '%s' does not exist"
+#define E_NOCOLUMN  "Attribute '%s' not found"
+#define E_BADPARSE  "SQL parse error",""
+#define E_BIGSTR    "String too long for '%s'"
+#define E_NOWRITE   "Can not update read-only column '%s'"
+#define E_FULLBUF   "Output buffer full",""
 
     /* Defines for the meta tables.  The table of tables must always be 
        table #0, and the table of columns must always be table #1. */
@@ -75,7 +72,7 @@
 struct Sql_Cmd
 {
   char    *sqlcmd;     /* points to text of SQL command */
-  int      command;    /* RTA_SELECT, UPDATE, or CALL */
+  int      command;    /* RTA_SELECT or UPDATE */
   char    *tbl;        /* the table in question */
   TBLDEF  *ptbl;       /* pointer to table in TBLDEFS */
   int      itbl;       /* Index of table in Tbl */
@@ -140,8 +137,6 @@ void     do_update(char *, int *);
 int      send_row_description(char *, int *);
 void     do_select(char *, int *);
 void     do_call(char *, int *);
-void     do_begin(char *, int *);
-void     do_commit(char *, int *);
 void     ad_str(char **, char *);
 void     ad_int2(char **, int);
 void     ad_int4(char **, int);

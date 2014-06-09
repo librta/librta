@@ -12,10 +12,13 @@ system.  It uses a subset of the Postgres protocol and is
 compatible with the Postgres bindings for "C", PHP, and
 the Postgres command line tool, psql.
 
-The most recent release adds the ability to access your
-internal tables as files in a virtual file system.  This
-ability gives your programs the same power /proc gives 
-the kernel.
+RTA also has the ability to access your internal tables
+as files in a virtual file system.  This ability gives
+your programs the same power /proc gives the kernel.
+
+This release is compatible with the PostgreSQL 7.4
+protocol.  It is *not* compatible with the earlier 7.3 and
+7.2 protocols.
 
 Please see http://www.linuxappliancedesign.com for more
 information and a working example.

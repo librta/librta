@@ -42,7 +42,6 @@ void
 rta_init()
 {
   int      i;          /* loop index */
-  extern TBLDEF pg_userTable;
   extern TBLDEF rta_tablesTable;
   extern TBLDEF rta_columnsTable;
   extern TBLDEF rta_dbgTable;
@@ -58,7 +57,6 @@ rta_init()
   /* add system and internal tables here */
   (void) rta_add_table(&rta_tablesTable);
   (void) rta_add_table(&rta_columnsTable);
-  (void) rta_add_table(&pg_userTable);
   (void) rta_add_table(&rta_dbgTable);
   (void) rta_add_table(&rta_statTable);
 
@@ -216,24 +214,15 @@ rta_add_table(TBLDEF *ptbl)
 
 /***************************************************************
  * Postgres "packets" are identified by their first few bytes.
- * The newer protocol used a single ASCII byte to identify the
- * packet type, while the older protocol has a 32 bit length
- * field at the start of the packet.  Note that multi-byte data
- * is sent with the most significant byte first.  Please see the
- * full documentation in "PostgreSQL 7.2.1 Developer's Guide"
- * at http://www.postgresql.org/idocs/
+ * The protocol uses the first byte to identify the packet type.  I
+ * If the first byte is a zero the packet is either a start-up
+ * packet or a cancel packet.  If the first byte is not a zero
+ * the packet is a command packet.  Most packets have the command
+ * byte followed by four bytes of packet length.  Note that
+ * multi-byte data is sent with the most significant byte first.
+ * Please see the full documentation in the "PostgreSQL 7.4
+ * Developer's Guide" at http://www.postgresql.org/
  * 
- * The Postgres protocol from client to server has about six
- * request types.  We use three of the request types in our
- * basic implementation.  The six packet types.....
- * BYTE0  BYTE1  BYTE2  BYTE3
- *     0      0    0x1   0x18  Startup packet to open connection
- *     0      ?      ?      ?  Encrypted password packet
- *     0      0      0   0x10  Cancel pending request
- *   'F'                       Function call
- *   'Q'                       Query
- *   'X'                       Terminate connection
- *
  **************************************************************/
 
 /***************************************************************
@@ -250,24 +239,26 @@ rta_add_table(TBLDEF *ptbl)
  *         RTA_NOCMD     - input did not have a full cmd
  *         RTA_ERROR     - some kind of error 
  *         RTA_CLOSE     - client requests a orderly close
+ *         RTA_NOBUF     - insufficient output buffer space
  **************************************************************/
 int
 dbcommand(char *buf, int *nin, char *out, int *nout)
 {
   extern struct EpgStat rtastat;
   int      length;     /* lenght of the packet if old protocol */
-  int      i;          /* a temp integer */
 
-  /* old style packet if first byte is zero */
+  /* startup or cancel packet if first byte is zero */
   if ((int) buf[0] == 0)
   {
-    /* get length.  Enough bytes for a length? if not, consume no
-       input, write no output */
+    /* get length.  Enough bytes for a length?  if not,
+       consume no input, write no output */
     if (*nin < 4)
     {
       return (RTA_NOCMD);
     }
-    length = (int) (buf[3] + (buf[2] << 8) + (buf[1] << 16));
+    length = (int) ((unsigned int)(0xff & buf[3]) +
+                   ((unsigned int)(0xff & buf[2]) << 8) +
+                   ((unsigned int)(0xff & buf[1]) << 16));
 
     /* Is the whole packet here? If not, consume no input, write no
        output */
@@ -275,33 +266,68 @@ dbcommand(char *buf, int *nin, char *out, int *nout)
     {
       return (RTA_NOCMD);
     }
-    if (length == 296)          /* a startup request */
+
+    /* Look for a start-up request packet.  Do a sanity check
+       since the minimum startup packet is 13 bytes (4 length,
+       4 protocol, 'user', and a null). */
+    if (length < 13)          /* unknown, ignore, (log?) */
     {
-      /* we key on a non-null user name to send AuthOK. The protocol
-         packet has an int32 for the length, an int32 for the protocol
-         version, a 64 char string for the DB name and at byte 72 the
-         start of a 32 char user name. */
-      if (buf[72] == (char) 0)
-      {
-        *nin -= length;
-        out[0] = 'N';           /* "Notice" response */
-        *nout -= 1;
-        rtastat.nauth++;
+      *nin -= length;
+      return (RTA_SUCCESS);
+    }
+
+    /* A start-up packet if 0300 in the protocol field */
+    if (buf[4] == 0 &&
+        buf[5] == 3 &&
+        buf[6] == 0 &&
+        buf[7] == 0 )
+    {
+      /* Currently we do not authenticate the user.  
+         If you want to add real authentication, this is the
+         place to add it.  */
+
+      /* This is the canned response we send on all start-ups.
+         See the Postgres protocol specification for details.
+         'R', int32(length), int32(0)
+         'S', int32(length), "client_encoding", null, "SQL_ASCII", null
+         'S', int32(length), "DataStyle", null, "ISO, MDY", null
+         'S', int32(length), "is_superuser", null, "on", null
+         'S', int32(length), "server_version", "7.4", null
+         'S', int32(length), "session_authorization", null, "postgres", null
+         'K', int32(length), int32(pid of backend), int32(secret key)
+         'Z', int32(length), 'I'   */
+
+      char reply[164] = {
+        'R',0x00,0x00,0x00,0x08,0x00,0x00,0x00, 0x00,
+        'S',0x00,0x00,0x00,0x1e,0x63,0x6c,0x69,0x65,0x6e,0x74,0x5f,0x65,
+            0x6e,0x63,0x6f,0x64,0x69,0x6e,0x67,0x00,0x53,0x51,0x4c,0x5f,
+            0x41,0x53,0x43,0x49,0x49,0x00,
+        'S',0x00,0x00,0x00,0x17,0x44,0x61,0x74,0x65,0x53,0x74,0x79,0x6c,
+            0x65,0x00,0x49,0x53,0x4f,0x2c,0x20,0x4d,0x44,0x59, 0x00,
+        'S',0x00,0x00,0x00,0x14,0x69,0x73,0x5f,0x73,0x75,0x70,0x65,0x72,
+            0x75,0x73,0x65,0x72,0x00,0x6f,0x6e,0x00,
+        'S',0x00,0x00,0x00,0x17,0x73,0x65,0x72,0x76,0x65,0x72,0x5f,0x76,
+            0x65,0x72,0x73,0x69,0x6f,0x6e,0x00,0x37,0x2e,0x34,0x00,
+        'S',0x00,0x00,0x00,0x23,0x73,0x65,0x73,0x73,0x69,0x6f,0x6e,0x5f,
+            0x61,0x75,0x74,0x68,0x6f,0x72,0x69,0x7a,0x61,0x74,0x69,0x6f,
+            0x6e,0x00,0x70,0x6f,0x73,0x74,0x67,0x72,0x65,0x73,0x00,
+        'K',0x00,0x00,0x00,0x0c,0x00,0x00,0x36,0x94,0x56,0xf4,0x8d,0x68,
+        'Z',0x00,0x00,0x00,0x05,0x49};
+
+      /* Verify that the buffer has enough room for the response */
+      if (*nout < 164)
+      { 
+        rtastat.nsqlerr++;
+        if (rtadbg.sqlerr)
+          rtalog(LOC, Er_No_Space);
+
+        return(RTA_NOBUF);
       }
-      else
-      {
-        *nin -= length;
-        out[0] = 'R';
-        out[1] = 0;
-        out[2] = 0;
-        out[3] = 0;
-        out[4] = 0;
-        out[5] = 'Z';
-        // *out++ = 'R';
-        // ad_int4 (&buf, 0);
-        // *out++ = 'Z';
-        *nout -= 6;
-      }
+
+      *nin -= length;
+      (void) memcpy(out, reply, 164);
+      *nout -= 164;
+      rtastat.nauth++;
       return (RTA_SUCCESS);
     }
     else if (length == 16)      /* a cancel request */
@@ -310,7 +336,7 @@ dbcommand(char *buf, int *nin, char *out, int *nout)
       *nin -= length;
       return (RTA_SUCCESS);
     }
-    else                        /* should be a password */
+    else                        /* unknown, ignore, (log?) */
     {
       *nin -= length;
       return (RTA_SUCCESS);
@@ -318,29 +344,35 @@ dbcommand(char *buf, int *nin, char *out, int *nout)
   }
   else if (buf[0] == 'Q')       /* a query request */
   {
-    /* check for a complete command */
-    for (i = 0; i < *nin; i++)
-    {
-      if (buf[i] == (char) 0)
-        break;
-    }
-    if (i == *nin)
+    /* the Postgres 0300 protocol has a 32 bit length after
+       the 1 byte command.  Verify that we have enough bytes
+       to get the lentgh */
+
+    if (*nin < 5)
     {
       return (RTA_NOCMD);
     }
 
-    /* Got a null terminated command; do it. (buf[1] since the SQL
-       follows the 'Q') */
-    SQL_string(&buf[1], out, nout);
-    *nin -= strlen(buf);        /* to swallow the cmd */
-    (*nin)--;                   /* to swallow the null */
+    /* Get length and verify that we have all the bytes.
+       Note the quiet assummption that the length is 24 bits. */
+    length = (int) ((unsigned int)(0xff & buf[4]) +
+                   ((unsigned int)(0xff & buf[3]) << 8) +
+                   ((unsigned int)(0xff & buf[2]) << 16));
+
+    /* add one to account for the 'Q' */
+    length++;
+    if (*nin < length)
+    {
+      return (RTA_NOCMD);
+    }
+
+    /* Got a complete command; do it. (buf[5] since the SQL
+       follows the 'Q' and length) */
+    SQL_string(&buf[5], out, nout);
+    *nin -= length;             /* to swallow the cmd */
     return (RTA_SUCCESS);
   }
   else if (buf[0] == 'X')       /* a terminate request */
-  {
-    return (RTA_CLOSE);
-  }
-  else if (buf[0] == 'F')       /* a function request */
   {
     return (RTA_CLOSE);
   }

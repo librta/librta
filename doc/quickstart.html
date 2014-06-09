@@ -269,6 +269,10 @@ to the connection.:</p>
                     close(connfd);
                     connfd = -1;
                     break;
+                case RTA_NOBUF:
+                    close(connfd);
+                    connfd = -1;
+                    break;
             }
         }
     }
@@ -303,8 +307,8 @@ to download, build, and run the sample application.</p>
 given above.  Untar it.  Go to the src directory
 and do a make.  </p>
 <pre>
-    # tar -xzf rta-0.6.0.tgz
-    # cd rta-0.6.0
+    # tar -xzf rta-0.6.1.tgz
+    # cd rta-0.6.1
     # cd src
     # make librtadb
 </pre>
@@ -322,7 +326,7 @@ directory.</p>
 it where to find the shared object library.  From
 the <tt>test</tt> directory enter:</p>
 <pre>
-    # export LD_LIBRARY_PATH=/home/rta-0.6.0/src
+    # export LD_LIBRARY_PATH=/home/rta-0.6.1/src
     # ./myappdb &amp;
 </pre>
 <p>That is all there is to it.  Please use the contact
@@ -337,10 +341,10 @@ is our sample application offering up its internal
 tables for use by various Postgres clients.</p>
 <h5>psql</h5>
 <p>The first client to try is the Postgres browser
-tool, psql.  This tool part of the base Postgres
+tool, psql.  This tool is part of the base Postgres
 install.  Remember that we have our application
 table, mytable, as well as the RTA internal tables,
-rta_tables, rta_columns, pg_user, rta_dbg, and
+rta_tables, rta_columns, rta_dbg, and
 rta_stat.  See the API section for a description
 of these tables.</p>
 <p>To start psql to our application enter:</p>
@@ -364,11 +368,10 @@ of these tables.</p>
     -------------
      rta_tables
      rta_columns
-     pg_user
      rta_dbg
      rta_stat
      mytable
-    (6 rows)
+    (5 rows)
 </pre>
 <p>You do not need to use upper case for the SQL keywords.
 The psql program accepts both upper and lower case.</p>
@@ -524,7 +527,7 @@ is that the signal handlers for SIGHUP, SIGINT, and SIGTERM are
 set to a routine that tries to unmount the file system prior to
 exit.</p>
 <p>Be sure that the mount point, /tmp/mydir/, exists and 
-has the same UID and GID and the users running the program.
+has the same UID and GID as the user running the program.
 </p>
 <br>
 <h4><a name="fsbuild">Build and Link</a></h4>
@@ -541,8 +544,8 @@ built, install the kernel module, fuse.o, and test your installation by
 trying several of the programs in the <tt>example</tt> directory.</p>
 <p>Once FUSE is installed and verified, you can build the librtafs
 library.
-<pre>    # tar -xzf rta-0.6.0.tgz
-    # cd rta-0.6.0
+<pre>    # tar -xzf rta-0.6.1.tgz
+    # cd rta-0.6.1
     # cd src
     # make librtafs
 </pre></p>
@@ -555,7 +558,7 @@ it with the command:
 in one of the system library directories or explicitly tell
 the system to look for the libraries in the <tt>src</tt> directory:
 <pre>
-    # export LD_LIBRARY_PATH=/home/rta-0.6.0/src
+    # export LD_LIBRARY_PATH=/home/rta-0.6.1/src
 </pre>
 <p>Make sure that <tt>/tmp/mydir</tt> exists and run the program.
 <pre>
@@ -575,10 +578,6 @@ within each table directory.
 
     /tmp/mydir/mytable:
     myfloat/  myint/  notes/  ROWS/  seton/
-
-    /tmp/mydir/pg_user:
-    passwd/  usecatupd/    usename/   usesysid/  valuntil/
-    ROWS/    usecreatedb/  usesuper/  usetrace/
 
     /tmp/mydir/rta_columns:
     flags/  length/  offset/  ROWS/   type/
