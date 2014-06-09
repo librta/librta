@@ -1,20 +1,33 @@
 /***************************************************************
+ * Run Time Access
+ * Copyright (C) 2003 Robert W Smith (bsmith@linuxtoys.org)
+ *
+ *  This program is distributed under the terms of the GNU LGPL.
+ *  See the file COPYING file.
+ **************************************************************/
+
+/***************************************************************
  * parse.y  -- Yacc parser for our subset of SQL.
  **************************************************************/
 
 %{
+#include <stdlib.h>
 #include "do_sql.h"
 
 
-/* This works around a problem in the yacc output */
-typedef char * STRPTR;
-#define YYSTYPE STRPTR
-
+#define YYSTYPE int
 
 
 /* While we parse the SET and WHERE clause we need someplace
  * to temporarily store the type of relation */
 static int  whrrelat;
+
+/* We don't want to pass pointers to allocated memory on the */
+/* yacc stack, since the memory might not be freed when an */
+/* error is detected.  Instead, we allocate the memory and */
+/* put the pointer into the following table where it is easy */
+/* free on error.  */
+char *parsestr[MXPARSESTR];
 
 static int   n;            /* temp/scratch integer */
 
@@ -98,11 +111,13 @@ select_statement:
 
 column_list:
 		NAME
-		{	cmd.cols[cmd.ncols] = $1;
+		{	cmd.cols[cmd.ncols] = parsestr[(int) $1];
+			parsestr[(int) $1] = (char *) NULL;
 			cmd.ncols++;
 		}
 	|	column_list "," NAME
-		{	cmd.cols[cmd.ncols] = $3;
+		{	cmd.cols[cmd.ncols] = parsestr[(int) $3];
+			parsestr[(int) $3] = (char *) NULL;
 			cmd.ncols++;
 			if (cmd.ncols > NCMDCOLS) {
 				/* too many columns in list */
@@ -114,11 +129,13 @@ column_list:
 table_name:
 		NAME
 		{
-			cmd.tbl = $1;
+			cmd.tbl = parsestr[(int) $1];
+			parsestr[(int) $1] = (char *) NULL;
 		}
 	|	NAME "." NAME
 		{
-			cmd.tbl = $3;
+			cmd.tbl = parsestr[(int) $3];
+			parsestr[(int) $3] = (char *) NULL;
 		}
 	;
 
@@ -134,9 +151,11 @@ test_condition:
 	|	test_condition AND test_condition
 	|	NAME relation literal
 		{	n = cmd.nwhrcols;
-			cmd.whrcols[n] = $1;
+			cmd.whrcols[n] = parsestr[(int) $1];
+			parsestr[(int) $1] = (char *) NULL;
 			cmd.whrrel[n] = whrrelat;
-			cmd.whrvals[n] = $3;
+			cmd.whrvals[n] = parsestr[(int) $3];
+			parsestr[(int) $3] = (char *) NULL;
 			cmd.nwhrcols++;
 			if (cmd.nwhrcols > NCMDCOLS) {
 				/* too many columns in list */
@@ -159,14 +178,17 @@ relation:
 limit_clause:
 		/* empty, optional */
 	|	LIMIT INTEGER
-		{	cmd.limit  = atoi($2);
-			free($2);
+		{	cmd.limit  = atoi(parsestr[(int) $2]);
+            free(parsestr[(int) $2]);
+			parsestr[(int) $2] = (char *) NULL;
 		}
 	|	LIMIT INTEGER OFFSET INTEGER
-		{	cmd.limit  = atoi($2);
-			cmd.offset = atoi($4);
-			free($2);
-			free($4);
+		{	cmd.limit  = atoi(parsestr[(int) $2]);
+            free(parsestr[(int) $2]);
+			parsestr[(int) $2] = (char *) NULL;
+			cmd.offset = atoi(parsestr[(int) $4]);
+            free(parsestr[(int) $4]);
+			parsestr[(int) $4] = (char *) NULL;
 		}
 	;
 
@@ -174,11 +196,13 @@ limit_clause:
 update_statement:
 		UPDATE NAME SET set_list where_clause limit_clause ';'
 		{	cmd.command = RTA_UPDATE;
-			cmd.tbl     = $2;
+			cmd.tbl     = parsestr[(int) $2];
+			parsestr[(int) $2] = (char *) NULL;
 		}
 	|	UPDATE NAME SET set_list where_clause limit_clause
 		{	cmd.command = RTA_UPDATE;
-			cmd.tbl     = $2;
+			cmd.tbl     = parsestr[(int) $2];
+			parsestr[(int) $2] = (char *) NULL;
 		}
 	;
 
@@ -186,8 +210,10 @@ set_list:
 		set_list ',' set_list
 	|	NAME EQ literal
 		{	n = cmd.ncols;
-			cmd.cols[n] = $1;
-			cmd.updvals[n] = $3;
+			cmd.cols[n] = parsestr[(int) $1];
+			parsestr[(int) $1] = (char *) NULL;
+			cmd.updvals[n] = parsestr[(int) $3];
+			parsestr[(int) $3] = (char *) NULL;
 			cmd.ncols++;
 			if (cmd.ncols > NCMDCOLS) {
 				/* too many columns in list */
@@ -207,18 +233,29 @@ literal:
 function_call:
 		SELECT NAME '(' ')' ';'
 		{	cmd.command = RTA_CALL;
-			cmd.tbl = $2;
+			cmd.tbl = parsestr[(int) $2];
+			parsestr[(int) $2] = (char *) NULL;
 			YYACCEPT;
 		}
 	|	SELECT NAME '(' ')'
 		{	cmd.command = RTA_CALL;
-			cmd.tbl = $2;
+			cmd.tbl = parsestr[(int) $2];
+			parsestr[(int) $2] = (char *) NULL;
 			YYACCEPT;
 		}
 	;
 
 
 %%
+
+
+/***************************************************************
+ * freesql(): - Free allocated memory from previous command.
+ *
+ * Input:        None.
+ * Output:       None.
+ * Affects:      Frees memory from last command
+ ***************************************************************/
 
 
 /***************************************************************
@@ -232,18 +269,42 @@ function_call:
 void dosql_init() {
     int   i;
 
-    cmd.tbl = (char *) 0;
-    cmd.ptbl = (TBLDEF *) 0;
-    cmd.ncols    = 0;
-    cmd.nwhrcols = 0;
     for (i=0; i<NCMDCOLS; i++) {
+        if (cmd.cols[i])
+            free(cmd.cols[i]);
+        if (cmd.updvals[i])
+            free(cmd.updvals[i]); /* values for column updates */
+        if (cmd.whrcols[i])
+            free(cmd.whrcols[i]); /* cols in where */
+        if (cmd.whrvals[i])
+            free(cmd.whrvals[i]); /* values in where clause */
         cmd.cols[i]    = (char *) 0;
         cmd.updvals[i] = (char *) 0;
         cmd.whrcols[i] = (char *) 0;
         cmd.whrvals[i] = (char *) 0;
     }
+    if (cmd.tbl);
+        free(cmd.tbl);
+    for (i=0; i<MXPARSESTR; i++) {
+        if (parsestr[i]) {
+            free(parsestr[i]);
+            parsestr[i] = (char *) NULL;
+        }
+    }
+
+    cmd.tbl = (char *) 0;
+    cmd.ptbl = (TBLDEF *) 0;
+    cmd.ncols    = 0;
+    cmd.nwhrcols = 0;
     cmd.limit  = 1<<30;  /* no real limit */
     cmd.offset = 0;
     cmd.err    = 0;
 }
+
+void yyerror(char *s)
+{
+    send_error(LOC, E_BADPARSE);
+    return;
+}
+
 

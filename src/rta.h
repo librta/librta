@@ -1,4 +1,12 @@
 /***************************************************************
+ * Run Time Access
+ * Copyright (C) 2003 Robert W Smith (bsmith@linuxtoys.org)
+ *
+ *  This program is distributed under the terms of the GNU LGPL.
+ *  See the file COPYING file.
+ **************************************************************/
+
+/***************************************************************
  * rta.h  -- DB API for your internal structures and tables
  **************************************************************/
 
@@ -154,23 +162,23 @@ typedef struct
 {
 
           /** The name of the table that has this column. */
-  char *table;
+  char    *table;
 
           /** The name of the column.  Must be at most MXCOLNAME
            * characters in length and must be unique within a
            * table.  The same column name may be used in more
            * than one table. */
-  char *name;
+  char    *name;
 
           /** The data type of the column.  Must be int, long,
            * string, pointer to void, pointer to int, pointer
            * to long, or pointer to string.  The DB types are
            * defined immediately following this structure. */
-  int   type;
+  int      type;
 
           /** The number of bytes in the string if the above
            * type is RTA_STR or RTA_PSTR. */
-  int   length;
+  int      length;
 
           /** Number of bytes from the start of the structure to
            * this column.  For example, a structure with an int,
@@ -180,7 +188,7 @@ typedef struct
            * members that do not start on word boundaries and
            * you do not want to use offsetof(), then consider
            * using -fpack-struct with gcc. */
-  int   offset;
+  int      offset;
 
           /** Boolean flags which describe attributes of the
            * columns.  The flags are defined after this
@@ -188,7 +196,7 @@ typedef struct
            * flag to indicate that updates to this column
            * should cause a table save.  (See table savefile
            * described below.)  */
-  int   flags;
+  int      flags;
 
           /** Read callback.  This routine is called before the
            * column value is used.  Input values include the
@@ -198,7 +206,7 @@ typedef struct
            * This routine is called *each* time the column is
            * read so the following would produce two calls:
            * SELECT intime FROM inns WHERE intime >= 100;   */
-  void  (*readcb) (char *tbl, char *column, char *SQL, int row_num);
+  void     (*readcb) (char *tbl, char *column, char *SQL, int row_num);
 
           /** Write callback.  This routine is called after an
            * UPDATE in which the column is written. Input values
@@ -214,7 +222,7 @@ typedef struct
            * UPDATE ethers SET mask="255.255.255.0", addr = \
            *     "192.168.1.10" WHERE name = "eth1";
            * The callback is called for each row modified. */
-  void  (*writecb) (char *tbl, char *column, char *SQL, int row_num);
+  void     (*writecb) (char *tbl, char *column, char *SQL, int row_num);
 
           /** A brief description of the column.  This should
            * include the meaning of the data in the column, the
@@ -223,7 +231,7 @@ typedef struct
            * This field is particularly important for tables 
            * which are part of the "boundary" between the UI
            * developers and the application programmers.  */
-  char *help;
+  char    *help;
 }
 COLDEF;
 
@@ -256,7 +264,7 @@ COLDEF;
 #define RTA_PINT         5
 #define RTA_PLONG        6
 
-        /* Float and pointer to float */
+        /** Float and pointer to float */
 #define RTA_FLOAT        7
 #define RTA_PFLOAT       8
 #define MXCOLTYPE       (RTA_PFLOAT)
@@ -274,55 +282,55 @@ COLDEF;
          * the corner cases.)   */
 #define RTA_READONLY     (1<<1)
 
-          /** The table definition (TBLDEF) structure describes
-           * a table and is passed into the DB system by the
-           * rta_add_table() subroutine.  */
+        /** The table definition (TBLDEF) structure describes
+         * a table and is passed into the DB system by the
+         * rta_add_table() subroutine.  */
 typedef struct
 {
 
-          /** The name of the table.  Must be less than than
-           * MXTLBNAME characters in length.  Must be unique
-           * within the DB.  */
-  char *name;
+        /** The name of the table.  Must be less than than
+         * MXTLBNAME characters in length.  Must be unique
+         * within the DB.  */
+  char    *name;
 
-          /** Address of the first element of the first row of
-           * the array of structs that make up the table.  */
-  void *address;
+        /** Address of the first element of the first row of
+         * the array of structs that make up the table.  */
+  void    *address;
 
-          /** The number of bytes in each row of the table.  
-           * This is usually a sizeof() of the structure 
-           * associated with the table.   (The idea is that we
-           * can get to data element E in row R with ...
-           *    data = *(address + (R * rowlen) + offset(E)) */
-  int   rowlen;
+        /** The number of bytes in each row of the table.  
+         * This is usually a sizeof() of the structure 
+         * associated with the table.   (The idea is that we
+         * can get to data element E in row R with ...
+         *    data = *(address + (R * rowlen) + offset(E)) */
+  int      rowlen;
 
-          /** Number of rows in the table.   */
-  int   nrows;
+        /** Number of rows in the table.   */
+  int      nrows;
 
-          /** An array of COLDEF structures which describe each
-           * column in the table.  These must be in statically
-           * allocated memory since the rta system references
-           * them while running.  */
-  COLDEF *cols;
+        /** An array of COLDEF structures which describe each
+         * column in the table.  These must be in statically
+         * allocated memory since the rta system references
+         * them while running.  */
+  COLDEF  *cols;
 
-          /** The number of columns in the table.  That is, the
-           * number of COLDEFs defined by 'cols'.  */
-  int   ncol;
+        /** The number of columns in the table.  That is, the
+         * number of COLDEFs defined by 'cols'.  */
+  int      ncol;
 
-          /**  Save file.  Path and name of a file which stores
-           * the non-volatile part of the table.  The file has
-           * all of the UPDATE statements needed to rebuild the
-           * table.  The file is rewritten in its entirety each
-           * time a 'savetodisk' column is updated.  No file
-           * save is attempted if the savefile is blank. */
-  char *savefile;
+        /**  Save file.  Path and name of a file which stores
+         * the non-volatile part of the table.  The file has
+         * all of the UPDATE statements needed to rebuild the
+         * table.  The file is rewritten in its entirety each
+         * time a 'savetodisk' column is updated.  No file
+         * save is attempted if the savefile is blank. */
+  char    *savefile;
 
-          /**  Help text.  A description of the table, how it is
-           * used, and what its intent is.  A brief note to
-           * describe how it relate to other parts of the system
-           * and description of important callbacks is nice 
-           * thing to include here.  */
-  char *help;
+        /**  Help text.  A description of the table, how it is
+         * used, and what its intent is.  A brief note to
+         * describe how it relate to other parts of the system
+         * and description of important callbacks is nice 
+         * thing to include here.  */
+  char    *help;
 }
 TBLDEF;
 
@@ -335,6 +343,14 @@ TBLDEF;
  *    SQL_string()    - execute an SQL statement in the DB
  *    rta_save()      - save a table to a file
  *    rta_load()      - load a table from a file
+ *
+ * The FUSE based virtual filesystem adds the following:
+ *    rtafs_init()    - mount FS and get file descriptor for it
+ *    do_rtafs()      - handle all virtual file system IO
+ * The above two routines are in the rtafs library.  Their 
+ * inclusion in this include file cause no harm if you are
+ * using only the rtadb library.  Note that the rtafs library
+ * requires the rtadb library.
  **************************************************************/
 
 /** ************************************************************
@@ -366,10 +382,7 @@ TBLDEF;
  *         RTA_NOCMD     - input did not have a full cmd
  *         RTA_CLOSE     - client requests an orderly close
  **************************************************************/
-int   dbcommand(char *,
-                int *,
-                char *,
-                int *);
+int      dbcommand(char *, int *, char *, int *);
 
 /** ************************************************************
  * rta_add_table():  - Register a table for inclusion in the
@@ -392,7 +405,7 @@ int   dbcommand(char *,
  * Return: RTA_SUCCESS   - table added
  *         RTA_ERROR     - error
  **************************************************************/
-int   rta_add_table(TBLDEF *);
+int      rta_add_table(TBLDEF *);
 
 /** ************************************************************
  * rta_init():  - Initialize all internal variables and tables
@@ -401,7 +414,7 @@ int   rta_add_table(TBLDEF *);
  * Input:  None
  * Return: None
  **************************************************************/
-void  rta_init();
+void     rta_init();
 
 /** ************************************************************
  * SQL_string():  - Execute single SQL command
@@ -426,9 +439,7 @@ void  rta_init();
  *               on exit, the number of remaining free bytes
  * Return: 
  **************************************************************/
-void  SQL_string(char *,
-                 char *,
-                 int *);
+void     SQL_string(char *, char *, int *);
 
 /** ************************************************************
  * rta_save():  - Save table to file.   Saves all "savetodisk"
@@ -453,8 +464,7 @@ void  SQL_string(char *,
  * Return: RTA_SUCCESS   - table saved
  *         RTA_ERROR     - some kind of error
  **************************************************************/
-int   rta_save(TBLDEF *,
-               char *);
+int      rta_save(TBLDEF *, char *);
 
 /** ************************************************************
  * rta_load():  - Load a table from a file of UPDATE commands.
@@ -468,8 +478,7 @@ int   rta_save(TBLDEF *,
  * Return: RTA_SUCCESS   - table loaded
  *         RTA_ERROR     - could not open the file specified
  **************************************************************/
-int   rta_load(TBLDEF *,
-               char *);
+int      rta_load(TBLDEF *, char *);
 
     /* successfully executed request or command */
 #define RTA_SUCCESS   (0)
@@ -482,6 +491,43 @@ int   rta_load(TBLDEF *,
 
     /* DB client requests a session close */
 #define RTA_CLOSE     (3)
+
+/** ************************************************************
+ * rtafs_init():  - Initialize the virtual file system interface
+ * to RTA.  The single input parameter is the mount point for
+ * the VFS.  On success, the return value is a file descriptor
+ * to the VFS.  On failure, a -1 is returned and errno is set.
+ * This file descriptor should be used in subsequent select() or
+ * poll() calls to notify your program of file system activity.
+ * An important SIDE EFFECT is that the signal handlers for
+ * SIGHUP, SIGINT, and SIGTERM are set.  The signal handler
+ * tries to unmount the virtual file system.  This routine
+ * is part of the librtafs library.
+ *   Note that FUSE requires that the owner and group of the
+ * mount point be the same as the owner and group of the program
+ * that does the mount.  For example, if your mount point is
+ * owned by Apache, then your the UID of your program must be
+ * Apache as well.
+ *
+ * Input:  char *mountpoint - desired mount point
+ *
+ * Return: int fd        - file descriptor on success.
+ **************************************************************/
+int      rtafs_init(char *);
+
+/** ************************************************************
+ * do_rtafs():  - Handle all actual virtual file system IO. 
+ * This routine handles all file system IO for the virtual file
+ * system mounted by the rtafs_init() call.  This routine should
+ * be called when there is activity on the file descriptor
+ * returned from rtafs_init().  It has no input or output
+ * parameters.  This routine is part of the librtafs library.
+ * 
+ * Input:  (none)
+ *
+ * Return: (none)
+ **************************************************************/
+void     do_rtafs();
 
 /** ************************************************************
  * - rta UPDATE and SELECT syntax
@@ -687,8 +733,8 @@ int   rta_load(TBLDEF *,
  *     nrtaerr    - count of internal rta failures.
  *     nsqlerr    - count of SQL failures.
  *     nauth      - count of authorizations. (==#connections)
- *     nupdate    - count of UPDATE requests
- *     nselect    - count of SELECT requests
+ *     nupdate    - count of UPDATE or file write requests
+ *     nselect    - count of SELECT or file read requests
  *
  **************************************************************/
 
@@ -759,7 +805,7 @@ int   rta_load(TBLDEF *,
 #define Er_Col_Type     "%s %d: Column contains an unknown data type: %s\n"
 #define Er_Col_Flag     "%s %d: Column contains unknown flag data: %s\n"
 #define Er_Cmd_Cols     "%s %d: Too many columns in table: %s\n"
-#define Er_No_Space     "%s %d: Not enough buffer space to dbcommand()\n"
+#define Er_No_Space     "%s %d: Not enough buffer space\n"
 
         /** "SQL" errors */
 #define Er_Bad_SQL      "%s %d: SQL parse error: %s\n"
@@ -802,10 +848,9 @@ int   rta_load(TBLDEF *,
  * - IPC and support for shared tables in shared memory
  * - specify pre or post for the write callback
  * - table save callback (to save file to flash?)
- * - times for table access, update
+ * - execution times for table access, update
  * - count(*) function
  * - model output buffer mgmt on zlib to allow output streams
- * - give a /proc like interface using the same API calls
  * - add a column data type of "table" to allow nested tables
  * - add internationalization support
  **************************************************************/

@@ -1,3 +1,14 @@
+2003-08-22  Bob Smith
+        * Version 0.6.0.   Added virtual file system interface using
+        the fuse package by Miklos Szeredi.  The library librtafs.a
+        adds two API routines, rtafs_init() and do_rtafs(), which
+        mount and maintain the program's tables as files in a file
+        system.
+           This version also fixes a memory leak which occurred when
+        the Yacc parser detected an SQL syntax error.  The amount of
+        leaked memory was about equal to the lenghts of the table and
+        columns names in the query.
+
 2003-04-18  Bob Smith
 
         * Version 0.5.1.   Added BEGIN and COMMIT to the SQL commands

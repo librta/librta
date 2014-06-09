@@ -1,4 +1,12 @@
 ################################################################
+ # Run Time Access
+ # Copyright (C) 2003 Robert W Smith (bsmith@linuxtoys.org)
+ #
+ #  This program is distributed under the terms of the GNU LGPL.
+ #  See the file COPYING file.
+################################################################
+
+################################################################
 # Makefile -- to make the rta library.
 #    Add or remove debug stuff to meet your needs.  
 #    The "standard" target runs the source through indent to
@@ -9,20 +17,45 @@
 CC = gcc
 OPT =  -fPIC -c -I.
 DEBUG = -g -DDEBUG -DYYDEBUG -ggdb -Wall
-#DEBUG = -g -DYYDEBUG -ggdb -Wall
 CFLAGS = $(OPT) $(DEBUG)
 OBJS   = api.o token.o parse.tab.o do_sql.o rtatables.o
+LIBS   = 
+FSOBJS   = rtafs.o
+FSLIBS   = /usr/local/lib/libfuse.a
+
+default:
+	@echo
+	@echo To make the database RTA interface enter.... 
+	@echo "   make librtadb.so.1 "
+	@echo
+	@echo To make the virtual file system interface enter....
+	@echo "   make librtafs.so.1 "
+	@echo Be sure the FUSE package by  Miklos Szeredi is 
+	@echo installed before you build librtafs.so.1
+	@echo
+	@echo To make both libraries enter....
+	@echo "   make all"
+	@echo
+
+all: librtadb.so.1 librtafs.so.1
 
 librtadb.so.1: $(OBJS)
 	gcc -ggdb -Wall -shared -Wl,-soname,librtadb.so.1 \
-		-o librtadb.so.1.0  $(OBJS) -lc
+		-o librtadb.so.1.0  $(OBJS) $(LIBS) -lc
 	ln -sf librtadb.so.1.0 librtadb.so.1
 	ln -sf librtadb.so.1.0 librtadb.so
 	ar -rcs librtadb.a $(OBJS)
 
+librtafs.so.1: $(FSOBJS) librtadb.so.1
+	gcc -ggdb -Wall -shared -Wl,-soname,librtafs.so.1 \
+		-o librtafs.so.1.0  $(FSOBJS) $(FSLIBS) -lc
+	ln -sf librtafs.so.1.0 librtafs.so.1
+	ln -sf librtafs.so.1.0 librtafs.so
+	ar -rcs librtafs.a $(FSOBJS)
+
 token.o: parse.tab.c do_sql.h
 
-parse.tab.c: do_sql.h
+parse.tab.c: parse.y do_sql.h
 	yacc -dv -bparse parse.y
 
 api.o: api.c rta.h do_sql.h
@@ -32,8 +65,16 @@ do_sql.o: do_sql.c do_sql.h rta.h
 rtatables.o: rtatables.c do_sql.h rta.h
 
 standard: clean
-	sh ../util/pprint.sh
+	for i in *.h *.c ; \
+	do \
+	 indent  -bad -bap -nbbb -bli0 -cdw -cli2 -cbi0 -saf -nut \
+		-sai -saw -di9 -nbc -bfda -bls -lp -ci2 -i2 -nbbo -l72 \
+		-fca -nbfda -nbfde -nlp -bbo -sob -cd24 -ts0 -npcs -nut \
+		-T TBLDEF -T COLDEF -T PRXPORT $$i ; \
+	 rm $$i~ ; \
+	done
+
 
 clean: 
-	rm -rf *.o parse.tab.? token.c librtadb*
+	rm -rf *.o parse.tab.? token.c lib* parse.output parse.save
 

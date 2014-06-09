@@ -1,4 +1,12 @@
 /***************************************************************
+ * Run Time Access
+ * Copyright (C) 2003 Robert W Smith (bsmith@linuxtoys.org)
+ *
+ *  This program is distributed under the terms of the GNU LGPL.
+ *  See the file COPYING file.
+ **************************************************************/
+
+/***************************************************************
  * token.l  -- Lex tokenizer for SQL commands.  
  **************************************************************/
 %option noyywrap
@@ -11,9 +19,10 @@
 #include "parse.tab.h"
 
 void dosql_init();
-extern char *yylval;
+extern int yylval;
 extern int yydebug;
 extern struct Sql_Cmd cmd;
+extern char *parsestr[];
 %}
 
 %%
@@ -26,36 +35,78 @@ extern struct Sql_Cmd cmd;
 [Ss][Ee][Tt]				{ return(SET); }
 [Uu][Pp][Dd][Aa][Tt][Ee]	{ return(UPDATE); }
 [Ww][Hh][Ee][Rr][Ee]		{ return(WHERE); }
-[Bb][Ee][Gg][Ii][Nn]		{ return(SQLBEGIN); printf("got begin\n");}
+[Bb][Ee][Gg][Ii][Nn]		{ return(SQLBEGIN); }
 [Cc][Oo][Mm][Mm][Ii][Tt]	{ return(SQLCOMMIT); }
 
 \"[A-Za-z][_A-Za-z0-9 \t]*\"	|
 \'[A-Za-z][_A-Za-z0-9 \t]*\'	{
-					yylval = strndup(&yytext[1], yyleng-2);
+					int i;
+					for (i=0; i<MXPARSESTR; i++) {
+						if (parsestr[i] == (char *) NULL) {
+							parsestr[i] = strndup(&yytext[1], yyleng-2);
+							break;
+						}
+					}
+					yylval = i;
 					return(NAME);
 				}
 \*				|
 [A-Za-z][_A-Za-z0-9]*		{
-					yylval = strdup(yytext);
+					int i;
+					for (i=0; i<MXPARSESTR; i++) {
+						if (parsestr[i] == (char *) NULL) {
+							parsestr[i] = strdup(yytext);
+							break;
+						}
+					}
+					yylval = i;
 					return(NAME);
 				}
 
 \"-?[0-9]+\"	|
 \'-?[0-9]+\'	{
-					yylval = strndup(&yytext[1], yyleng-2);
+					int i;
+					for (i=0; i<MXPARSESTR; i++) {
+						if (parsestr[i] == (char *) NULL) {
+							parsestr[i] = strndup(&yytext[1], yyleng-2);
+							break;
+						}
+					}
+					yylval = i;
 					return(INTEGER);
 				}
 -?[0-9]+		{
-					yylval = strdup(yytext);
+					int i;
+					for (i=0; i<MXPARSESTR; i++) {
+						if (parsestr[i] == (char *) NULL) {
+							parsestr[i] = strdup(yytext);
+							break;
+						}
+					}
+					yylval = i;
 					return(INTEGER);
 				}
 \"-?[0-9]+\.[0-9]*\"	|
 \'-?[0-9]+\.[0-9]*\'	{
-                    yylval = strndup(&yytext[1], yyleng-2);
+					int i;
+					for (i=0; i<MXPARSESTR; i++) {
+						if (parsestr[i] == (char *) NULL) {
+							parsestr[i] = strndup(&yytext[1], yyleng-2);
+							break;
+						}
+					}
+					yylval = i;
 					return(REALNUM);
 				}
 -?[0-9]+\.[0-9]*	{
-					yylval = strdup(yytext);
+					int i;
+					for (i=0; i<MXPARSESTR; i++) {
+						if (parsestr[i] == (char *) NULL) {
+							parsestr[i] = strdup(yytext);
+							break;
+						}
+					}
+					yylval = i;
 					return(REALNUM);
 				}
 
@@ -74,29 +125,27 @@ extern struct Sql_Cmd cmd;
 
 \"[A-Za-z0-9 \t!@#$%^&*()_+-={}|;:<>?~`\[\]'\\]*\"	|
 \'[A-Za-z0-9 \t!@#$%^&*()_+-={}|;:<>?~`\[\]"\\]*\'	{
-					yylval = strndup(&yytext[1], yyleng-2);
+					int i;
+					for (i=0; i<MXPARSESTR; i++) {
+						if (parsestr[i] == (char *) NULL) {
+							parsestr[i] = strndup(&yytext[1], yyleng-2);
+							break;
+						}
+					}
+					yylval = i;
 					return(STRING);
 				}
 [ \t\n]+		{ }
 
 %%
 
-void yyerror(char *s)
-{
-    send_error(LOC, E_BADPARSE);
-    return;
-}
-
 
 void SQL_string(char *s, char *out, int *nout)
 {
     extern int yyparse();
-
     YY_BUFFER_STATE x;
-    int    i;
 
-    yydebug = 0;
-
+    dosql_init();
     cmd.out  = out;
     cmd.nout = nout;
     cmd.sqlcmd = s;
@@ -110,7 +159,6 @@ void SQL_string(char *s, char *out, int *nout)
 
     x = yy_scan_string(s);
 
-    dosql_init();
     while(yyparse() == 0) {
         /* At this point we have parsed the command.  */
         /* If no errors were detected, we can continue processing */
@@ -118,23 +166,11 @@ void SQL_string(char *s, char *out, int *nout)
             /* everything is set.  do the command */
             do_sql(&out[cmd.nerrout - *nout], nout);
         }
-        /* Success or failure: Either way, free allocated memory */
-        for (i=0; i<NCMDCOLS; i++) {
-            if (cmd.cols[i])
-                free(cmd.cols[i]);
-            if (cmd.updvals[i])
-                free(cmd.updvals[i]); /* values for column updates */
-            if (cmd.whrcols[i])
-                free(cmd.whrcols[i]); /* cols in where */
-            if (cmd.whrvals[i])
-                free(cmd.whrvals[i]); /* values in where clause */
-        }
-        free(cmd.tbl);
-        dosql_init();   /* and re-init the cmd structure */
-        if (cmd.err) {
+        else {
             yy_delete_buffer(x);
             return;
         }
+        dosql_init();   /* free memory and re-init the cmd structure */
     }
     /* We are done processing the command and have assembled response */
     /* Tell the other end that we are ready for a new command.  */
@@ -143,6 +179,8 @@ void SQL_string(char *s, char *out, int *nout)
     yy_delete_buffer(x);
     return;
 }
+
+
 
 
 #ifdef xxxx

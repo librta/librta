@@ -8,7 +8,7 @@
 <?php
     $subject = htmlentities(current($_POST));
     $message = htmlentities(next($_POST));
-    $to = "bob@mail";
+    $to = "bob@mail.linuxtoys.org";
     if (mail($to, $subject, $message))
     {
         print("<h3>Message sent. &nbsp; &nbsp; &nbsp; Thanks.</h3>\n");

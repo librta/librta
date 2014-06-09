@@ -1,5 +1,13 @@
 
 /***************************************************************
+ * Run Time Access
+ * Copyright (C) 2003 Robert W Smith (bsmith@linuxtoys.org)
+ *
+ *  This program is distributed under the terms of the GNU LGPL.
+ *  See the file COPYING file.
+ **************************************************************/
+
+/***************************************************************
  * api.c  -- routines to provide a PostgreSQL DB API to
  * embedded systems.
  **************************************************************/
@@ -17,10 +25,10 @@
  * definitions of all tables and columns in * the system.
  * Ntbl and Ncol are the number of tables and columns in each
  * list.  These are used often enough that they are globals. */
-TBLDEF *Tbl[MX_TBL];
-int   Ntbl;
-COLDEF *Col[MX_COL];
-int   Ncol;
+TBLDEF  *Tbl[MX_TBL];
+int      Ntbl;
+COLDEF  *Col[MX_COL];
+int      Ncol;
 
 extern struct EpgDbg rtadbg;
 
@@ -33,7 +41,7 @@ extern struct EpgDbg rtadbg;
 void
 rta_init()
 {
-  int   i;             /* loop index */
+  int      i;          /* loop index */
   extern TBLDEF pg_userTable;
   extern TBLDEF rta_tablesTable;
   extern TBLDEF rta_columnsTable;
@@ -78,7 +86,7 @@ rta_add_table(TBLDEF *ptbl)
 {
   extern struct EpgStat rtastat;
   extern TBLDEF rta_columnsTable;
-  int   i, j;          /* a loop index */
+  int      i, j;       /* a loop index */
 
   /* Error if at Ntbl limit */
   if (Ntbl == MX_TBL)
@@ -135,8 +143,7 @@ rta_add_table(TBLDEF *ptbl)
   {
     for (j = 0; j < i; j++)
     {
-      if (!strncmp(ptbl->cols[i].name, ptbl->cols[j].name,
-                   MXCOLNAME))
+      if (!strncmp(ptbl->cols[i].name, ptbl->cols[j].name, MXCOLNAME))
       {
         rtastat.nrtaerr++;
         if (rtadbg.rtaerr)
@@ -146,7 +153,7 @@ rta_add_table(TBLDEF *ptbl)
     }
   }
 
-  /* verify column name length, help length, data type, and flag 
+  /* verify column name length, help length, data type, and flag
      contents */
   for (i = 0; i < ptbl->ncol; i++)
   {
@@ -245,40 +252,35 @@ rta_add_table(TBLDEF *ptbl)
  *         RTA_CLOSE     - client requests a orderly close
  **************************************************************/
 int
-dbcommand(char *buf,
-          int *nin,
-          char *out,
-          int *nout)
+dbcommand(char *buf, int *nin, char *out, int *nout)
 {
   extern struct EpgStat rtastat;
-  int   length;        /* lenght of the packet if old protocol */
-  int   i;             /* a temp integer */
+  int      length;     /* lenght of the packet if old protocol */
+  int      i;          /* a temp integer */
 
   /* old style packet if first byte is zero */
   if ((int) buf[0] == 0)
   {
-
-    /* get length.  Enough bytes for a length? if not, consume
-       no input, write no output */
+    /* get length.  Enough bytes for a length? if not, consume no
+       input, write no output */
     if (*nin < 4)
     {
       return (RTA_NOCMD);
     }
     length = (int) (buf[3] + (buf[2] << 8) + (buf[1] << 16));
 
-    /* Is the whole packet here? If not, consume no input,
-       write no output */
+    /* Is the whole packet here? If not, consume no input, write no
+       output */
     if (*nin < length)
     {
       return (RTA_NOCMD);
     }
     if (length == 296)          /* a startup request */
     {
-
-      /* we key on a non-null user name to send AuthOK. The
-         protocol packet has an int32 for the length, an int32
-         for the protocol version, a 64 char string for the DB
-         name and at byte 72 the start of a 32 char user name. */
+      /* we key on a non-null user name to send AuthOK. The protocol
+         packet has an int32 for the length, an int32 for the protocol
+         version, a 64 char string for the DB name and at byte 72 the
+         start of a 32 char user name. */
       if (buf[72] == (char) 0)
       {
         *nin -= length;
@@ -304,7 +306,6 @@ dbcommand(char *buf,
     }
     else if (length == 16)      /* a cancel request */
     {
-
       /* ignore the request for now */
       *nin -= length;
       return (RTA_SUCCESS);
@@ -317,7 +318,6 @@ dbcommand(char *buf,
   }
   else if (buf[0] == 'Q')       /* a query request */
   {
-
     /* check for a complete command */
     for (i = 0; i < *nin; i++)
     {
@@ -329,8 +329,8 @@ dbcommand(char *buf,
       return (RTA_NOCMD);
     }
 
-    /* Got a null terminated command; do it. (buf[1] since the
-       SQL follows the 'Q') */
+    /* Got a null terminated command; do it. (buf[1] since the SQL
+       follows the 'Q') */
     SQL_string(&buf[1], out, nout);
     *nin -= strlen(buf);        /* to swallow the cmd */
     (*nin)--;                   /* to swallow the null */
@@ -362,24 +362,21 @@ dbcommand(char *buf,
  *         RTA_ERROR     - some kind of error
  **************************************************************/
 int
-rta_save(TBLDEF *ptbl,
-         char *fname)
+rta_save(TBLDEF *ptbl, char *fname)
 {
   extern struct EpgStat rtastat;
-  int   sr;            /* the Size of each Row in the table */
-  int   rx;            /* Row indeX in for() loop */
-  void *pd;            /* Pointer to the Data in the
-                          table/column */
-  int   cx;            /* Column index while building Data pkt */
-  char  tfile[PATH_MAX];
-  char  path[PATH_MAX];
-  int   fd;            /* file descriptor of temp file */
-  FILE *ftmp;          /* FILE handle to the temp file */
-  int   did_header;    /* == 1 if printed UPDATE part */
-  int   did_1_col;     /* == 1 if at least one col printed */
+  int      sr;         /* the Size of each Row in the table */
+  int      rx;         /* Row indeX in for() loop */
+  void    *pd;         /* Pointer to the Data in the table/column */
+  int      cx;         /* Column index while building Data pkt */
+  char     tfile[PATH_MAX];
+  char     path[PATH_MAX];
+  int      fd;         /* file descriptor of temp file */
+  FILE    *ftmp;       /* FILE handle to the temp file */
+  int      did_header; /* == 1 if printed UPDATE part */
+  int      did_1_col;  /* == 1 if at least one col printed */
 
-  /* Open a temp file in the same directory as the users target
-     file */
+  /* Open a temp file in the same directory as the users target file */
   (void) strncpy(path, fname, PATH_MAX);
   (void) strncpy(tfile, dirname(path), PATH_MAX);
   (void) strcat(tfile, "/tmpXXXXXX");
@@ -423,7 +420,7 @@ rta_save(TBLDEF *ptbl,
 
       /* compute pointer to actual data */
       pd = ptbl->address + (rx * sr) + ptbl->cols[cx].offset;
-      switch ((ptbl->cols[cx]).type) 
+      switch ((ptbl->cols[cx]).type)
       {
         case RTA_STR:
           if (memchr((char *) pd, '"', ptbl->cols[cx].length))
@@ -450,6 +447,7 @@ rta_save(TBLDEF *ptbl,
           fprintf(ftmp, "= %lld", **((long long **) pd));
           break;
         case RTA_PTR:
+
           /* works only if INT and PTR are same size */
           fprintf(ftmp, "= %d", *((int *) pd));
           break;
@@ -469,10 +467,10 @@ rta_save(TBLDEF *ptbl,
   /* Done saving the data.  Close the file and rename it to the
      location the user requested */
 
-  /* (BTW: we use rename() because it is guaranteed to be
-     atomic.  Rename() requires that both files be on the same
-     partition; hence our effort to put the temp file in the
-     same directory as the target file.) */
+  /* (BTW: we use rename() because it is guaranteed to be atomic.
+     Rename() requires that both files be on the same partition; hence
+     our effort to put the temp file in the same directory as the
+     target file.) */
   (void) fclose(ftmp);
   if (rename(tfile, fname) != 0)
   {
@@ -494,23 +492,21 @@ rta_save(TBLDEF *ptbl,
  *         RTA_ERROR     - some kind of error
  **************************************************************/
 int
-rta_load(TBLDEF *ptbl,
-         char *fname)
+rta_load(TBLDEF *ptbl, char *fname)
 {
   extern struct EpgStat rtastat;
-  FILE *fp;            /* FILE handle to the load file */
-  char *savefilename;  /* table's savefile name */
-  char  line[MX_LN_SZ]; /* input line from file */
-  char  reply[MX_LN_SZ]; /* response from SQL process */
-  int   nreply;        /* number of free bytes in reply */
+  FILE    *fp;         /* FILE handle to the load file */
+  char    *savefilename; /* table's savefile name */
+  char     line[MX_LN_SZ]; /* input line from file */
+  char     reply[MX_LN_SZ]; /* response from SQL process */
+  int      nreply;     /* number of free bytes in reply */
 
-  /* We open the load file and read it one line at a time,
-     executing each line that contains "UPDATE" as the first
-     word.  (Lines not starting with UPDATE are comments.) Note
-     that any write callbacks associated with the table will be
-     invoked. We hide the table's save file name, if any, in
-     order to prevent the system from trying to save the table
-     before we are done loading it. */
+  /* We open the load file and read it one line at a time, executing
+     each line that contains "UPDATE" as the first word.  (Lines not
+     starting with UPDATE are comments.) Note that any write callbacks
+     associated with the table will be invoked. We hide the table's
+     save file name, if any, in order to prevent the system from trying 
+     to save the table before we are done loading it. */
   fp = fopen(fname, "r");
   if (fp == (FILE *) 0)
   {
@@ -527,7 +523,6 @@ rta_load(TBLDEF *ptbl,
   /* process each line in the file */
   while (fgets(line, MX_LN_SZ, fp))
   {
-
     /* A comment if first word is not "UPDATE " */
     if (strncmp(line, "UPDATE ", 7))
       continue;
@@ -536,7 +531,6 @@ rta_load(TBLDEF *ptbl,
     SQL_string(line, reply, &nreply);
     if (!strncmp(line, "UPDATE 1", 8))
     {
-
       /* SQL command failed! Report error */
       rtastat.nsyserr++;
       if (rtadbg.syserr)

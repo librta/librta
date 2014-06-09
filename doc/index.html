@@ -1,9 +1,11 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
-"http://www.w3.org
-/TR/REC-html401/loose.dtd">
+"http://www.w3.org/TR/REC-html401/loose.dtd">
 <html lang="en">
 <head>
-<title>rta: Embedded DB API</title>
+<title>RTA: Embedded DB API</title>
+<meta name="keywords" content="embedded Linux UI database API">
+<meta name="description" content=
+"How to talk to a running Linux process">
 <style type="text/css">
 p {font-size: large;}
 th {font-size: large;}
@@ -15,55 +17,79 @@ h3 {font-family: sans-serif}
 </style>
 </head>
 <body>
-<table width="95%" summary="" align="center">
+<table width="100%" summary="" align="center" bgcolor="#DCEFFF">
 <tr>
-<td valign="top" align="left"><font size="+1"><a href=
- "index.html">Introduction</a><br>
- <a href="FAQ.html">FAQ</a><br>
- <a href="apiref.html">API Spec</a><br>
- <a href="download.html">Download</a><br>
- <a href="quickstart.html">Quick Start</a><br>
- <a href="rta_tables.php">Live Demo</a><br>
- <a href="contact.html">Contact Info</a><br></font></td>
-<td align="center" valign=bottom>
- <h2>Run Time Access</h2></td>
-</tr></table>
- <h2>Introduction</h2>
-<p><b><font face="san-serif">rta</font></b> is 
-a specialized memory resident interface to the internal data of your application. 
-It is not a stand-alone server but a library which attaches to your program and 
-offers up your program's internal structures and arrays as tables. It uses a subset 
-of the Postgres protocol and is compatible with the Postgres bindings for <b>C</b>, 
-<b>PHP</b>, and the <b>Postgres</b> command line tool, <b>psql</b>. </p>
-
-<h2>Purpose</h2> 
+<td valign="top" align="left" width="40%">
+<ul>
+<li><a href="index.html">Introduction</a></li>
+<li><a href="FAQ.html">FAQ</a></li>
+<li><a href="apiref.html">API Spec</a></li>
+<li><a href="download.html">Download</a></li>
+<li><a href="quickstart.html">Quick Start</a></li>
+<li><a href="livedemo.html">Live Demo</a></li>
+<li><a href="contact.html">Contact Info</a></li>
+</ul>
+</td>
+<td align="left" valign="middle"><br>
+<h2>Run Time Access</h2>
+</td>
+</tr>
+</table>
+<br>
+<h2>Introduction</h2>
+<p><b><font face="san-serif">RTA</font></b> is a specialized memory
+resident interface to the internal data of your application. It is
+not a stand-alone server but a library which attaches to your
+program and offers up your program's internal structures and arrays
+as tables in a database and as files in a virtual file system. The
+database interface uses a subset of the Postgres protocol and is
+compatible with the Postgres bindings for <b>C</b>, <b>PHP</b>, and
+the <b>Postgres</b> command line tool, <b>psql</b>. The file system
+interface is based on the Fuse package by Miklos Szeredi.</p>
+<ul>
+<li><a href="#problem">The Problem</a></li>
+<li><a href="#solution">The RTA Solution</a></li>
+<li><a href="#db">A Database Interface</a></li>
+<li><a href="#fs">A File System Interface</a></li>
+<li><a href="#plus">Advantages</a></li>
+<li><a href="#minus">Some Effort...</a></li>
+</ul>
+<br>
+<h2><a name="problem">The Problem</a></h2>
 <p>One of the problems facing Linux is the lack of run time access
-to status, statistics, and configuration of a service once the service has
-started. We assume that to configure an application we will be able
-to ssh into the box, vi the /etc configuration file, and do a 'kill
--1' on the process. Real time status and statistics are things
-Linux programmers don't even think to ask for. The need for run
-time access is particularly pronounced for network appliances where
-ssh is not available or might not be allowed.</p>
-<table summary="" align=center>
+to status, statistics, and configuration of a service once the
+service has started. We assume that to configure an application we
+will be able to ssh into the box, vi the /etc configuration file,
+and do a 'kill -1' on the process. Real time status and statistics
+are things Linux programmers don't even think to ask for. The need
+for run time access is particularly pronounced for network
+appliances where ssh is not available or might not be allowed.</p>
+<table summary="" align="center">
 <caption>The Bad Unix Model</caption>
-<tr><td><img src=BadUnixModel.png alt=""></td></tr>
+<tr>
+<td><img src="BadUnixModel.png" alt=""></td>
+</tr>
 </table>
 <p>Another problem for appliance designers is that more than one
 type of user interface may be required. Sometimes a customer
-requires that no configuration information be sent over an
-Ethernet line which transports unsecured user data. In such a case
-the customer may turn off the web interface and require that
+requires that no configuration information be sent over an Ethernet
+line which transports unsecured user data. In such a case the
+customer may turn off the web interface and require that
 configuration, status, and statistics be sent over an RS-232 serial
 line. Other popular interfaces include the VGA console, SNMP MIBs,
- and LDAP.</p>
-<p>The rta package helps solve both of these problems by giving run time
-access to the data structures and arrays inside your running program.
-With minimal effort, you make your program's data structures appear as
-Postgres tables in a Postgres data base.</p>
-<table summary="" align=center>
-<caption>The Good rta Model</caption>
-<tr><td><img src=GoodrtaModel.png alt=""></td></tr>
+and LDAP.</p>
+<br>
+<h2><a name="solution">The RTA Solution</a></h2>
+<p>The RTA package helps solve both of these problems by giving run
+time access to the data structures and arrays inside your running
+program. With minimal effort, you make your program's data
+structures appear as tables in a Postgres database and/or as files
+in a file system.</p>
+<table summary="" align="center">
+<caption>The Good RTA Model</caption>
+<tr>
+<td><img src="GoodrtaModel.png" alt=""></td>
+</tr>
 </table>
 <p>For example, say you have a structure for TCP connections
 defined as:</p>
@@ -78,34 +104,108 @@ defined as:</p>
      long  nwrite;   // number of writes on the socket
    };
 </pre>
-<p>You might then define an array of these structures as:<br>
+<p>You might then define an array of these structures as:</p>
 <pre>
-    struct tcpconn Conns[MX_CONN];
+    struct tcpconn Conns[20];
 </pre>
-<p>The rta package allows any programming language with a Postgres
-binding to query your table of TCP connections....<br>
- <pre>
+<p>This array of structs could also be considered a table with
+seven columns and twenty rows. RTA maps this table into a Postgres
+database and into files in a virtual file system.</p>
+<br>
+<h2><a name="db">A Database Interface</a></h2>
+<p>The RTA package gives your program a socket interface like that
+of a Postgres database. It allows any programming language with a
+Postgres binding to query your table of TCP connections....</p>
+<pre>
     SELECT lport, dport FROM Conns WHERE fd != -1;
-
     UPDATE Conns SET dport = 0 WHERE fd = -1;
-</pre></p>
-<p>A data base API for all of your program's configuration, status,
-and statistics makes debugging easier since you can view much more
-of your program's state with simple Postgres tools. A data base API
-makes building user interface programs easier since there are
-Postgres bindings for PHP, Tcl/Tk, Perl, "C", as well as many
-more.</p>
-<p>A data base API can help speed development. Carefully defining
-the tables to be used by the UI programs lets the core application
-team build the application while the UI developers work on the web
-pages, wizards, and MIBs of the various UI programs.</p>
+</pre>
+<p>Only two commands, SELECT and UPDATE, are implemented, but they
+give you tremendous power to interact with your program. The RTA
+SQL implementation includes a WHERE clause and both LIMIT and
+OFFSET. Say you want to allocate one <tt>tcpconn</tt> by setting
+the file descriptor to a non-negative number. The UPDATE part of
+the command would be 'UPDATE Conns SET fd=newfd'. To change only a
+row where the file descriptor is -1, we add 'WHERE fd=-1'. We want
+to change only one row so we add 'LIMIT 1'. The final command would
+be:</p>
+<pre>
+    UPDATE Conns SET fd=newfd WHERE fd=-1 LIMIT 1
+</pre>
+<br>
+<br>
+<br>
+<h2><a name="fs">A File System Interface</a></h2>
+<p>RTA also offers file system access to your tables. The RTA file
+system interface is based on the Fuse package by Miklos Szeredi.
+Each of your tables is visible as a subdirectory under the mount
+point you specify. For example, if your application's mount point
+is <tt>/mnt/app</tt>, the above table of TCP connections would
+appear as <tt>/mnt/app/Conn</tt> with subdirectories <tt>fd</tt>,
+<tt>lport</tt>, <tt>dport</tt>, <tt>nsbytes</tt>, <tt>nrbytes</tt>,
+<tt>nread</tt>, and <tt>nwrite</tt>. Each of the column
+subdirectories has a file for each row in the table. The file can
+be read or written and contains the table value of that row and
+column.</p>
+<p><b>Both the database and the file system interface point to the
+actual data in memory in your program. They are not copies of the
+data.</b></p>
+<br>
+<h2><a name="plus">Advantages</a></h2>
+<p>The advantages of separating the user interface programs from
+the daemon proper fall into the broad categories of design, coding,
+debug, and capabilities.</p>
+<p>From a design point of view, the division forces you to decide
+early in the design what exactly is offered as part of the UI
+without worrying how it is displayed. The thought process required
+to design the tables forces you to think through the real design of
+your application.  The tables might form the internal functional
+specification of your application.</p> 
+<p>While coding, the table definitions are what the daemon
+engineers build to and what the UI engineers build from.  The
+division of UI and daemon means you can hire UI experts and daemon
+experts independently and they can code independently which might
+help bring the product to market sooner. Since there are Postgres
+bindings for PHP, Tcl/Tk, Perl, and "C", your developers can use
+the right tool for the job.</p>
+<p>Debug is faster and easier because both the UI and the daemon
+engineers can simulate the other half easily. For example, the UI
+engineers could run their UI programs against a real Postgres DB
+which has the same tables the daemon will have. Testing the daemon
+can be easier and more complete since it is easy to build test scripts
+to simulate the UI, and it is  easy to examine internal status and
+statistics while a test runs. The ability to force an internal state
+or condition helps test corner cases which are sometimes difficult
+to do in a lab setup.</p>
+<p>The capability of your product can be expanded with RTA. Your
+customers will really appreciate being able to see detailed status
+and statistics while the program is running. Separating the UIs
+from the daemon means you can have a wider variety and a greater
+number of UI programs. SNMP, command line, web, LDAP, ... the list
+goes on. This flexibility will come in handy if (when!) a customer
+asks for a custom UI.</p>
+<p>RTA offers several other features you might want in a package of
+this type:</p>
+<ul>
+<li>Application data model reflected by the API data model</li>
+<li>Remote access to the application</li>
+<li>Use of standards and existing software by the application</li>
+<li>Few new protocols and APIs to learn</li>
+<li>Discovery mechanisms for the application</li>
+<li>Few constraints on the application</li>
+<li>Resource locking</li>
+<li>CPU and memory efficiency</li>
+</ul>
+<br>
+<br>
+<h2><a name="minus">Some Effort...</a></h2>
 <p>Some effort is required. In order to make your arrays and
-structures available to the data base API, you need to tell rta
-about the tables and columns in the data base. Table information
-includes things like the name, start address, number of rows and
-the length of each row. Column information includes things like the
-associated table, the column name, the column's data type, and
-whether we want any special functions called when the column is
-read or written.</p>
+structures visible, you need to tell RTA about the tables and
+columns in your program. Table information includes things like the
+name, start address, number of rows and the length of each row.
+Column information includes things like the associated table, the
+column name, the column's data type, and whether we want any
+special functions called when the column is read or written. Please
+see the Quick Start or the API reference for more details.</p>
 </body>
 </html>

@@ -1,4 +1,4 @@
-/* A trivial application to demonistrate the rta package */
+/* A trivial application to demonstrate the RTA-DB package */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -53,7 +53,7 @@ COLDEF mycolumns[] = {
   {
     "mytable",          /* the table name */
     "notes",            /* the column name */
-    RTA_STR,            /* it is an integer */
+    RTA_STR,            /* it is a string */
     NOTE_LEN,           /* number of bytes */
     offsetof(struct MyData, notes), /* location in struct */
     0,                  /* no flags */
@@ -64,7 +64,7 @@ COLDEF mycolumns[] = {
   {
     "mytable",          /* the table name */
     "seton",            /* the column name */
-    RTA_STR,            /* it is an integer */
+    RTA_STR,            /* it is a string */
     NOTE_LEN,           /* number of bytes */
     offsetof(struct MyData, seton), /* location in struct */
     RTA_READONLY,       /* a read-only column */

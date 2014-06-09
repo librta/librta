@@ -1,1022 +1,596 @@
-<HTML
-><HEAD
-><TITLE
->Message Formats</TITLE
-><META
-NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.41"><LINK
-REL="HOME"
-TITLE="PostgreSQL Programmer's Guide"
-HREF="programmer.htm"><LINK
-REL="UP"
-TITLE="Frontend/Backend Protocol"
-HREF="protocol.htm"><LINK
-REL="PREVIOUS"
-TITLE="Message Data Types"
-HREF="x6994.htm"><LINK
-REL="NEXT"
-TITLE="Postgres Signals"
-HREF="signals.htm"></HEAD
-><BODY
-BGCOLOR="#FFFFFF"
-TEXT="#000000"
-LINK="#0000FF"
-VLINK="#840084"
-ALINK="#0000FF"
-><DIV
-CLASS="NAVHEADER"
-><TABLE
-WIDTH="100%"
-BORDER="0"
-CELLPADDING="0"
-CELLSPACING="0"
-><TR
-><TH
-COLSPAN="3"
-ALIGN="center"
->PostgreSQL Programmer's Guide</TH
-></TR
-><TR
-><TD
-WIDTH="10%"
-ALIGN="left"
-VALIGN="bottom"
-><A
-HREF="x6994.htm"
->Prev</A
-></TD
-><TD
-WIDTH="80%"
-ALIGN="center"
-VALIGN="bottom"
->Chapter 25. Frontend/Backend Protocol</TD
-><TD
-WIDTH="10%"
-ALIGN="right"
-VALIGN="bottom"
-><A
-HREF="signals.htm"
->Next</A
-></TD
-></TR
-></TABLE
-><HR
-ALIGN="LEFT"
-WIDTH="100%"></DIV
-><DIV
-CLASS="SECT1"
-><H1
-CLASS="SECT1"
-><A
-NAME="AEN7030"
->Message Formats</A
-></H1
-><P
->This section describes the detailed format of each message.  Each can be sent
-by either a frontend (F), a postmaster/backend (B), or both (F &#38; B).</P
-><P
-></P
-><DL
-><DT
->AsciiRow (B)</DT
-><DD
-><P
-><P
-></P
-><DL
-><DT
->Byte1('D')</DT
-><DD
-><P
->		Identifies the message as an <SPAN
-CLASS="ACRONYM"
->ASCII</SPAN
-> data row.
-		(A prior RowDescription message defines the number of
-		fields in the row and their data types.)</P
-></DD
-><DT
->Byte<TT
-CLASS="REPLACEABLE"
-><I
->n</I
-></TT
-></DT
-><DD
-><P
->                A bit map with one bit for each field in the row.  The 1st
-                field corresponds to bit 7 (MSB) of the 1st byte, the 2nd
-                field corresponds to bit 6 of the 1st byte, the 8th field
-                corresponds to bit 0 (LSB) of the 1st byte, the 9th field
-                corresponds to bit 7 of the 2nd byte, and so on.  Each bit
-                is set if the value of the corresponding field is not NULL.
-                If the number of fields is not a multiple of 8, the remainder
-                of the last byte in the bit map is wasted.</P
-><P
->	Then, for each field with a non-NULL value, there is the following:
-<P
-></P
-><DL
-><DT
->Int32</DT
-><DD
-><P
->			Specifies the size of the value of the field, including
-			this size.</P
-></DD
-><DT
->Byte<TT
-CLASS="REPLACEABLE"
-><I
->n</I
-></TT
-></DT
-><DD
-><P
->			Specifies the value of the field itself in <SPAN
-CLASS="ACRONYM"
->ASCII</SPAN
->
-			characters.  <TT
-CLASS="REPLACEABLE"
-><I
->n</I
-></TT
-> is the above
-			size minus 4.
-                        There is no trailing '\0' in the field data; the front
-			end must add one if it wants one.</P
-></DD
-></DL
->&#13;</P
-></DD
-></DL
->&#13;</P
-></DD
-><DT
->AuthenticationOk (B)</DT
-><DD
-><P
->&#13;<P
-></P
-><DL
-><DT
->Byte1('R')</DT
-><DD
-><P
->		Identifies the message as an authentication request.</P
-></DD
-><DT
->Int32(0)</DT
-><DD
-><P
->		Specifies that the authentication was successful.</P
-></DD
-></DL
->&#13;</P
-></DD
-><DT
->AuthenticationKerberosV4 (B)</DT
-><DD
-><P
->&#13;<P
-></P
-><DL
-><DT
->Byte1('R')</DT
-><DD
-><P
->		Identifies the message as an authentication request.</P
-></DD
-><DT
->Int32(1)</DT
-><DD
-><P
->		Specifies that Kerberos V4 authentication is required.</P
-></DD
-></DL
->
-&#13;</P
-></DD
-><DT
->AuthenticationKerberosV5 (B)</DT
-><DD
-><P
->&#13;<P
-></P
-><DL
-><DT
->Byte1('R')</DT
-><DD
-><P
->		Identifies the message as an authentication request.</P
-></DD
-><DT
->Int32(2)</DT
-><DD
-><P
->		Specifies that Kerberos V5 authentication is required.</P
-></DD
-></DL
->
-&#13;</P
-></DD
-><DT
->AuthenticationUnencryptedPassword (B)</DT
-><DD
-><P
->&#13;<P
-></P
-><DL
-><DT
->Byte1('R')</DT
-><DD
-><P
->		Identifies the message as an authentication request.</P
-></DD
-><DT
->Int32(3)</DT
-><DD
-><P
->		Specifies that an unencrypted password is required.</P
-></DD
-></DL
->
-&#13;</P
-></DD
-><DT
->AuthenticationEncryptedPassword (B)</DT
-><DD
-><P
->&#13;<P
-></P
-><DL
-><DT
->Byte1('R')</DT
-><DD
-><P
->		Identifies the message as an authentication request.</P
-></DD
-><DT
->Int32(4)</DT
-><DD
-><P
->		Specifies that an encrypted password is required.</P
-></DD
-><DT
->Byte2</DT
-><DD
-><P
->		The salt to use when encrypting the password.</P
-></DD
-></DL
->&#13;</P
-></DD
-><DT
->BackendKeyData (B)</DT
-><DD
-><P
->&#13;<P
-></P
-><DL
-><DT
->Byte1('K')</DT
-><DD
-><P
->		Identifies the message as cancellation key data.
-		The frontend must save these values if it wishes to be
-		able to issue CancelRequest messages later.</P
-></DD
-><DT
->Int32</DT
-><DD
-><P
->		The process ID of this backend.</P
-></DD
-><DT
->Int32</DT
-><DD
-><P
->		The secret key of this backend.</P
-></DD
-></DL
->
-&#13;</P
-></DD
-><DT
->BinaryRow (B)</DT
-><DD
-><P
->&#13;<P
-></P
-><DL
-><DT
->Byte1('B')</DT
-><DD
-><P
->		Identifies the message as a binary data row.
-		(A prior RowDescription message defines the number of
-		fields in the row and their data types.)</P
-></DD
-><DT
->Byte<TT
-CLASS="REPLACEABLE"
-><I
->n</I
-></TT
-></DT
-><DD
-><P
->                A bit map with one bit for each field in the row.  The 1st
-                field corresponds to bit 7 (MSB) of the 1st byte, the 2nd
-                field corresponds to bit 6 of the 1st byte, the 8th field
-                corresponds to bit 0 (LSB) of the 1st byte, the 9th field
-                corresponds to bit 7 of the 2nd byte, and so on.  Each bit
-                is set if the value of the corresponding field is not NULL.
-                If the number of fields is not a multiple of 8, the remainder
-                of the last byte in the bit map is wasted.</P
-><P
->	Then, for each field with a non-NULL value, there is the following:
-<P
-></P
-><DL
-><DT
->Int32</DT
-><DD
-><P
->			Specifies the size of the value of the field, excluding
-			this size.</P
-></DD
-><DT
->Byte<TT
-CLASS="REPLACEABLE"
-><I
->n</I
-></TT
-></DT
-><DD
-><P
->			Specifies the value of the field itself in binary
-			format.  <TT
-CLASS="REPLACEABLE"
-><I
->n</I
-></TT
-> is the above size.</P
-></DD
-></DL
->&#13;</P
-></DD
-></DL
->&#13;</P
-></DD
-><DT
->CancelRequest (F)</DT
-><DD
-><P
->&#13;<P
-></P
-><DL
-><DT
->Int32(16)</DT
-><DD
-><P
->		The size of the packet in bytes.</P
-></DD
-><DT
->Int32(80877102)</DT
-><DD
-><P
->		The cancel request code.  The value is chosen to contain
-		"1234" in the most significant 16 bits, and "5678" in the
-		least 16 significant bits.  (To avoid confusion, this code
-		must not be the same as any protocol version number.)</P
-></DD
-><DT
->Int32</DT
-><DD
-><P
->		The process ID of the target backend.</P
-></DD
-><DT
->Int32</DT
-><DD
-><P
->		The secret key for the target backend.</P
-></DD
-></DL
->
-&#13;</P
-></DD
-><DT
->CompletedResponse (B)</DT
-><DD
-><P
->&#13;<P
-></P
-><DL
-><DT
->Byte1('C')</DT
-><DD
-><P
->		Identifies the message as a completed response.</P
-></DD
-><DT
->String</DT
-><DD
-><P
->		The command tag.  This is usually (but not always) a single
-		word that identifies which SQL command was completed.</P
-></DD
-></DL
->
-&#13;</P
-></DD
-><DT
->CopyDataRows (B &#38; F)</DT
-><DD
-><P
->	This is a stream of rows where each row is terminated by a Byte1('\n').
-	This is then followed by the sequence Byte1('\\'), Byte1('.'),
-	Byte1('\n').</P
-></DD
-><DT
->CopyInResponse (B)</DT
-><DD
-><P
->&#13;<P
-></P
-><DL
-><DT
->Byte1('G')</DT
-><DD
-><P
->		Identifies the message as a Start Copy In response.
-		The frontend must now send a CopyDataRows message.</P
-></DD
-></DL
->
-&#13;</P
-></DD
-><DT
->CopyOutResponse (B)</DT
-><DD
-><P
->&#13;<P
-></P
-><DL
-><DT
->Byte1('H')</DT
-><DD
-><P
->		Identifies the message as a Start Copy Out response.
-		This message will be followed by a CopyDataRows message.</P
-></DD
-></DL
->
-&#13;</P
-></DD
-><DT
->CursorResponse (B)</DT
-><DD
-><P
->&#13;<P
-></P
-><DL
-><DT
->Byte1('P')</DT
-><DD
-><P
->		Identifies the message as a cursor response.</P
-></DD
-><DT
->String</DT
-><DD
-><P
->		The name of the cursor.  This will be "blank" if the cursor is
-		implicit.</P
-></DD
-></DL
->
-&#13;</P
-></DD
-><DT
->EmptyQueryResponse (B)</DT
-><DD
-><P
->&#13;<P
-></P
-><DL
-><DT
->Byte1('I')</DT
-><DD
-><P
->		Identifies the message as a response to an empty query string.</P
-></DD
-><DT
->String("")</DT
-><DD
-><P
->		Unused.</P
-></DD
-></DL
->
-&#13;</P
-></DD
-><DT
->EncryptedPasswordPacket (F)</DT
-><DD
-><P
->&#13;<P
-></P
-><DL
-><DT
->Int32</DT
-><DD
-><P
->		The size of the packet in bytes.</P
-></DD
-><DT
->String</DT
-><DD
-><P
->		The encrypted (using crypt()) password.</P
-></DD
-></DL
->
-&#13;</P
-></DD
-><DT
->ErrorResponse (B)</DT
-><DD
-><P
->&#13;<P
-></P
-><DL
-><DT
->Byte1('E')</DT
-><DD
-><P
->		Identifies the message as an error.</P
-></DD
-><DT
->String</DT
-><DD
-><P
->		The error message itself.</P
-></DD
-></DL
->
-&#13;</P
-></DD
-><DT
->FunctionCall (F)</DT
-><DD
-><P
->&#13;<P
-></P
-><DL
-><DT
->Byte1('F')</DT
-><DD
-><P
->		Identifies the message as a function call.</P
-></DD
-><DT
->String("")</DT
-><DD
-><P
->		Unused.</P
-></DD
-><DT
->Int32</DT
-><DD
-><P
->		Specifies the object ID of the function to call.</P
-></DD
-><DT
->Int32</DT
-><DD
-><P
->		Specifies the number of arguments being supplied to the
-		function.</P
-><P
->	Then, for each argument, there is the following:
-<P
-></P
-><DL
-><DT
->Int32</DT
-><DD
-><P
->			Specifies the size of the value of the argument,
-			excluding this size.</P
-></DD
-><DT
->Byte<TT
-CLASS="REPLACEABLE"
-><I
->n</I
-></TT
-></DT
-><DD
-><P
->			Specifies the value of the field itself in binary
-			format.  <TT
-CLASS="REPLACEABLE"
-><I
->n</I
-></TT
-> is the above size.</P
-></DD
-></DL
->&#13;</P
-></DD
-></DL
->&#13;</P
-></DD
-><DT
->FunctionResultResponse (B)</DT
-><DD
-><P
->&#13;<P
-></P
-><DL
-><DT
->Byte1('V')</DT
-><DD
-><P
->		Identifies the message as a function call result.</P
-></DD
-><DT
->Byte1('G')</DT
-><DD
-><P
->		Specifies that a nonempty result was returned.</P
-></DD
-><DT
->Int32</DT
-><DD
-><P
->		Specifies the size of the value of the result, excluding this
-		size.</P
-></DD
-><DT
->Byte<TT
-CLASS="REPLACEABLE"
-><I
->n</I
-></TT
-></DT
-><DD
-><P
->		Specifies the value of the result itself in binary format.
-		<TT
-CLASS="REPLACEABLE"
-><I
->n</I
-></TT
-> is the above size.</P
-></DD
-><DT
->Byte1('0')</DT
-><DD
-><P
->		Unused.  (Strictly speaking, FunctionResultResponse and
-		FunctionVoidResponse are the same thing but with some optional
-		parts to the message.)</P
-></DD
-></DL
->
-&#13;</P
-></DD
-><DT
->FunctionVoidResponse (B)</DT
-><DD
-><P
->&#13;<P
-></P
-><DL
-><DT
->Byte1('V')</DT
-><DD
-><P
->		Identifies the message as a function call result.</P
-></DD
-><DT
->Byte1('0')</DT
-><DD
-><P
->		Specifies that an empty result was returned.</P
-></DD
-></DL
->
-&#13;</P
-></DD
-><DT
->NoticeResponse (B)</DT
-><DD
-><P
->&#13;<P
-></P
-><DL
-><DT
->Byte1('N')</DT
-><DD
-><P
->		Identifies the message as a notice.</P
-></DD
-><DT
->String</DT
-><DD
-><P
->		The notice message itself.</P
-></DD
-></DL
->
-&#13;</P
-></DD
-><DT
->NotificationResponse (B)</DT
-><DD
-><P
->&#13;<P
-></P
-><DL
-><DT
->Byte1('A')</DT
-><DD
-><P
->		Identifies the message as a notification response.</P
-></DD
-><DT
->Int32</DT
-><DD
-><P
->		The process ID of the notifying backend process.</P
-></DD
-><DT
->String</DT
-><DD
-><P
->		The name of the condition that the notify has been raised on.</P
-></DD
-></DL
->
-&#13;</P
-></DD
-><DT
->Query (F)</DT
-><DD
-><P
->&#13;<P
-></P
-><DL
-><DT
->Byte1('Q')</DT
-><DD
-><P
->		Identifies the message as a query.</P
-></DD
-><DT
->String</DT
-><DD
-><P
->		The query string itself.</P
-></DD
-></DL
->
-&#13;</P
-></DD
-><DT
->ReadyForQuery (B)</DT
-><DD
-><P
->&#13;<P
-></P
-><DL
-><DT
->Byte1('Z')</DT
-><DD
-><P
->		Identifies the message type.  ReadyForQuery is sent
-		whenever the backend is ready for a new query cycle.</P
-></DD
-></DL
->
-&#13;</P
-></DD
-><DT
->RowDescription (B)</DT
-><DD
-><P
->&#13;<P
-></P
-><DL
-><DT
->Byte1('T')</DT
-><DD
-><P
->		Identifies the message as a row description.</P
-></DD
-><DT
->Int16</DT
-><DD
-><P
->		Specifies the number of fields in a row (may be zero).</P
-><P
->	Then, for each field, there is the following:
-<P
-></P
-><DL
-><DT
->String</DT
-><DD
-><P
->			Specifies the field name.</P
-></DD
-><DT
->Int32</DT
-><DD
-><P
->			Specifies the object ID of the field type.</P
-></DD
-><DT
->Int16</DT
-><DD
-><P
->			Specifies the type size.</P
-></DD
-><DT
->Int32</DT
-><DD
-><P
->			Specifies the type modifier.</P
-></DD
-></DL
->&#13;</P
-></DD
-></DL
->
-&#13;</P
-></DD
-><DT
->StartupPacket (F)</DT
-><DD
-><P
->&#13;<P
-></P
-><DL
-><DT
->Int32(296)</DT
-><DD
-><P
->		The size of the packet in bytes.</P
-></DD
-><DT
->Int32</DT
-><DD
-><P
->		The protocol version number.  The most significant 16 bits are
-		the major version number.  The least 16 significant bits are
-		the minor version number.</P
-></DD
-><DT
->LimString64</DT
-><DD
-><P
->		The database name, defaults to the user name if empty.</P
-></DD
-><DT
->LimString32</DT
-><DD
-><P
->		The user name.</P
-></DD
-><DT
->LimString64</DT
-><DD
-><P
->		Any additional command line arguments to be passed to the
-		backend by the postmaster.</P
-></DD
-><DT
->LimString64</DT
-><DD
-><P
->		Unused.</P
-></DD
-><DT
->LimString64</DT
-><DD
-><P
->		The optional tty the backend should use for debugging messages.</P
-></DD
-></DL
->
-&#13;</P
-></DD
-><DT
->Terminate (F)</DT
-><DD
-><P
->&#13;<P
-></P
-><DL
-><DT
->Byte1('X')</DT
-><DD
-><P
->		Identifies the message as a termination.</P
-></DD
-></DL
->
-&#13;</P
-></DD
-><DT
->UnencryptedPasswordPacket (F)</DT
-><DD
-><P
->&#13;<P
-></P
-><DL
-><DT
->Int32</DT
-><DD
-><P
->		The size of the packet in bytes.</P
-></DD
-><DT
->String</DT
-><DD
-><P
->		The unencrypted password.</P
-></DD
-></DL
->&#13;</P
-></DD
-></DL
-></DIV
-><DIV
-CLASS="NAVFOOTER"
-><HR
-ALIGN="LEFT"
-WIDTH="100%"><TABLE
-WIDTH="100%"
-BORDER="0"
-CELLPADDING="0"
-CELLSPACING="0"
-><TR
-><TD
-WIDTH="33%"
-ALIGN="left"
-VALIGN="top"
-><A
-HREF="x6994.htm"
->Prev</A
-></TD
-><TD
-WIDTH="34%"
-ALIGN="center"
-VALIGN="top"
-><A
-HREF="programmer.htm"
->Home</A
-></TD
-><TD
-WIDTH="33%"
-ALIGN="right"
-VALIGN="top"
-><A
-HREF="signals.htm"
->Next</A
-></TD
-></TR
-><TR
-><TD
-WIDTH="33%"
-ALIGN="left"
-VALIGN="top"
->Message Data Types</TD
-><TD
-WIDTH="34%"
-ALIGN="center"
-VALIGN="top"
-><A
-HREF="protocol.htm"
->Up</A
-></TD
-><TD
-WIDTH="33%"
-ALIGN="right"
-VALIGN="top"
-><SPAN
-CLASS="PRODUCTNAME"
->Postgres</SPAN
-> Signals</TD
-></TR
-></TABLE
-></DIV
-></BODY
-></HTML
->
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<meta name="generator" content=
+"HTML Tidy for Linux/x86 (vers 1st August 2003), see www.w3.org">
+<title>Message Formats</title>
+<meta name="GENERATOR" content=
+"Modular DocBook HTML Stylesheet Version 1.41">
+<link rel="HOME" title="PostgreSQL Programmer's Guide" href=
+"programmer.htm">
+<link rel="UP" title="Frontend/Backend Protocol" href=
+"protocol.htm">
+<link rel="PREVIOUS" title="Message Data Types" href="x6994.htm">
+<link rel="NEXT" title="Postgres Signals" href="signals.htm">
+</head>
+<body bgcolor="#FFFFFF" text="#000000" link="#0000FF" vlink=
+"#840084" alink="#0000FF">
+<div class="NAVHEADER">
+<table width="100%" border="0" cellpadding="0" cellspacing="0">
+<tr>
+<th colspan="3" align="center">PostgreSQL Programmer's Guide</th>
+</tr>
+<tr>
+<td width="10%" align="left" valign="bottom"><a href=
+"x6994.htm">Prev</a></td>
+<td width="80%" align="center" valign="bottom">Chapter 25.
+Frontend/Backend Protocol</td>
+<td width="10%" align="right" valign="bottom"><a href=
+"signals.htm">Next</a></td>
+</tr>
+</table>
+<hr align="left" width="100%"></div>
+<div class="SECT1">
+<h1 class="SECT1"><a name="AEN7030">Message Formats</a></h1>
+<p>This section describes the detailed format of each message. Each
+can be sent by either a frontend (F), a postmaster/backend (B), or
+both (F &amp; B).</p>
+<dl>
+<dt>AsciiRow (B)</dt>
+<dd>
+<dl>
+<dt>Byte1('D')</dt>
+<dd>
+<p>Identifies the message as an <span class="ACRONYM">ASCII</span>
+data row. (A prior RowDescription message defines the number of
+fields in the row and their data types.)</p>
+</dd>
+<dt>Byte<tt class="REPLACEABLE"><i>n</i></tt></dt>
+<dd>
+<p>A bit map with one bit for each field in the row. The 1st field
+corresponds to bit 7 (MSB) of the 1st byte, the 2nd field
+corresponds to bit 6 of the 1st byte, the 8th field corresponds to
+bit 0 (LSB) of the 1st byte, the 9th field corresponds to bit 7 of
+the 2nd byte, and so on. Each bit is set if the value of the
+corresponding field is not NULL. If the number of fields is not a
+multiple of 8, the remainder of the last byte in the bit map is
+wasted.</p>
+<p>Then, for each field with a non-NULL value, there is the
+following:</p>
+<dl>
+<dt>Int32</dt>
+<dd>
+<p>Specifies the size of the value of the field, including this
+size.</p>
+</dd>
+<dt>Byte<tt class="REPLACEABLE"><i>n</i></tt></dt>
+<dd>
+<p>Specifies the value of the field itself in <span class=
+"ACRONYM">ASCII</span> characters. <tt class=
+"REPLACEABLE"><i>n</i></tt> is the above size minus 4. There is no
+trailing '\0' in the field data; the front end must add one if it
+wants one.</p>
+</dd>
+</dl>
+<br>
+<br></dd>
+</dl>
+<br>
+<br></dd>
+<dt>AuthenticationOk (B)</dt>
+<dd>
+<dl>
+<dt>Byte1('R')</dt>
+<dd>
+<p>Identifies the message as an authentication request.</p>
+</dd>
+<dt>Int32(0)</dt>
+<dd>
+<p>Specifies that the authentication was successful.</p>
+</dd>
+</dl>
+<br>
+<br></dd>
+<dt>AuthenticationKerberosV4 (B)</dt>
+<dd>
+<dl>
+<dt>Byte1('R')</dt>
+<dd>
+<p>Identifies the message as an authentication request.</p>
+</dd>
+<dt>Int32(1)</dt>
+<dd>
+<p>Specifies that Kerberos V4 authentication is required.</p>
+</dd>
+</dl>
+<br>
+<br></dd>
+<dt>AuthenticationKerberosV5 (B)</dt>
+<dd>
+<dl>
+<dt>Byte1('R')</dt>
+<dd>
+<p>Identifies the message as an authentication request.</p>
+</dd>
+<dt>Int32(2)</dt>
+<dd>
+<p>Specifies that Kerberos V5 authentication is required.</p>
+</dd>
+</dl>
+<br>
+<br></dd>
+<dt>AuthenticationUnencryptedPassword (B)</dt>
+<dd>
+<dl>
+<dt>Byte1('R')</dt>
+<dd>
+<p>Identifies the message as an authentication request.</p>
+</dd>
+<dt>Int32(3)</dt>
+<dd>
+<p>Specifies that an unencrypted password is required.</p>
+</dd>
+</dl>
+<br>
+<br></dd>
+<dt>AuthenticationEncryptedPassword (B)</dt>
+<dd>
+<dl>
+<dt>Byte1('R')</dt>
+<dd>
+<p>Identifies the message as an authentication request.</p>
+</dd>
+<dt>Int32(4)</dt>
+<dd>
+<p>Specifies that an encrypted password is required.</p>
+</dd>
+<dt>Byte2</dt>
+<dd>
+<p>The salt to use when encrypting the password.</p>
+</dd>
+</dl>
+<br>
+<br></dd>
+<dt>BackendKeyData (B)</dt>
+<dd>
+<dl>
+<dt>Byte1('K')</dt>
+<dd>
+<p>Identifies the message as cancellation key data. The frontend
+must save these values if it wishes to be able to issue
+CancelRequest messages later.</p>
+</dd>
+<dt>Int32</dt>
+<dd>
+<p>The process ID of this backend.</p>
+</dd>
+<dt>Int32</dt>
+<dd>
+<p>The secret key of this backend.</p>
+</dd>
+</dl>
+<br>
+<br></dd>
+<dt>BinaryRow (B)</dt>
+<dd>
+<dl>
+<dt>Byte1('B')</dt>
+<dd>
+<p>Identifies the message as a binary data row. (A prior
+RowDescription message defines the number of fields in the row and
+their data types.)</p>
+</dd>
+<dt>Byte<tt class="REPLACEABLE"><i>n</i></tt></dt>
+<dd>
+<p>A bit map with one bit for each field in the row. The 1st field
+corresponds to bit 7 (MSB) of the 1st byte, the 2nd field
+corresponds to bit 6 of the 1st byte, the 8th field corresponds to
+bit 0 (LSB) of the 1st byte, the 9th field corresponds to bit 7 of
+the 2nd byte, and so on. Each bit is set if the value of the
+corresponding field is not NULL. If the number of fields is not a
+multiple of 8, the remainder of the last byte in the bit map is
+wasted.</p>
+<p>Then, for each field with a non-NULL value, there is the
+following:</p>
+<dl>
+<dt>Int32</dt>
+<dd>
+<p>Specifies the size of the value of the field, excluding this
+size.</p>
+</dd>
+<dt>Byte<tt class="REPLACEABLE"><i>n</i></tt></dt>
+<dd>
+<p>Specifies the value of the field itself in binary format.
+<tt class="REPLACEABLE"><i>n</i></tt> is the above size.</p>
+</dd>
+</dl>
+<br>
+<br></dd>
+</dl>
+<br>
+<br></dd>
+<dt>CancelRequest (F)</dt>
+<dd>
+<dl>
+<dt>Int32(16)</dt>
+<dd>
+<p>The size of the packet in bytes.</p>
+</dd>
+<dt>Int32(80877102)</dt>
+<dd>
+<p>The cancel request code. The value is chosen to contain "1234"
+in the most significant 16 bits, and "5678" in the least 16
+significant bits. (To avoid confusion, this code must not be the
+same as any protocol version number.)</p>
+</dd>
+<dt>Int32</dt>
+<dd>
+<p>The process ID of the target backend.</p>
+</dd>
+<dt>Int32</dt>
+<dd>
+<p>The secret key for the target backend.</p>
+</dd>
+</dl>
+<br>
+<br></dd>
+<dt>CompletedResponse (B)</dt>
+<dd>
+<dl>
+<dt>Byte1('C')</dt>
+<dd>
+<p>Identifies the message as a completed response.</p>
+</dd>
+<dt>String</dt>
+<dd>
+<p>The command tag. This is usually (but not always) a single word
+that identifies which SQL command was completed.</p>
+</dd>
+</dl>
+<br>
+<br></dd>
+<dt>CopyDataRows (B &amp; F)</dt>
+<dd>
+<p>This is a stream of rows where each row is terminated by a
+Byte1('\n'). This is then followed by the sequence Byte1('\\'),
+Byte1('.'), Byte1('\n').</p>
+</dd>
+<dt>CopyInResponse (B)</dt>
+<dd>
+<dl>
+<dt>Byte1('G')</dt>
+<dd>
+<p>Identifies the message as a Start Copy In response. The frontend
+must now send a CopyDataRows message.</p>
+</dd>
+</dl>
+<br>
+<br></dd>
+<dt>CopyOutResponse (B)</dt>
+<dd>
+<dl>
+<dt>Byte1('H')</dt>
+<dd>
+<p>Identifies the message as a Start Copy Out response. This
+message will be followed by a CopyDataRows message.</p>
+</dd>
+</dl>
+<br>
+<br></dd>
+<dt>CursorResponse (B)</dt>
+<dd>
+<dl>
+<dt>Byte1('P')</dt>
+<dd>
+<p>Identifies the message as a cursor response.</p>
+</dd>
+<dt>String</dt>
+<dd>
+<p>The name of the cursor. This will be "blank" if the cursor is
+implicit.</p>
+</dd>
+</dl>
+<br>
+<br></dd>
+<dt>EmptyQueryResponse (B)</dt>
+<dd>
+<dl>
+<dt>Byte1('I')</dt>
+<dd>
+<p>Identifies the message as a response to an empty query
+string.</p>
+</dd>
+<dt>String("")</dt>
+<dd>
+<p>Unused.</p>
+</dd>
+</dl>
+<br>
+<br></dd>
+<dt>EncryptedPasswordPacket (F)</dt>
+<dd>
+<dl>
+<dt>Int32</dt>
+<dd>
+<p>The size of the packet in bytes.</p>
+</dd>
+<dt>String</dt>
+<dd>
+<p>The encrypted (using crypt()) password.</p>
+</dd>
+</dl>
+<br>
+<br></dd>
+<dt>ErrorResponse (B)</dt>
+<dd>
+<dl>
+<dt>Byte1('E')</dt>
+<dd>
+<p>Identifies the message as an error.</p>
+</dd>
+<dt>String</dt>
+<dd>
+<p>The error message itself.</p>
+</dd>
+</dl>
+<br>
+<br></dd>
+<dt>FunctionCall (F)</dt>
+<dd>
+<dl>
+<dt>Byte1('F')</dt>
+<dd>
+<p>Identifies the message as a function call.</p>
+</dd>
+<dt>String("")</dt>
+<dd>
+<p>Unused.</p>
+</dd>
+<dt>Int32</dt>
+<dd>
+<p>Specifies the object ID of the function to call.</p>
+</dd>
+<dt>Int32</dt>
+<dd>
+<p>Specifies the number of arguments being supplied to the
+function.</p>
+<p>Then, for each argument, there is the following:</p>
+<dl>
+<dt>Int32</dt>
+<dd>
+<p>Specifies the size of the value of the argument, excluding this
+size.</p>
+</dd>
+<dt>Byte<tt class="REPLACEABLE"><i>n</i></tt></dt>
+<dd>
+<p>Specifies the value of the field itself in binary format.
+<tt class="REPLACEABLE"><i>n</i></tt> is the above size.</p>
+</dd>
+</dl>
+<br>
+<br></dd>
+</dl>
+<br>
+<br></dd>
+<dt>FunctionResultResponse (B)</dt>
+<dd>
+<dl>
+<dt>Byte1('V')</dt>
+<dd>
+<p>Identifies the message as a function call result.</p>
+</dd>
+<dt>Byte1('G')</dt>
+<dd>
+<p>Specifies that a nonempty result was returned.</p>
+</dd>
+<dt>Int32</dt>
+<dd>
+<p>Specifies the size of the value of the result, excluding this
+size.</p>
+</dd>
+<dt>Byte<tt class="REPLACEABLE"><i>n</i></tt></dt>
+<dd>
+<p>Specifies the value of the result itself in binary format.
+<tt class="REPLACEABLE"><i>n</i></tt> is the above size.</p>
+</dd>
+<dt>Byte1('0')</dt>
+<dd>
+<p>Unused. (Strictly speaking, FunctionResultResponse and
+FunctionVoidResponse are the same thing but with some optional
+parts to the message.)</p>
+</dd>
+</dl>
+<br>
+<br></dd>
+<dt>FunctionVoidResponse (B)</dt>
+<dd>
+<dl>
+<dt>Byte1('V')</dt>
+<dd>
+<p>Identifies the message as a function call result.</p>
+</dd>
+<dt>Byte1('0')</dt>
+<dd>
+<p>Specifies that an empty result was returned.</p>
+</dd>
+</dl>
+<br>
+<br></dd>
+<dt>NoticeResponse (B)</dt>
+<dd>
+<dl>
+<dt>Byte1('N')</dt>
+<dd>
+<p>Identifies the message as a notice.</p>
+</dd>
+<dt>String</dt>
+<dd>
+<p>The notice message itself.</p>
+</dd>
+</dl>
+<br>
+<br></dd>
+<dt>NotificationResponse (B)</dt>
+<dd>
+<dl>
+<dt>Byte1('A')</dt>
+<dd>
+<p>Identifies the message as a notification response.</p>
+</dd>
+<dt>Int32</dt>
+<dd>
+<p>The process ID of the notifying backend process.</p>
+</dd>
+<dt>String</dt>
+<dd>
+<p>The name of the condition that the notify has been raised
+on.</p>
+</dd>
+</dl>
+<br>
+<br></dd>
+<dt>Query (F)</dt>
+<dd>
+<dl>
+<dt>Byte1('Q')</dt>
+<dd>
+<p>Identifies the message as a query.</p>
+</dd>
+<dt>String</dt>
+<dd>
+<p>The query string itself.</p>
+</dd>
+</dl>
+<br>
+<br></dd>
+<dt>ReadyForQuery (B)</dt>
+<dd>
+<dl>
+<dt>Byte1('Z')</dt>
+<dd>
+<p>Identifies the message type. ReadyForQuery is sent whenever the
+backend is ready for a new query cycle.</p>
+</dd>
+</dl>
+<br>
+<br></dd>
+<dt>RowDescription (B)</dt>
+<dd>
+<dl>
+<dt>Byte1('T')</dt>
+<dd>
+<p>Identifies the message as a row description.</p>
+</dd>
+<dt>Int16</dt>
+<dd>
+<p>Specifies the number of fields in a row (may be zero).</p>
+<p>Then, for each field, there is the following:</p>
+<dl>
+<dt>String</dt>
+<dd>
+<p>Specifies the field name.</p>
+</dd>
+<dt>Int32</dt>
+<dd>
+<p>Specifies the object ID of the field type.</p>
+</dd>
+<dt>Int16</dt>
+<dd>
+<p>Specifies the type size.</p>
+</dd>
+<dt>Int32</dt>
+<dd>
+<p>Specifies the type modifier.</p>
+</dd>
+</dl>
+<br>
+<br></dd>
+</dl>
+<br>
+<br></dd>
+<dt>StartupPacket (F)</dt>
+<dd>
+<dl>
+<dt>Int32(296)</dt>
+<dd>
+<p>The size of the packet in bytes.</p>
+</dd>
+<dt>Int32</dt>
+<dd>
+<p>The protocol version number. The most significant 16 bits are
+the major version number. The least 16 significant bits are the
+minor version number.</p>
+</dd>
+<dt>LimString64</dt>
+<dd>
+<p>The database name, defaults to the user name if empty.</p>
+</dd>
+<dt>LimString32</dt>
+<dd>
+<p>The user name.</p>
+</dd>
+<dt>LimString64</dt>
+<dd>
+<p>Any additional command line arguments to be passed to the
+backend by the postmaster.</p>
+</dd>
+<dt>LimString64</dt>
+<dd>
+<p>Unused.</p>
+</dd>
+<dt>LimString64</dt>
+<dd>
+<p>The optional tty the backend should use for debugging
+messages.</p>
+</dd>
+</dl>
+<br>
+<br></dd>
+<dt>Terminate (F)</dt>
+<dd>
+<dl>
+<dt>Byte1('X')</dt>
+<dd>
+<p>Identifies the message as a termination.</p>
+</dd>
+</dl>
+<br>
+<br></dd>
+<dt>UnencryptedPasswordPacket (F)</dt>
+<dd>
+<dl>
+<dt>Int32</dt>
+<dd>
+<p>The size of the packet in bytes.</p>
+</dd>
+<dt>String</dt>
+<dd>
+<p>The unencrypted password.</p>
+</dd>
+</dl>
+<br>
+<br></dd>
+</dl>
+</div>
+<div class="NAVFOOTER">
+<hr align="left" width="100%">
+<table width="100%" border="0" cellpadding="0" cellspacing="0">
+<tr>
+<td width="33%" align="left" valign="top"><a href=
+"x6994.htm">Prev</a></td>
+<td width="34%" align="center" valign="top"><a href=
+"programmer.htm">Home</a></td>
+<td width="33%" align="right" valign="top"><a href=
+"signals.htm">Next</a></td>
+</tr>
+<tr>
+<td width="33%" align="left" valign="top">Message Data Types</td>
+<td width="34%" align="center" valign="top"><a href=
+"protocol.htm">Up</a></td>
+<td width="33%" align="right" valign="top"><span class=
+"PRODUCTNAME">Postgres</span> Signals</td>
+</tr>
+</table>
+</div>
+</body>
+</html>

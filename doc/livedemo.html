@@ -1,0 +1,83 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+"http://www.w3.org/TR/REC-html401/loose.dtd">
+<html lang="en">
+<head>
+<title>RTA: Embedded DB API</title>
+<style type="text/css">
+p {font-size: large;}
+th {font-size: large;}
+td {font-size: large;}
+pre {font-size: large;}
+h1 {font-family: sans-serif}
+h2 {font-family: sans-serif}
+h3 {font-family: sans-serif}
+</style>
+</head>
+<body>
+<table width="100%" summary="" align="center" bgcolor="#dcefff">
+<tr>
+<td valign="top" align="left" width=40%>
+<ul>
+ <li><a href="index.html">Introduction</a></li>
+ <li><a href="FAQ.html">FAQ</a></li>
+ <li><a href="apiref.html">API Spec</a></li>
+ <li><a href="download.html">Download</a></li>
+ <li><a href="quickstart.html">Quick Start</a></li>
+ <li><a href="livedemo.html">Live Demo</a></li>
+ <li><a href="contact.html">Contact Info</a></li>
+</ul>
+</td>
+<td align="left" valign=middle>
+ <h2>Run Time Access</h2></td>
+</tr></table>
+<h2>Live Demonstration</h2> 
+<h3>- Table Editor</h3>
+<p>RTA comes with a <i>table editor</i> which lets you view
+and edit any of the tables in your RTA program.  The table
+editor is composed of four short PHP programs which use the
+information in the two system tables to figure out how to
+display and edit the other tables in the program.
+</p>
+<p>  Click on the link below to give it a try.
+<ul>
+<li><a href=http://www.runtimeaccess.com/rta_tables.php>
+http://www.runtimeaccess.com/rta_tables.php</a></li>
+</ul></p>
+<p>You might want to try changing one of the "notes" fields in 
+<i>mytable</i>.  Be sure to hit 'reload' to see the effect of
+your changes.<br>
+</p>
+<br>
+<br>
+
+<h3>- Direct <tt>psql</tt> Access</h3>
+<p>If you have the PostgreSQL command line tool <tt>psql</tt>
+on your system you can access our demo application directly with</p>
+<pre>     psql -h www.runtimeaccess.com -p 8888</pre>
+<p>Once connected, try a few of the following simple SQL commands.</p>
+<pre>
+     SELECT * FROM mytable;
+     UPDATE mytable SET myint=4 LIMIT 5 OFFSET 10;
+     SELECT * FROM mytable;
+     UPDATE mytable SET notes="Hi Mom!" LIMIT 1 OFFSET 0;
+     SELECT name FROM rta_tables;
+     \q
+</pre>
+<br>
+<br>
+<h3>- Virtual File System</h3>
+<p>RTA provides a /proc-like access to your program's tables as well
+as PostgreSQL-like access.  In our demo application we have mounted
+the RTA virtual file system under the root of Apache.  This lets you
+browse the application's tables as directories and files visible
+with your web browser.  Click on the link below to give it a try.
+<ul>
+<li><a href=http://www.runtimeaccess.com/app>
+http://www.runtimeaccess.com/app</a></li>
+</ul>
+</p>
+<br>
+<br>
+<br>
+</body>
+</html>

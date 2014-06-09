@@ -1,4 +1,12 @@
 /***************************************************************
+ * Run Time Access
+ * Copyright (C) 2003 Robert W Smith (bsmith@linuxtoys.org)
+ *
+ *  This program is distributed under the terms of the GNU LGPL.
+ *  See the file COPYING file.
+ **************************************************************/
+
+/***************************************************************
  * app.h --
  *
  * Overview:
@@ -23,11 +31,12 @@
  * the structure for the sample application table.  This is 
  * where you would put your real application tables.
  **************************************************************/
-struct MyData {
-    int    myint;
-    float  myfloat;
-    char   notes[NOTE_LEN];
-    char   seton[NOTE_LEN];
+struct MyData
+{
+  int      myint;
+  float    myfloat;
+  char     notes[NOTE_LEN];
+  char     seton[NOTE_LEN];
 };
 
 /***************************************************************
@@ -35,16 +44,16 @@ struct MyData {
  **************************************************************/
 typedef struct
 {
-    int   fd;          /* FD of TCP conn (=-1 if not in use) */
-    int   cmdindx;     /* Index of next location in cmd buffer */
-    char  cmd[MXCMD];  /* SQL command from UI program */
-    int   rspfree;     /* Number of free bytes in rsp buffer */
-    char  rsp[MXRSP];  /* SQL response to the UI program */
-    int   o_port;      /* Other-end TCP port number */
-    int   o_ip;        /* Other-end IP address */
-    long long nbytin;  /* number of bytes read in */
-    long long nbytout; /* number of bytes sent out */
-    int   ctm;         /* connect time (==time();) */
-    int   cdur;        /* duration time (== now()-ctm;) */
+  int      fd;         /* FD of TCP conn (=-1 if not in use) */
+  int      cmdindx;    /* Index of next location in cmd buffer */
+  char     cmd[MXCMD]; /* SQL command from UI program */
+  int      rspfree;    /* Number of free bytes in rsp buffer */
+  char     rsp[MXRSP]; /* SQL response to the UI program */
+  int      o_port;     /* Other-end TCP port number */
+  int      o_ip;       /* Other-end IP address */
+  long long nbytin;    /* number of bytes read in */
+  long long nbytout;   /* number of bytes sent out */
+  int      ctm;        /* connect time (==time();) */
+  int      cdur;       /* duration time (== now()-ctm;) */
 }
 UI;

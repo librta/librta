@@ -1,9 +1,8 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
-"http://www.w3.org
-/TR/REC-html401/loose.dtd">
+"http://www.w3.org/TR/REC-html401/loose.dtd">
 <html lang="en">
 <head>
-<title>rta: Embedded DB API</title>
+<title>RTA: Embedded DB API</title>
 <style type="text/css">
 p {font-size: large;}
 th {font-size: large;}
@@ -15,30 +14,33 @@ h3 {font-family: sans-serif}
 </style>
 </head>
 <body>
-<table width="95%" summary="" align="center">
+<table width="100%" summary="" align="center" bgcolor="#dcefff">
 <tr>
-<td valign="top" align="left"><font size="+1"><a href=
- "index.html">Introduction</a><br>
- <a href="FAQ.html">FAQ</a><br>
- <a href="apiref.html">API Spec</a><br>
- <a href="download.html">Download</a><br>
- <a href="quickstart.html">Quick Start</a><br>
- <a href="rta_tables.php">Live Demo</a><br>
- <a href="contact.html">Contact Info</a><br></font></td>
-<td align="center" valign=bottom>
+<td valign="top" align="left" width=40%>
+<ul>
+ <li><a href="index.html">Introduction</a></li>
+ <li><a href="FAQ.html">FAQ</a></li>
+ <li><a href="apiref.html">API Spec</a></li>
+ <li><a href="download.html">Download</a></li>
+ <li><a href="quickstart.html">Quick Start</a></li>
+ <li><a href="livedemo.html">Live Demo</a></li>
+ <li><a href="contact.html">Contact Info</a></li>
+</ul>
+</td>
+<td align="left" valign=middle>
  <h2>Run Time Access</h2></td>
 </tr></table>
 <h2>API Specification</h2> 
 <h3><a name="Preamble">- Preamble</a></h3>
-<p> "rta" is a specialized memory resident data base interface. It is
+<p> RTA is a specialized memory resident database interface. It is
 not a stand-alone server but a library which attaches to your
 program and offers up the program's internal structures and arrays
-as data base tables. It uses a subset of the Postgres protocol and
+as database tables. It uses a subset of the Postgres protocol and
 is compatible with the Postgres bindings for "C", PHP, and the
 Postgres command line tool, psql.</p>
 <p>This page contains the defines, structures, and function
-prototypes for the 'rta' package. The information in this page is
-taken from the rta.h file in the rta package. The rta.h file is the
+prototypes for the 'RTA' package. The information in this page is
+taken from the rta.h file in the RTA package. The rta.h file is the
 authoritative reference to the API.</p>
 <table summary="">
 <tr>
@@ -59,7 +61,7 @@ authoritative reference to the API.</p>
 <td><a href="#Subroutines">- Subroutines</a></td></tr>
 <tr>
 <td></td>
-<td><a href="#Syntax">- rta UPDATE and SELECT syntax</a></td></tr>
+<td><a href="#Syntax">- RTA UPDATE and SELECT syntax</a></td></tr>
 <tr>
 <td></td>
 <td><a href="#Internal">- Internal DB tables</a></td></tr>
@@ -73,9 +75,9 @@ routines</a></td></tr></table>
 <hr width="70%">
 <h3><a name="Limits">- Limits</a></h3>
  <p>Here are the defines which describe the internal limits set in the
-rta package. You are welcome to change these limits; just be sure
-to recompile the rta package using your new settings.</p>
-<table summary="defines used to set limits in rta" width="95%">
+RTA package. You are welcome to change these limits; just be sure
+to recompile the RTA package using your new settings.</p>
+<table summary="defines used to set limits in RTA" width="95%">
 <tr>
 <th>#define</th>
 <th>Value</th>
@@ -83,12 +85,12 @@ to recompile the rta package using your new settings.</p>
 <tr>
 <td valign="top">MX_TBL</td>
 <td valign="top">500</td>
-<td>Maximum number of tables allowed in the system. Your data base
+<td>Maximum number of tables allowed in the system. Your database
 may not contain more than this number of tables.</td></tr>
 <tr>
 <td valign="top">MX_COL</td>
 <td valign="top">2500</td>
-<td>Maximum number of columns allowed in the system. Your data base
+<td>Maximum number of columns allowed in the system. Your database
 may not contain more than this number of columns.</td></tr>
 <tr>
 <td valign="top">MXCOLNAME</td>
@@ -126,7 +128,7 @@ characters are silently truncated to MX_LN_SZ characters.</td></tr>
 <td></td></tr></table>
 <hr width="70%">
 <h3><a name="Structures">- Data Structures</a></h3>
-<p>Each column and table in the data base must be described in a data
+<p>Each column and table in the database must be described in a data
 structure. Here are the data structures and associated defines to
 describe tables and columns.</p>
 <p>The column definition (COLDEF) structure describes one column of
@@ -274,7 +276,7 @@ that we can get to data element E in row R with ... data =
 <tr>
 <td valign="top">COLDEF&nbsp;*cols</td>
 <td>An array of COLDEF structures which describe the columns in the
-table. These must be in statically allocated memory since the rta
+table. These must be in statically allocated memory since the RTA
 system references them while running.</td></tr>
 <tr>
 <td valign="top">int&nbsp;ncol</td>
@@ -295,14 +297,14 @@ parts of the system and description of important callbacks is nice
 thing to include here.</td></tr></table>
 <hr width="70%">
 <h3><a name="Subroutines">- Subroutines</a></h3>
- <p>Here is a summary of the few routines in the rta API:</p>
+ <p>Here is a summary of the few routines in the RTA API:</p>
 <table summary="list of API subroutines">
 <tr>
 <td>rta_init()</td>
 <td>initialize internal tables</td></tr>
 <tr>
 <td>dbcommand()</td>
-<td>I/F to Postgres clients</td></tr>
+<td>process data stream from Postgres clients</td></tr>
 <tr>
 <td>egp_add_table()</td>
 <td>add a table and its columns to the DB</td></tr>
@@ -314,12 +316,19 @@ thing to include here.</td></tr></table>
 <td>save a table to a file</td></tr>
 <tr>
 <td>rta_load()</td>
-<td>load a table from a file</td></tr></table>
+<td>load a table from a file</td></tr>
+<tr>
+<td>rtafs_init()</td>
+<td>initialize and mount virtual file system</td></tr>
+<tr>
+<td>do_rtafs()</td>
+<td>process file system commands</td></tr>
+</table>
 <br>
 <br>
  
 <p><b>rta_init() - Initialize internal tables</b><br>
- Initialize all rta internal variables and tables. It has no
+ Initialize all RTA internal variables and tables. It has no
 calling parameters and returns void.</p>
 <pre>
 void
@@ -327,12 +336,11 @@ rta_init();
 </pre>
 <br>
 <br>
-
 <p><b>dbcommand() - Depacketize and execute Postgres
 commands</b><br>
  The main application accepts TCP connections from Postgres clients
 and passes the stream of bytes (encoded SQL requests) from the
-client into the rta system via this routine. If the input buffer
+client into the RTA system via this routine. If the input buffer
 contains a complete command, it is executed, nin is decrement by
 the number of bytes consumed, and RTA_SUCCESS is returned. If there
 is not a complete command, RTA_NOCMD is returned and no bytes are
@@ -358,7 +366,6 @@ Return: RTA_SUCCESS   - executed one command
 </pre>
 <br>
 <br>
-
 <p><b>rta_add_table() - Add table to DB</b><br>
 Registers a table for inclusion in the DB interface. Adding a table
 allows external Postgres clients access to the table's content.
@@ -380,7 +387,6 @@ Return: RTA_SUCCESS   - table added
 </pre>
 <br>
 <br>
-
 <p><b>SQL_string()- Execute single SQL command</b><br>
  Executes the SQL command placed in the null-terminated string,
 cmd. The results are encoded into the Postgres protocol and placed
@@ -404,7 +410,6 @@ SQL_string(char *cmd - the buffer with the SQL command
 </pre>
 <br>
 <br>
-
 <p><b>rta_save() - Save table to file</b><br>
  Saves all "savetodisk" columns to the path/file specified. Only
 savetodisk columns are saved. The resultant file is a list of
@@ -428,6 +433,8 @@ rta_save(TBLDEF *ptbl - pointer to the TBLDEF structure for the
 Return: RTA_SUCCESS   - table saved
         RTA_ERROR     - some kind of error
 </pre>
+<br>
+<br>
 <p><b>rta_load() - Load table from file</b><br>
 Load a table from a file of UPDATE commands. The file format is a
 series of UPDATE commands with one command per line. Any write
@@ -439,11 +446,45 @@ rta_load(TBLDEF *ptbl   - pointer to the table to be loaded,
 Return: RTA_SUCCESS   - table loaded
         RTA_ERROR     - could not open the file specified
 </pre>
+<br>
+<br>
+<p><b>rtafs_init() - Initialize the virtual file system interface</b><br>
+The single input parameter is the mount point for the VFS.  On success, 
+the return value is a file descriptor to the VFS.  On failure, a -1 is
+returned and errno is set.  This file descriptor should be used in
+subsequent select() or poll() calls to notify your program of file 
+system activity.  An important SIDE EFFECT of rtafs_init() is that the
+signal handlers for SIGHUP, SIGINT, and SIGTERM are set.  The signal
+handler tries to unmount the virtual file system. This routine is part
+of the librtafs library.</p>
+<p>Note that FUSE requires that the owner and group of the mount point
+be the same as the owner and group of the program that does the mount.
+For example, if your mount point is owned by Apache, then your the
+UID of your program must be Apache as well.</p>
+<pre>
+int
+rtafs_init(char *mountpoint  - desired mount point);
+Return: int fd        - file descriptor or -1
+</pre>
+<br>
+<br>
+<p><b>do_rtafs() - Handle all virtual file system IO</b><br>
+This routine handles all file system IO for the virtual file system
+mounted by the rtafs_init() call.  This routine should be called
+when there is activity on the file descriptor returned from rtafs_init().
+It has no input or output parameters This routine is part
+of the librtafs library.
+<pre>
+void
+do_rtafs();
+</pre>
+<br>
+<br>
 
 <hr width="70%">
-<h3><a name="Syntax">- rta UPDATE and SELECT syntax</a></h3>
-<p>rta IS AN API, *NOT* A DATABASE!</p>
-<p>Neither the rta UPDATE nor the rta SELECT adhere to the Postgres
+<h3><a name="Syntax">- RTA UPDATE and SELECT syntax</a></h3>
+<p>RTA IS AN API, *NOT* A DATABASE!</p>
+<p>Neither the RTA UPDATE nor the RTA SELECT adhere to the Postgres
 equivalents. Joins are not allowed, and the WHERE clause supports
 only the AND relation. There are no locks or transactions.</p>
 <pre>
@@ -522,7 +563,7 @@ like 'LIMIT 1 OFFSET n' (n is zero-indexed).</p>
 
 <hr width="70%">
 <h3><a name="Internal">- Internal DB tables</a></h3>
-<p>The rta API has five tables visible to the application:</p>
+<p>The RTA API has five tables visible to the application:</p>
 <table summary="">
 <tr>
 <td rowspan="5">&nbsp;&nbsp;&nbsp;</td>
@@ -611,11 +652,11 @@ the generic table editor. The columns of rta_columns are:</p>
 <br>
  
 <p>The pg_user table is provided to complete the connection
-protocol between Postgres clients and the rta package. It
+protocol between Postgres clients and the RTA package. It
 authenticates the connecting user. We spoof the protocol by using a
 read callback to add the user into the table before checking if the
 user is valid. In this way *any* user who connects is in the table
-and so is authenticated. (One future enhancement to rta might be to
+and so is authenticated. (One future enhancement to RTA might be to
 do real Postgres style authentication.) The columns of pg_user
 are:</p>
 <table summary="">
@@ -649,7 +690,7 @@ are:</p>
  
 <p>The rta_dbgconfig table controls which errors generate debug log
 messages. See the logging section below for the exact mapping. The
-rta package generates no user level log messages, only debug
+RTA package generates no user level log messages, only debug
 messages. All of the fields in this table are volatile. You will
 need to set the values in your main program to make them seem
 persistent. (Try something like "SQL_string("UPDATE rta_dbgconfig
@@ -663,7 +704,7 @@ errors like malloc() failures. Default is 1.</td></tr>
 <tr>
 <td valign="top">rtaerr</td>
 <td>- integer, 0 means no log, 1 means log. Enables logging of
-errors internal to the rta package itself. Default is 1.</td></tr>
+errors internal to the RTA package itself. Default is 1.</td></tr>
 <tr>
 <td valign="top">sqlerr</td>
 <td>- integer, 0 means no log, 1 means log. Log any SQL request
@@ -686,7 +727,7 @@ of syslog().</td></tr>
 <tr>
 <td valign="top">priority</td>
 <td>- integer. Syslog() requires a priority as part of all log
-messages. This specifies the priority to use when sending rta debug
+messages. This specifies the priority to use when sending RTA debug
 messages. Changes to this do not take effect until dbg_target is
 updated.<br>
  0: LOG_EMERG<br>
@@ -701,7 +742,7 @@ updated.<br>
 <tr>
 <td valign="top">facility</td>
 <td>- integer. Syslog() requires a facility as part of all log
-messages. This specifies the facility to use when sending rta debug
+messages. This specifies the facility to use when sending RTA debug
 messages. It is best to use the defines in .../sys/syslog.h to set
 this. The default is LOG_USER. Changes to this do not take effect
 until dbg_target is updated.</td></tr>
@@ -709,7 +750,7 @@ until dbg_target is updated.</td></tr>
 <td valign="top">ident</td>
 <td>- string. Syslog() requires an 'ident' string as part of all
 log messages. This specifies the ident string to use when sending
-rta debug messages. This is normally set to the process or command
+RTA debug messages. This is normally set to the process or command
 name. The default is "rta". Changes to this do not take effect
 until dbg_target is updated. This can be at most MXDBGIDENT
 characters in length.</td></tr></table>
@@ -727,7 +768,7 @@ rta_stats are:</p>
 <td>- count of failed OS calls.</td></tr>
 <tr>
 <td>nrtaerr</td>
-<td>- count of internal rta failures.</td></tr>
+<td>- count of internal RTA failures.</td></tr>
 <tr>
 <td>nsqlerr</td>
 <td>- count of SQL failures.</td></tr>
@@ -745,7 +786,7 @@ rta_stats are:</p>
  
 <hr width="70%">
 <h3><a name="Messages">- List of all error messages</a></h3>
-<p>There are two types of error messages available in the rta
+<p>There are two types of error messages available in the RTA
 package. The first type is the error messages returned in response
 to a failed SQL request. The messages of this type are:</p>
 <table summary="" width="95%">
@@ -826,7 +867,8 @@ detected.</p>
 "%s %d: Column contains an unknown data type: %s\n"
 "%s %d: Column contains unknown flag data: %s\n"
 "%s %d: Too many columns in table: %s\n"
-"%s %d: Not enough buffer space to dbcommand()\n"
+"%s %d: Not enough buffer space\n"
+
 
          "SQL" errors 
 "%s %d: SQL parse error: %s\n"
