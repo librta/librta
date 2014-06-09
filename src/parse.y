@@ -1,6 +1,6 @@
 /***************************************************************
  * Run Time Access
- * Copyright (C) 2003-2004 Robert W Smith (bsmith@linuxtoys.org)
+ * Copyright (C) 2003-2006 Robert W Smith (bsmith@linuxtoys.org)
  *
  *  This program is distributed under the terms of the GNU LGPL.
  *  See the file COPYING file.
@@ -49,6 +49,8 @@ extern int   yylex();
 %token LIMIT
 %token OFFSET
 %token SET
+%token GARBAGE
+%token TERMINATOR
 		/* relations for the where clause */
 %token EQ
 %token NE
@@ -63,20 +65,21 @@ extern int   yylex();
 
 %%
 
-
 command:
-		{ YYABORT; }   
-	|	select_statement
+		select_statement
 	|	update_statement
+	| empty_statement
 	;
 
+empty_statement:
+	TERMINATOR
+	{
+		YYABORT;
+	}
+	;
 
 select_statement:
-		SELECT column_list FROM table_name where_clause limit_clause ';'
-		{	cmd.command = RTA_SELECT;
-			YYACCEPT;
-		}
-	|	SELECT column_list FROM table_name where_clause limit_clause
+		SELECT column_list FROM table_name where_clause limit_clause TERMINATOR
 		{	cmd.command = RTA_SELECT;
 			YYACCEPT;
 		}
@@ -88,7 +91,7 @@ column_list:
 			parsestr[(int) $1] = (char *) NULL;
 			cmd.ncols++;
 		}
-	|	column_list "," NAME
+	|	column_list ',' NAME
 		{	cmd.cols[cmd.ncols] = parsestr[(int) $3];
 			parsestr[(int) $3] = (char *) NULL;
 			cmd.ncols++;
@@ -104,11 +107,6 @@ table_name:
 		{
 			cmd.tbl = parsestr[(int) $1];
 			parsestr[(int) $1] = (char *) NULL;
-		}
-	|	NAME "." NAME
-		{
-			cmd.tbl = parsestr[(int) $3];
-			parsestr[(int) $3] = (char *) NULL;
 		}
 	;
 
@@ -167,15 +165,11 @@ limit_clause:
 
 
 update_statement:
-		UPDATE NAME SET set_list where_clause limit_clause ';'
+		UPDATE NAME SET set_list where_clause limit_clause TERMINATOR
 		{	cmd.command = RTA_UPDATE;
 			cmd.tbl     = parsestr[(int) $2];
 			parsestr[(int) $2] = (char *) NULL;
-		}
-	|	UPDATE NAME SET set_list where_clause limit_clause
-		{	cmd.command = RTA_UPDATE;
-			cmd.tbl     = parsestr[(int) $2];
-			parsestr[(int) $2] = (char *) NULL;
+			YYACCEPT;
 		}
 	;
 
@@ -202,18 +196,7 @@ literal:
 	|	REALNUM
 	;
 
-
-
 %%
-
-
-/***************************************************************
- * freesql(): - Free allocated memory from previous command.
- *
- * Input:        None.
- * Output:       None.
- * Affects:      Frees memory from last command
- ***************************************************************/
 
 
 /***************************************************************

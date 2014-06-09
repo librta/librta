@@ -1,6 +1,6 @@
 ################################################################
  # Run Time Access
- # Copyright (C) 2003-2004 Robert W Smith (bsmith@linuxtoys.org)
+ # Copyright (C) 2003-2006 Robert W Smith (bsmith@linuxtoys.org)
  #
  #  This program is distributed under the terms of the GNU LGPL.
  #  See the file COPYING file.
@@ -21,13 +21,13 @@ CFLAGS = $(OPT) $(DEBUG)
 APPOBJS   = appmain.o apptables.o
 
 
-default: app
+default: app rta_client
 
 app: $(APPOBJS) 
-	$(CC) $(APPOBJS) -o $@ -L../src -lrtadb -lrtafs
+	$(CC) $(APPOBJS) -o $@ -L../src -lrtadb
 
 app-static: $(APPOBJS) 
-	$(CC) $(APPOBJS) -o $@ ../src/librtadb.a ../src/librtafs.a
+	$(CC) $(APPOBJS) -o $@ ../src/librtadb.a
 
 rta_client: rta_client.o
 	$(CC) rta_client.c -o $@ -lpq

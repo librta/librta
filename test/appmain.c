@@ -1,6 +1,6 @@
 /***************************************************************
  * Run Time Access
- * Copyright (C) 2003-2004 Robert W Smith (bsmith@linuxtoys.org)
+ * Copyright (C) 2003-2006 Robert W Smith (bsmith@linuxtoys.org)
  *
  *  This program is distributed under the terms of the GNU LGPL.
  *  See the file COPYING file.
@@ -70,23 +70,19 @@ main()
   fd_set   wfds;       /* write bit masks for select statement */
   int      mxfd;       /* Maximum FD for the select statement */
   int      newui_fd = -1; /* FD to TCP socket accept UI conns */
-  int      rtafs_fd = -1; /* FD to fuse interface to file system */
   int      i;          /* generic loop counter */
   UI      *pui;        /* pointer to a UI struct */
   UI      *nextpui;    /* points to next UI in list */
 
 
 
-  /* Comment out the following if you are not using the fuse */
-  /* package. */
-  /* Init the file system interface */
-  rtafs_fd = rtafs_init("/tmp/app");
-
+  /* Init */
   for (i = 0; i < nuitables; i++)
   {
     rta_add_table(&UITables[i]);
   }
   ConnHead = (UI *) NULL;
+
 
   while (1)
   {
@@ -97,13 +93,6 @@ main()
     FD_ZERO(&rfds);
     FD_ZERO(&wfds);
     mxfd = 0;
-
-    /* Listen for file-system requests if FD is valid */
-    if (rtafs_fd >= 0)
-    {
-      FD_SET(rtafs_fd, &rfds);
-      mxfd = (rtafs_fd > mxfd) ? rtafs_fd : mxfd;
-    }
 
     /* open UI/DB/manager listener if needed */
     if (newui_fd < 0)
@@ -136,14 +125,6 @@ main()
 
     /* ....after the select call.  We have activity. Search through
        the open fd's to find what to do. */
-
-    /* Comment out the following if you are not using */
-    /* the fuse package. */
-    /* Handle file-system requests */
-    if ((rtafs_fd >= 0) && (FD_ISSET(rtafs_fd, &rfds)))
-    {
-      do_rtafs();
-    }
 
     /* Handle new UI/DB/manager connection requests */
     if ((newui_fd >= 0) && (FD_ISSET(newui_fd, &rfds)))
@@ -187,7 +168,7 @@ void
 accept_ui_session(int srvfd)
 {
   int      newuifd;    /* New UI FD */
-  int      adrlen;     /* length of an inet socket address */
+  u_int    adrlen;     /* length of an inet socket address */
   struct sockaddr_in cliskt; /* socket to the UI/DB client */
   int      flags;      /* helps set non-blocking IO */
   UI      *pnew;       /* pointer to the new UI struct */

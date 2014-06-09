@@ -1,3 +1,22 @@
+2006-04-06  Bob Smith                 Version 0.7.5
+    - Removed support for FUSE
+    - Makefile changes include removing efence, making librtadb
+      the default target and adding an 'uninstall' target
+    - SQL_string() has a new calling parameter which has the
+      length of input SQL string
+    - The web/PHP table editor now supports multiple RTA apps,
+      and supports strings with embedded single quotes.
+    - Fixed a bug in the table editor in which you could not
+      edit tables with more than 20 rows.
+    - Switched from byacc to Bison
+    - SQL statements must now be terminated by either \0 or ';'
+    - Fixed bug in which an extra "'" at end of line was not
+      flagged as an error.  e.g.:
+      psql -h localhost -p 8888 -c "update mytable set myint=6 '"
+    - We now limit the length of a returned string to the length
+      as defined in the column definition
+
+
 2004-11-14  Bob Smith                 Version 0.7.4
     - Read and write callbacks now return a zero on success 
       and a non-zero on failure.  A failed write callback

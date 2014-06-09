@@ -1,6 +1,6 @@
 /***************************************************************
  * Run Time Access
- * Copyright (C) 2003-2004 Robert W Smith (bsmith@linuxtoys.org)
+ * Copyright (C) 2003-2006 Robert W Smith (bsmith@linuxtoys.org)
  *
  *  This program is distributed under the terms of the GNU LGPL.
  *  See the file COPYING file.
@@ -421,7 +421,7 @@ dbcommand(char *buf, int *nin, char *out, int *nout)
 
     /* Got a complete command; do it. (buf[5] since the SQL follows the 
        'Q' and length) */
-    SQL_string(&buf[5], out, nout);
+    SQL_string(&buf[5], (*nin - 5), out, nout);
     *nin -= length;             /* to swallow the cmd */
     return (RTA_SUCCESS);
   }
@@ -664,7 +664,7 @@ rta_load(TBLDEF *ptbl, char *fname)
       continue;
 
     nreply = MX_LN_SZ;
-    SQL_string(line, reply, &nreply);
+    SQL_string(line, strlen(line), reply, &nreply);
     if (!strncmp(line, "UPDATE 1", 8)) {
       /* SQL command failed! Report error */
       rtastat.nsyserr++;

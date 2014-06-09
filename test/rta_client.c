@@ -1,3 +1,11 @@
+/***************************************************************
+ * Run Time Access
+ * Copyright (C) 2003-2006 Robert W Smith (bsmith@linuxtoys.org)
+ *
+ *  This program is distributed under the terms of the GNU LGPL.
+ *  See the file COPYING file.
+ **************************************************************/
+
 /*
  *  libpq sample program
  *  gcc rta_client.c -o rta_client -lpq
@@ -13,7 +21,6 @@ char cmd2[] ="SELECT myint, myfloat, notes FROM mytable";
 int
 main()
 {
-    char        query_string[256];  /* holds constructed SQL query */
     PGconn     *conn;               /* holds database connection */
     PGresult   *res;                /* holds query result */
     int         i;                  /* generic loop counter */

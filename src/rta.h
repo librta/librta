@@ -1,6 +1,6 @@
 /***************************************************************
  * Run Time Access
- * Copyright (C) 2003-2004 Robert W Smith (bsmith@linuxtoys.org)
+ * Copyright (C) 2003-2006 Robert W Smith (bsmith@linuxtoys.org)
  *
  *  This program is distributed under the terms of the GNU LGPL.
  *  See the file COPYING file.
@@ -370,13 +370,6 @@ TBLDEF;
  *    rta_save()      - save a table to a file
  *    rta_load()      - load a table from a file
  *
- * The FUSE based virtual filesystem adds the following:
- *    rtafs_init()    - mount FS and get file descriptor for it
- *    do_rtafs()      - handle all virtual file system IO
- * The above two routines are in the rtafs library.  Their 
- * inclusion in this include file cause no harm if you are
- * using only the rtadb library.  Note that the rtafs library
- * requires the rtadb library.
  **************************************************************/
 
 /** ************************************************************
@@ -452,12 +445,13 @@ int      rta_add_table(TBLDEF *);
  * might not be too useful directly.)
  *
  * Input:  cmd - the buffer with the SQL command,
+ *         nin - number of bytes in cmd,
  *         out - the buffer to hold responses back to client,
  *         nout - on entry, the number of free bytes in 'out'
  *               on exit, the number of remaining free bytes
  * Return: 
  **************************************************************/
-void     SQL_string(char *, char *, int *);
+void     SQL_string(char *, int, char *, int *);
 
 
 /** ************************************************************
@@ -533,42 +527,6 @@ int      rta_load(TBLDEF *, char *);
     /* Insufficient output buffer space */
 #define RTA_NOBUF     (4)
 
-/** ************************************************************
- * rtafs_init():  - Initialize the virtual file system interface
- * to RTA.  The single input parameter is the mount point for
- * the VFS.  On success, the return value is a file descriptor
- * to the VFS.  On failure, a -1 is returned and errno is set.
- * This file descriptor should be used in subsequent select() or
- * poll() calls to notify your program of file system activity.
- * An important SIDE EFFECT is that the signal handlers for
- * SIGHUP, SIGINT, and SIGTERM are set.  The signal handler
- * tries to unmount the virtual file system.  This routine
- * is part of the librtafs library.
- *   Note that FUSE requires that the owner and group of the
- * mount point be the same as the owner and group of the program
- * that does the mount.  For example, if your mount point is
- * owned by Apache, then your the UID of your program must be
- * Apache as well.
- *
- * Input:  char *mountpoint - desired mount point
- *
- * Return: int fd        - file descriptor on success.
- **************************************************************/
-int      rtafs_init(char *);
-
-/** ************************************************************
- * do_rtafs():  - Handle all actual virtual file system IO. 
- * This routine handles all file system IO for the virtual file
- * system mounted by the rtafs_init() call.  This routine should
- * be called when there is activity on the file descriptor
- * returned from rtafs_init().  It has no input or output
- * parameters.  This routine is part of the librtafs library.
- * 
- * Input:  (none)
- *
- * Return: (none)
- **************************************************************/
-void     do_rtafs();
 
 /** ************************************************************
  * - rta UPDATE and SELECT syntax

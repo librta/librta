@@ -37,9 +37,6 @@ building a trivial application which uses RTA. We define the task,
 define the tables, give the code, describe how to build and
 link the application, and describe how to the test the application
 using the database interface.</p>
-<p>The last section describes how to solve the problem using the FUSE
-package and librtafs to give a virtual file system interface to 
-the application.</p>
 
 <ul compact type="circle">
 <li><a href="#app">Problem Statement</a>
@@ -50,13 +47,7 @@ the application.</p>
     <li><a href="#dbbuild">Build and Link</a>
     <li><a href="#dbtest">Test</a>
     </ul>
-<li><a href="#fs">File System Interface</a>
-    <ul>
-    <li><a href="#fscode">C Code</a>
-    <li><a href="#fsbuild">Build and Link</a>
-    <li><a href="#fstest">Test</a>
-    </ul>
-    </ul>
+</ul>
 <br>
 <br>
  
@@ -479,168 +470,6 @@ PHP and php-pgsql are installed).  The table editor is the
 application running on the <i>Live Demo</i> link above.
 </p>
 <br>
-<br>
-<h3><a name="fs">File System Interface</a></h3>
-<h4><a name="fscode">C Code</a></h4>
-<p>The steps to build myapp with the file system interface are
-similar to those of the database interface.
-First let's consider the C code, <a href=myappfs.c>myappfs.c</a>.</p>
-<p>The table definitions are exactly those shown above and are not
-included in this listing.  The file system package is built on top
-of the database package and we still use the calls to rta_init()
-and rta_add_table().  The two new calls are to rtafs_init() and
-do_rtafs().</p>
-<code><pre>
-int main()
-{
-    fd_set   rfds;       /* read bit masks for select statement */
-    int   i;             /* a loop counter */
-    int   fsfd;          /* FD to the file system */
-
-    /* init mydata */
-    for (i=0; i&gt;ROW_COUNT; i++) {
-        mydata[i].myint    = 0;
-        mydata[i].myfloat  = 0.0;
-        mydata[i].notes[0] = (char) 0;
-        mydata[i].seton[0] = (char) 0;
-    }
-
-    /* init the rta package and tell it about mydata */
-    rta_init();
-    if (rta_add_table(&amp;mytbldef) != RTA_SUCCESS) {
-        fprintf(stderr, "Table definition error!\n");
-        exit(1);
-    }
-
-    /* Mount the tables as a file system. */
-    fsfd = rtafs_init("/tmp/mydir");
-
-    /* Loop forever processing file system requests */
-    while (1) {
-        FD_ZERO(&amp;rfds);
-        FD_SET(fsfd, &amp;rfds);
-        (void) select(fsfd + 1, &amp;rfds, (fd_set *) 0, (fd_set *) 0,
-                (struct timeval *) 0);
-        if ((fsfd &gt; 0) &amp;&amp; (FD_ISSET(fsfd, &amp;rfds)))
-        {
-          do_rtafs();
-        }
-    }
-}
-</pre></code>
-<p>We use a select() to detect arrival of a file system command
-and use do_rtafs() to do the read and execution of the command.
-You can use routines in the FUSE package directly if you want
-to have the read() statement in your main loop.</p>
-<p>Note that an important side effect of the rtafs_init() call
-is that the signal handlers for SIGHUP, SIGINT, and SIGTERM are
-set to a routine that tries to unmount the file system prior to
-exit.</p>
-<p>Be sure that the mount point, /tmp/mydir/, exists and 
-has the same UID and GID as the user running the program.
-</p>
-<br>
-<h4><a name="fsbuild">Build and Link</a></h4>
-<p>Before compiling myappfs.c we need to build librtafs.so and
-to do that we need the FUSE package installed.  FUSE is available
-from:<br> &nbsp;&nbsp; &nbsp;&nbsp;
-<a href="http://prdownloads.sourceforge.net/avf/fuse-1.0.tar.gz">
-http://prdownloads.sourceforge.net/avf/fuse-1.0.tar.gz</a></p>
-<p>FUSE uses the usual download, <tt>./configure</tt>,
-<tt>make</tt>, <tt>make install</tt> commands, and it requires that
-the kernel sources be installed prior to its build.  Once FUSE is
-built, install the kernel module, fuse.o, and test your installation by
-trying several of the programs in the <tt>example</tt> directory.</p>
-<p>Once FUSE is installed and verified, you can build the librtafs
-library.</p>
-<pre>    # tar -xzf rta-0.7.0.tgz
-    # cd rta-0.7.0
-    # cd src
-    # make librtafs.so.2
-</pre>
-<p>Copy the myappfs.c program to the <tt>test</tt> directory and compile
-it with the command:</p>
-<pre>
-    # gcc myappfs.c -o myappfs -L../src -lrtadb -lrtafs
-</pre>
-<p>As before, make sure sure the RTA libraries are installed
-in one of the system library directories or explicitly tell
-the system to look for the libraries in the <tt>src</tt> directory:
-<pre>
-    # export LD_LIBRARY_PATH=/home/rta-0.7.0/src
-</pre>
-<p>Make sure that <tt>/tmp/mydir</tt> exists and run the program.</p>
-<pre>
-    # mkdir /tmp/mydir
-    # ./myappfs &amp;
-</pre>
-<br>
-<h4><a name="fstest">Test</a></h4>
-<p>If all has gone well you should be able to see the application
-mounted on /tmp/mydir:</p>
-<pre>     # mount
-    /proc/fs/fuse/dev on /tmp/mydir type fuse (rw,nosuid,nodev,user=bsmith)
-</pre>
-<p>An <tt>ls /tmp/mydir/*</tt> should show all of the tables
-as directories with all of the columns as subdirectories
-within each table directory.</p>
-<pre>    # ls /tmp/mydir/*
-
-    /tmp/mydir/mytable:
-    myfloat/  myint/  notes/  ROWS/  seton/
-
-    /tmp/mydir/rta_columns:
-    flags/  length/  noff/    ROWS/   type/
-    help/   name/    readcb/  table/  writecb/
-
-    /tmp/mydir/rta_dbg:
-    facility/  priority/  rtaerr/  syserr/  trace/
-    ident/     ROWS/      sqlerr/  target/
-
-    /tmp/mydir/rta_stat:
-    nauth/  nrtaerr/  nselect/  nsqlerr/  nsyserr/  nupdate/  ROWS/
-
-    /tmp/mydir/rta_tables:
-    address/  help/  ncol/   rowlen/  savefile/
-    cols/     name/  nrows/  ROWS/
-</pre>
-<p>Remember that in each column directory is a file for each
-row in the table.  The rows are just numbered starting with
-zero.</p>
-<pre>    # ls /tmp/mydir/mytable/notes
-    0000  0002  0004  0006  0008  0010  0012  0014  0016  0018
-    0001  0003  0005  0007  0009  0011  0013  0015  0017  0019
-</pre>
-<p>The <tt>ROWS</tt> directory also has a file for each row
-in the table.  A cat of one of the <tt>ROWS</tt> files
-displays the whole row with commas separating the columns
-and with strings enclosed in quotes.</p>
-<pre>    # cat /tmp/mydir/mytable/ROWS/0000
-    0, 0.000000, "", ""
-</pre>
-<p>Either <tt>cat</tt> or <tt>echo</tt> can change a column
-or a row.
-<pre>    # echo "Babylon 5" &gt; /tmp/mydir/mytable/notes/0000
-</pre>
-<p>There is no way to update the whole table at once, but
-it is pretty easy to update each row, one at a time.</p>
-<pre>    # for i in /tmp/mydir/mytable/notes/*
-    do
-        date &gt; $i
-    done
-</pre>
-<p>When updating a whole row, you may need to use single
-quotes to surround strings.</p>
-<pre>    # echo "44, 12.345, 'Hi Mom!', ''" &gt; /tmp/mydir/mytable/ROWS/0000
-</pre>
-<br>
-<br>
-
-<p>
-      <a href="http://validator.w3.org/check/referer"><img border="0"
-          src="http://www.w3.org/Icons/valid-html401"
-          alt="Valid HTML 4.01!" height="31" width="88"></a>
-</p>
 
 </body>
 </html>

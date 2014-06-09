@@ -1,6 +1,6 @@
 /***************************************************************
  * Run Time Access
- * Copyright (C) 2003-2004 Robert W Smith (bsmith@linuxtoys.org)
+ * Copyright (C) 2003-2006 Robert W Smith (bsmith@linuxtoys.org)
  *
  *  This program is distributed under the terms of the GNU LGPL.
  *  See the file COPYING file.
@@ -118,8 +118,6 @@ extern char *parsestr[];
 \,				{ return((int)','); }
 \(				{ return((int)'('); }
 \)				{ return((int)')'); }
-\;				{ return((int)';'); }
-\.				{ return((int)'.'); }
 
 \"[A-Za-z0-9 \t!@#$%^&*()_+-={}|;:<>?~`\[\]'\\]*\"	|
 \'[A-Za-z0-9 \t!@#$%^&*()_+-={}|;:<>?~`\[\]"\\]*\'	{
@@ -133,16 +131,29 @@ extern char *parsestr[];
 					yylval = i;
 					return(STRING);
 				}
-[ \t\n]+		{ }
+
+[ \t\n]+		{ /* Ignore white space */ }
+
+\;					|
+\000				|
+<<EOF>>			{ return(TERMINATOR); /* done with this buffer of SQL */ }
+
+.						{ return(GARBAGE);  /* Causes a syntax error */}
 
 %%
 
 
-void SQL_string(char *s, char *out, int *nout)
+void SQL_string(char *s, int incnt, char *out, int *nout)
 {
     extern int yyparse();
     YY_BUFFER_STATE x;
     int             i;
+
+
+    /* Sanity checks */
+    if (!s || !out || !nout) {
+      return;
+    }
 
 
     dosql_init();
@@ -157,7 +168,7 @@ void SQL_string(char *s, char *out, int *nout)
     cmd.nerrout  = *nout;
     cmd.nlineout = 0;
 
-    x = yy_scan_string(s);
+    x = yy_scan_bytes(s, incnt);
 
     while(yyparse() == 0) {
         /* At this point we have parsed the command.  */
@@ -191,21 +202,22 @@ void SQL_string(char *s, char *out, int *nout)
 
 
 #ifdef xxxx
+    extern int yydebug;
+    yydebug = 1;
 
     printf("N-out = %d\n", *cmd.nout);
     printf("Scanning ---%s---\n", s);
 
         printf("Limit  = %d\n", cmd.limit);
         printf("Offset = %d\n", cmd.offset);
-
-
-        int i;
+        printf("Table = %s\n", cmd.tbl);
         for (i=0; i<cmd.ncols; i++)
              printf("   %s  %s\n",cmd.cols[i],cmd.updvals[i]);
-        printf("Table = %s\n", cmd.tbl);
         for (i=0; i<cmd.nwhrcols; i++)
-             printf("   %s  %d  %s\n",cmd.whrcols[i],
-                    cmd.whrrel[i], cmd.whrvals[i]);
+             printf("   %s  %d  %s\n",cmd.whrcols[i], cmd.whrrel[i], cmd.whrvals[i]);
+        printf("Error  = %d\n", cmd.err);
+
+
         printf("Limit  = %d\n", cmd.limit);
         printf("Offset = %d\n", cmd.offset);
         printf("N-out  = %d\n", *cmd.nout);

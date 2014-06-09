@@ -1,22 +1,24 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2//EN">
 <html>
-<!-- ------------------------------------------------------------ -->
-<!--  Run Time Access                                             -->
-<!--  Copyright (C) 2003 Robert W Smith (bsmith@linuxtoys.org)    -->
-<!--                                                              -->
-<!--   This program is distributed under the terms of the GNU     -->
-<!--   LGPL.  See the file COPYING file.                          -->
-<!-- ------------------------------------------------------------ -->
+<!-- ----------------------------------------------------------------- -->
+<!--  Run Time Access                                                  -->
+<!--  Copyright (C) 2003-2006 Robert W Smith (bsmith@linuxtoys.org)    -->
+<!--                                                                   -->
+<!--   This program is distributed under the terms of the GNU          -->
+<!--   LGPL.  See the file COPYING file.                               -->
+<!-- ----------------------------------------------------------------- -->
 <head>
 <title>Edit Row</title>
 </head>
 <body>
 <?php
+
     // The user has submitted an update to a particular
     // row in a particular table.  Build and execute 
     // the UPDATE command.
-    $tbl = htmlentities(current($_POST));
-    $row = htmlentities(next($_POST));
+    $tbl  = htmlentities(current($_POST));
+    $row  = htmlentities(next($_POST));
+    $port= htmlentities(next($_POST));
 
     // Say where we are.
     print("<center><h3>Update $tbl, row $row</h3></center><hr>\n");
@@ -25,27 +27,27 @@
     error_reporting(error_reporting() & 0xFFFD);
 
     // connect to the database 
-    $c1 = pg_connect("localhost", "8888", "anyuser");
+    $c1 = pg_connect("localhost", "$port", "anyuser");
     if ($c1 == "") { 
         printf("$s%s", "Unable to connect to application.<br>",
             "Please verify that the application is running and ",
-            "listening on port 8888.<br>");
+            "listening on port $port.<br>");
         exit();
     }
 
     // Build SQL UPDATE command.
     $command = "UPDATE $tbl SET ";
     $count = count($_POST);
-    for ($index=2; $index < $count; $index++) {
+    for ($index=3; $index < $count; $index++) {
         // use "htmlentities()" to protect from malicious HTML
         // $value=htmlentities(next($_POST));
         // $key = htmlentities(key($_POST));
         $value=next($_POST);
         $key = key($_POST);
-        if ($index > 2)
-            $command = "$command, '$key' = '$value' ";
+        if ($index > 3)
+            $command = "$command, \"$key\" = \"$value\" ";
         else
-            $command = "$command '$key' = '$value' ";
+            $command = "$command \"$key\" = \"$value\" ";
     }
     $command = "$command LIMIT 1 OFFSET $row";
 

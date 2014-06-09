@@ -38,20 +38,16 @@ h3 {font-family: sans-serif}
 </table>
 <br>
 <h2>Introduction</h2>
-<p><b><font face="san-serif">RTA</font></b> is a specialized memory
-resident interface to the internal data of your application. It is
-not a stand-alone server but a library which attaches to your
-program and offers up your program's internal structures and arrays
-as tables in a database and as files in a virtual file system. The
+<p><b><font face="san-serif">RTA</font></b> is a library that you
+can attach to your program to expose your program's internal arrays
+and data structures as if they were tables in a database.  The
 database interface uses a subset of the Postgres protocol and is
 compatible with the Postgres bindings for <b>C</b>, <b>PHP</b>, and
-the <b>Postgres</b> command line tool, <b>psql</b>. The file system
-interface is based on the Fuse package by Miklos Szeredi.</p>
+the <b>Postgres</b> command line tool, <b>psql</b>.</p>
 <ul>
 <li><a href="#problem">The Problem</a></li>
 <li><a href="#solution">The RTA Solution</a></li>
 <li><a href="#db">A Database Interface</a></li>
-<li><a href="#fs">A File System Interface</a></li>
 <li><a href="#plus">Advantages</a></li>
 <li><a href="#minus">Some Effort...</a></li>
 </ul>
@@ -84,8 +80,7 @@ and LDAP.</p>
 <p>The RTA package helps solve both of these problems by giving run
 time access to the data structures and arrays inside your running
 program. With minimal effort, you make your program's data
-structures appear as tables in a Postgres database and/or as files
-in a file system.</p>
+structures appear as tables in a Postgres database. </p>
 <table summary="" align="center">
 <caption>The Good RTA Model</caption>
 <tr>
@@ -111,7 +106,7 @@ defined as:</p>
 </pre>
 <p>This array of structs could also be considered a table with
 seven columns and twenty rows. RTA maps this table into a Postgres
-database and into files in a virtual file system.</p>
+database.</p>
 <br>
 <h2><a name="db">A Database Interface</a></h2>
 <p>The RTA package gives your program a socket interface like that
@@ -134,23 +129,6 @@ be:</p>
     UPDATE Conns SET fd=newfd WHERE fd=-1 LIMIT 1
 </pre>
 <br>
-<br>
-<br>
-<h2><a name="fs">A File System Interface</a></h2>
-<p>RTA also offers file system access to your tables. The RTA file
-system interface is based on the Fuse package by Miklos Szeredi.
-Each of your tables is visible as a subdirectory under the mount
-point you specify. For example, if your application's mount point
-is <tt>/mnt/app</tt>, the above table of TCP connections would
-appear as <tt>/mnt/app/Conn</tt> with subdirectories <tt>fd</tt>,
-<tt>lport</tt>, <tt>dport</tt>, <tt>nsbytes</tt>, <tt>nrbytes</tt>,
-<tt>nread</tt>, and <tt>nwrite</tt>. Each of the column
-subdirectories has a file for each row in the table. The file can
-be read or written and contains the table value of that row and
-column.</p>
-<p><b>Both the database and the file system interface point to the
-actual data in memory in your program. They are not copies of the
-data.</b></p>
 <br>
 <h2><a name="plus">Advantages</a></h2>
 <p>The advantages of separating the user interface programs from

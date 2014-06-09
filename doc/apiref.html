@@ -498,38 +498,6 @@ Return: RTA_SUCCESS   - config path set
 </pre>
 <br>
 <br>
-<p><b>rtafs_init() - Initialize the virtual file system interface</b><br>
-The single input parameter is the mount point for the VFS.  On success, 
-the return value is a file descriptor to the VFS.  On failure, a -1 is
-returned and errno is set.  This file descriptor should be used in
-subsequent select() or poll() calls to notify your program of file 
-system activity.  An important SIDE EFFECT of rtafs_init() is that the
-signal handlers for SIGHUP, SIGINT, and SIGTERM are set.  The signal
-handler tries to unmount the virtual file system. This routine is part
-of the librtafs library.</p>
-<p>Note that FUSE requires that the owner and group of the mount point
-be the same as the owner and group of the program that does the mount.
-For example, if your mount point is owned by Apache, then your the
-UID of your program must be Apache as well.</p>
-<pre>
-int
-rtafs_init(char *mountpoint  - desired mount point);
-Return: int fd        - file descriptor or -1
-</pre>
-<br>
-<br>
-<p><b>do_rtafs() - Handle all virtual file system IO</b><br>
-This routine handles all file system IO for the virtual file system
-mounted by the rtafs_init() call.  This routine should be called
-when there is activity on the file descriptor returned from rtafs_init().
-It has no input or output parameters This routine is part
-of the librtafs library.
-<pre>
-void
-do_rtafs();
-</pre>
-<br>
-<br>
 
 <hr width="70%">
 <h3><a name="Syntax">- RTA UPDATE and SELECT syntax</a></h3>

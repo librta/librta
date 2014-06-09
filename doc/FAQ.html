@@ -82,8 +82,6 @@ dbcommand()?</a></li>
   <li><a href="#p27">Why must a write() have all data in a single
 buffer?</a></li>
   <li><a href="#p28">Can I export a simple variable?</a></li>
-  <li><a href="#p29">Which is better, the file system or the database
-interface?</a></li>
   <li><a href="#p30">Is RTA thread safe?</a></li>
   <li><a href="#p31">What is in the To-Do list?</a></li>
 </ul>
@@ -201,9 +199,7 @@ fclose(), fdopen(), fgets(), fopen(), fprintf(), free(), malloc(),
 memchr(), mkstemp(), offsetof(), openlog(), rename(), snprintf(),
 sprintf(), sscanf(), strcat(), strcmp(), strcpy(), strlen(),
 strncmp(), strncpy(), strstr(), syslog(), va_arg(), va_end(),
-va_start(). You will need yacc and lex to build RTA.<br>
-The virtual file system interface to RTA (librtafs) is built on
-top of librtadb and the "FUSE" package by Miklos Szeredi</p>
+va_start(). You will need yacc and lex to build RTA.</p>
 <p><b><a name="p16">Do I need the Postgres libraries?</a></b><br>
 Your application does not need any libraries or include files from
 the PostgreSQL distribution. Your *client* applications may need
@@ -272,28 +268,13 @@ row. Be sure to use LIMIT and OFFSET to step through a big list of
 returned rows.</p>
 <p><b><a name="p27">Why must a write() have all data in a single
 buffer?</a></b><br>
-There are two reasons. First, RTA requires a single write buffer
+RTA requires a single write buffer
 in order to be sure that all table writes are atomic. Without
-atomic table writes we could not guarantee table consistency.
-Second, the FUSE package, upon which the file system interface is
-based, does not implement or use file descriptors. The write call
-has as input a path, buffer, count, and offset. This leaves open
-the possibility that two programs writing to the same row or column
-could conflict and leave the table an inconsistent state.</p>
+atomic table writes we could not guarantee table consistency.</p>
 <p><b><a name="p28">Can I export a simple variable?</a></b><br>
 Sure. Just define a single column for your variable and a table
 with a single row. You can make visible simple variables, single
 structures, or arrays of structures.</p>
-<p><b><a name="p29">Which is better, the file system or the database
-interface?</a></b><br>
-The database interface is better in most applications. It is
-faster and it is atomic. That is, a single statement can do an
-update based on the results of WHERE clause. Our use of the
-file system interface has shown it to be a little fragile. You
-need to be careful to not leave a mounted file system when your
-program exits abnormally. This means you need some supervisory
-program to unmount the file system and possibly remove and
-re-install the fuse kernel module. </p>
 <p><b><a name="p30">Is RTA thread safe?</a></b><br>
 RTA is not currently thread safe. Please contact the authors
 if this is very high on your wish list. </p>

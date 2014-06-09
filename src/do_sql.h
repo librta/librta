@@ -1,7 +1,6 @@
-
 /***************************************************************
  * Run Time Access
- * Copyright (C) 2003-2004 Robert W Smith (bsmith@linuxtoys.org)
+ * Copyright (C) 2003-2006 Robert W Smith (bsmith@linuxtoys.org)
  *
  *  This program is distributed under the terms of the GNU LGPL.
  *  See the file COPYING file.
@@ -129,7 +128,7 @@ void     do_update(char *, int *);
 int      send_row_description(char *, int *);
 void     do_select(char *, int *);
 void     do_call(char *, int *);
-void     ad_str(char **, char *);
+void     ad_str(char **, char *, int);
 void     ad_int2(char **, int);
 void     ad_int4(char **, int);
 void     rtalog(char *, int, char *, ...);

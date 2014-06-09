@@ -1,12 +1,12 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2//EN">
 <html>
-<!-- ------------------------------------------------------------ -->
-<!--  Run Time Access                                             -->
-<!--  Copyright (C) 2003 Robert W Smith (bsmith@linuxtoys.org)    -->
-<!--                                                              -->
-<!--   This program is distributed under the terms of the GNU     -->
-<!--   LGPL.  See the file COPYING file.                          -->
-<!-- ------------------------------------------------------------ -->
+<!-- ----------------------------------------------------------------- -->
+<!--  Run Time Access                                                  -->
+<!--  Copyright (C) 2003-2006 Robert W Smith (bsmith@linuxtoys.org)    -->
+<!--                                                                   -->
+<!--   This program is distributed under the terms of the GNU          -->
+<!--   LGPL.  See the file COPYING file.                               -->
+<!-- ----------------------------------------------------------------- -->
 <head>
 <title>Edit Row</title>
 </head>
@@ -17,8 +17,9 @@
     // each field in the row.  If the row is editable,
     // we want to add it to a form which lets them 
     // change the value.
-    $tbl = htmlentities($_GET[table]);
-    $row = htmlentities($_GET[row]);
+    $tbl  = htmlentities($_GET[table]);
+    $row  = htmlentities($_GET[row]);
+    $port = htmlentities($_GET[port]);
 
     // Say where we are.
     print("<center><h3>Edit $tbl, row $row</h3></center>\n");
@@ -27,11 +28,11 @@
     error_reporting(error_reporting() & 0xFFFD);
 
     // connect to the database 
-    $c1 = pg_connect("localhost", "8888", "bsmith");
+    $c1 = pg_connect("localhost", "$port", "bsmith");
     if ($c1 == "") { 
         printf("$s%s%s", "Unable to connect to application.<br>",
             "Please verify that the application is running and ",
-            "listening on port 8888.<br>");
+            "listening on port $port.<br>");
         exit();
     }
 
@@ -39,6 +40,7 @@
     print("<form method=\"post\" action=rta_update.php>\n");
     print("<td><input type=\"hidden\" name=\"__table\" value=\"$tbl\">\n");
     print("<td><input type=\"hidden\" name=\"__row\" value=\"$row\">\n");
+    print("<td><input type=\"hidden\" name=\"__port\" value=\"$port\">\n");
 
     // print name, help, value of each column
     print("<center><table border=3 cellpadding=4 width=85%>\n");

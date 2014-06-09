@@ -1,6 +1,6 @@
 /***************************************************************
  * Run Time Access
- * Copyright (C) 2003-2004 Robert W Smith (bsmith@linuxtoys.org)
+ * Copyright (C) 2003-2006 Robert W Smith (bsmith@linuxtoys.org)
  *
  *  This program is distributed under the terms of the GNU LGPL.
  *  See the file COPYING file.
@@ -23,7 +23,7 @@
 #define MXRSP     (50000)
 
     /* Note length and number of rows in the "mydata" table. */
-#define NOTE_LEN   30
+#define NOTE_LEN   20
 #define ROW_COUNT  20
 
 /*  -structure definitions */

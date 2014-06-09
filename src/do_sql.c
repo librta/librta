@@ -1,6 +1,6 @@
 /***************************************************************
  * Run Time Access
- * Copyright (C) 2003-2004 Robert W Smith (bsmith@linuxtoys.org)
+ * Copyright (C) 2003-2006 Robert W Smith (bsmith@linuxtoys.org)
  *
  *  This program is distributed under the terms of the GNU LGPL.
  *  See the file COPYING file.
@@ -428,6 +428,7 @@ do_select(char *buf, int *nbuf)
   char    *lenloc;     /* points to where 'D' pkt length goes */
   int      cx;         /* Column index while building Data pkt */
   int      n;          /* number of chars printed in sprintf() */
+  int      count;      /* number of chars to send as string */
 
   startbuf = buf;
 
@@ -548,13 +549,21 @@ do_select(char *buf, int *nbuf)
         switch ((cmd.pcol[cx])->type) {
           case RTA_STR:
             /* send 4 byte length.  Include the length */
-            ad_int4(&buf, strlen(pd));
-            ad_str(&buf, pd);   /* send the response */
+            count = strlen(pd);  /* shorter of field length or strlen */
+            if (count > cmd.pcol[cx]->length -1) {
+              count = cmd.pcol[cx]->length -1;
+            }
+            ad_int4(&buf, count);
+            ad_str(&buf, pd, count);   /* send the response */
             break;
           case RTA_PSTR:
-            ad_int4(&buf, strlen(*(char **) pd));
+            count = strlen(*(char **) pd);  /* shorter of field length or strlen */
+            if (count > cmd.pcol[cx]->length -1) {
+              count = cmd.pcol[cx]->length -1;
+            }
+            ad_int4(&buf, count);
             /* send the response */
-            ad_str(&buf, *(char **) pd);
+            ad_str(&buf, *(char **) pd, count);
             break;
           case RTA_INT:
             n = sprintf((buf + 4), "%d", *((int *) pd));
@@ -610,7 +619,7 @@ do_select(char *buf, int *nbuf)
   /* Add 'C', length(11), 'SELECT', NULL to output */
   *buf++ = 'C';
   ad_int4(&buf, 11);            /* 11= 4+strlen(SELECT)+1 */
-  ad_str(&buf, "SELECT");
+  ad_str(&buf, "SELECT", 6);
   *buf++ = 0x00;
 
   *nbuf -= (int) (buf - startbuf);
@@ -659,7 +668,7 @@ send_row_description(char *buf, int *nbuf)
   ad_int2(&buf, cmd.ncols);     /* num fields */
 
   for (i = 0; i < cmd.ncols; i++) {
-    ad_str(&buf, cmd.cols[i]);  /* column name */
+    ad_str(&buf, cmd.cols[i], strlen(cmd.cols[i]));  /* column name */
     *buf++ = (char) 0;          /* send the NULL */
 
     /* Add table index */
@@ -753,9 +762,9 @@ send_error(char *filename, int lineno, char *fmt, char *arg)
   *cmd.out++ = 'E';
   lenptr = cmd.out;             /* msg length goes here */
   cmd.out += 4;                 /* skip over length for now */
-  ad_str(&(cmd.out), "SERROR"); /* severity code */
+  ad_str(&(cmd.out), "SERROR", 6); /* severity code */
   *cmd.out++ = (char) 0;
-  ad_str(&(cmd.out), "C42601"); /* error code (syntax error) */
+  ad_str(&(cmd.out), "C42601", 6); /* error code (syntax error) */
   *cmd.out++ = (char) 0;
   *cmd.out++ = 'M';
   cnt = snprintf(cmd.out, *(cmd.nout), fmt, arg);
@@ -973,7 +982,7 @@ do_update(char *buf, int *nbuf)
   *buf++ = 'C';
   tmark = buf;                  /* Save length location */
   buf += 4;
-  ad_str(&buf, "UPDATE");
+  ad_str(&buf, "UPDATE", 6);
   n = sprintf(buf, " %d", nru); /* # rows affected */
   buf += n;
   *buf++ = 0x00;
@@ -990,16 +999,16 @@ do_update(char *buf, int *nbuf)
  * ad_str(): - Add a string to the output buffer.  Includes a
  *             NULL to terminate the string.
  *
- * Input:        A **char to the buffer and the string
+ * Input:        A **char to the buffer and the string and a length
  * Output:       void
  * Effects:      Increments the **char to point to the next
  *               available space in the buffer.
  ***************************************************************/
 void
-ad_str(char **pbuf, char *instr)
+ad_str(char **pbuf, char *instr, int count)
 {
-  strcpy(*pbuf, instr);
-  *pbuf += strlen(instr);
+  strncpy(*pbuf, instr, count);
+  *pbuf += count;
   **pbuf = (char) 0;
 }
 

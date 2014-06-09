@@ -1,12 +1,12 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2//EN">
 <html>
-<!-- ------------------------------------------------------------ -->
-<!--  Run Time Access                                             -->
-<!--  Copyright (C) 2003 Robert W Smith (bsmith@linuxtoys.org)    -->
-<!--                                                              -->
-<!--   This program is distributed under the terms of the GNU     -->
-<!--   LGPL.  See the file COPYING file.                          -->
-<!-- ------------------------------------------------------------ -->
+<!-- ----------------------------------------------------------------- -->
+<!--  Run Time Access                                                  -->
+<!--  Copyright (C) 2003-2006 Robert W Smith (bsmith@linuxtoys.org)    -->
+<!--                                                                   -->
+<!--   This program is distributed under the terms of the GNU          -->
+<!--   LGPL.  See the file COPYING file.                               -->
+<!-- ----------------------------------------------------------------- -->
 <head>
 <title>Table View</title>
 </head>
@@ -15,17 +15,18 @@
     $tbl    = htmlentities($_GET[table]);
     $offset = htmlentities($_GET[offset]);
     $nrows  = htmlentities($_GET[nrows]);
+    $port   = htmlentities($_GET[port]);
     print("<h3><center>$tbl</center></h3>\n");
 
     // Suppress Postgres error messages
     error_reporting(error_reporting() & 0xFFFD);
 
     // connect to the database 
-    $connection = pg_connect("localhost", "8888", "bsmith");
+    $connection = pg_connect("localhost", "$port", "bsmith");
     if ($connection == "") { 
         printf("$s%s%s", "Unable to connect to application.<br>",
             "Please verify that the application is running and ",
-            "listening on port 8888.<br>");
+            "listening on port $port.<br>");
         exit();
     }
 
@@ -74,8 +75,11 @@
             print("</td>\n");
         }
         // Add link to edit the row if editable.
-        if ($readonly == 0)
-            print("<td><a href=rta_edit.php?table=$tbl&row=$row>(edit)</a></td>");
+        if ($readonly == 0) {
+            $rowindex = $offset + $row;
+            print("<td><a href=rta_edit.php?table=$tbl");
+            print("&row=$rowindex&port=$port>(edit)</a></td>");
+        }
         print("</tr>\n");
     }
     print("</table></center>\n");
@@ -88,7 +92,7 @@
         if ($nrows - $offset > 20)
             $nextcount = 20;
         print("<p align=right><a href=rta_view.php?table=$tbl&offset=$offset");
-        print("&nrows=$nrows>Next $nextcount rows &gt;</a></p>\n");
+        print("&nrows=$nrows&port=$port>Next $nextcount rows &gt;</a></p>\n");
     }
 
     // free the result and close the connection 
