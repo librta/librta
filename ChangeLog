@@ -1,3 +1,6 @@
+2003-08-26  Bob Smith
+        * Version 0.6.1.   Change st_atim to st_atime in rtafs.c.
+
 2003-08-22  Bob Smith
         * Version 0.6.0.   Added virtual file system interface using
         the fuse package by Miklos Szeredi.  The library librtafs.a

@@ -199,9 +199,9 @@ rta_getattr(const char *path, struct stat *stbuf)
       return (-ENOENT);
       break;
   }
-  (void) time((time_t *) & (stbuf->st_atim)); /* last access time */
-  stbuf->st_mtim = stbuf->st_atim; /* Time of last mod */
-  stbuf->st_ctim = stbuf->st_atim; /* last status change.  */
+  (void) time((time_t *) & (stbuf->st_atime)); /* last access time */
+  stbuf->st_mtime = stbuf->st_atime; /* Time of last mod */
+  stbuf->st_ctime = stbuf->st_atime; /* last status change.  */
   stbuf->st_uid = getuid();
   stbuf->st_gid = getgid();
 
