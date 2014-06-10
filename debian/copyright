@@ -2,11 +2,9 @@ Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: rta
 Upstream-Contact: Robert W Smith <bsmith@linuxtoys.org>
 Source: http://www.linuxappliancedesign.com/projects/rta
-Copyright: LGPL-2+
 
 Files: *
-Copyright:
- 2003-2014 Robert W Smith
+Copyright: 2003-2014 Robert W Smith
 License: LGPL-2.1+
 
 License: LGPL-2.1+
