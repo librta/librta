@@ -1,6 +1,6 @@
 ################################################################
  # Run Time Access
- # Copyright (C) 2003-2006 Robert W Smith (bsmith@linuxtoys.org)
+ # Copyright (C) 2003-2014 Robert W Smith (bsmith@linuxtoys.org)
  #
  #  This program is distributed under the terms of the GNU LGPL.
  #  See the file COPYING file.
@@ -15,8 +15,8 @@
 # We use the default make rules for .c and .l 
 
 CC = gcc
-OPT =  -fPIC -c -I.
-DEBUG = -g3 -DDEBUG -DYYDEBUG -ggdb -Wall
+OPT = -c -I.
+DEBUG = -g -DDEBUG -DYYDEBUG -Wall
 CFLAGS = $(OPT) $(DEBUG)
 APPOBJS   = appmain.o apptables.o
 
@@ -24,13 +24,13 @@ APPOBJS   = appmain.o apptables.o
 default: app rta_client
 
 app: $(APPOBJS) 
-	$(CC) $(APPOBJS) -o $@ -L../src -lrtadb
+	$(CC) $(APPOBJS) -g -o $@ -L../src -Wl,-rpath=../src -lrtadb
 
 app-static: $(APPOBJS) 
-	$(CC) $(APPOBJS) -o $@ ../src/librtadb.a
+	$(CC) $(APPOBJS) -g -o $@ ../src/librtadb.a
 
 rta_client: rta_client.o
-	$(CC) rta_client.c -o $@ -lpq
+	$(CC) -g rta_client.c -o $@ -lpq
 
 appmain.o: appmain.c app.h
 	$(CC) $(CFLAGS) $< -o $@

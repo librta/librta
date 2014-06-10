@@ -1,0 +1,13 @@
+Source: rta
+Maintainer: Frederic Roussel <fr.frasc@gmail.com>
+Section: misc
+Priority: optional
+Standards-Version: 0.8.2
+Build-Depends: debhelper (>= 9)
+
+Package: rta
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Run-Time Access
+ Library allowing to expose program internal data structures as databse tables.
+

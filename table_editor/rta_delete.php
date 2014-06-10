@@ -2,7 +2,7 @@
 <html>
 <!-- ----------------------------------------------------------------- -->
 <!--  Run Time Access                                                  -->
-<!--  Copyright (C) 2003-2008 Robert W Smith (bsmith@linuxtoys.org)    -->
+<!--  Copyright (C) 2003-2014 Robert W Smith (bsmith@linuxtoys.org)    -->
 <!--                                                                   -->
 <!--   This program is distributed under the terms of the GNU          -->
 <!--   LGPL.  See the file COPYING file.                               -->
