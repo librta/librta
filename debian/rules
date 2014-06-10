@@ -1,5 +1,51 @@
 #!/usr/bin/make -f
 
-%:
-	dh $@
+export DH_OPTIONS
+
+ifneq (,$(wildcard /usr/share/dpkg/default.mk))
+  include /usr/share/dpkg/default.mk
+else
+  DEB_HOST_ARCH_OS ?= $(shell dpkg-architecture -qDEB_HOST_ARCH_OS)
+  DEB_HOST_GNU_TYPE ?= $(shell dpkg-architecture -qDEB_HOST_GNU_TYPE)
+  DEB_BUILD_GNU_TYPE ?= $(shell dpkg-architecture -qDEB_BUILD_GNU_TYPE)
+  DEB_HOST_ARCH_CPU ?= $(shell dpkg-architecture -qDEB_HOST_ARCH_CPU)
+  DEB_VENDOR := $(shell dpkg-vendor --query vendor)
+
+  CFLAGS := -Wall -g
+  ifneq (,$(filter noopt,$(DEB_BUILD_OPTIONS)))
+    CFLAGS += -O0
+  else
+    CFLAGS += -O2
+  endif
+
+  DEB_VERSION_UPSTREAM := $(shell dpkg-parsechangelog | sed -n '/^Version:/{s/Version: *\([^:]*:\)\?\([^-]*\)-.*/\2/;p;q}')
+endif
+
+VARIANTS=rta
+VARIANTS+=rta-dev
+VARIANTS+=rta-doc
+VARIANTS+=rta-dbg
+VARIANTS+=rta-examples
+
+# There is no runnable test.
+# So, the DEB_BUILD_OPTIONS 'nocheck' can be ignored.
+MAKETEST := no
+
+ifeq ($(DEB_VENDOR),Ubuntu)
+  :
+else
+  :
+endif
+
+# nothing to do per default
+all:
+
+clean:
+	dh_testdir
+	dh_testroot
+	for i in src test; do \
+	  cd $$i; \
+	  make clean; \
+	  cd ..; \
+	done
 

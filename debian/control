@@ -1,13 +1,56 @@
 Source: rta
 Maintainer: Frederic Roussel <fr.frasc@gmail.com>
-Section: misc
+Section: libs
 Priority: optional
-Standards-Version: 0.8.2
+Standards-Version: 3.9.5
 Build-Depends: debhelper (>= 9)
+Homepage: http://www.linuxappliancedesign.com/projects/rta
 
 Package: rta
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}
+Depends:
+ ${shlibs:Depends},
+ ${misc:Depends}
 Description: Run-Time Access
- Library allowing to expose program internal data structures as databse tables.
+ Library allowing to expose program internal data structures as database tables.
+
+Package: rta-dev
+Architecture: any
+Depends:
+ rta (= ${binary:Version}),
+ ${misc:Depends}
+Description: Development files for rta
+ Library allowing to expose program internal data structures as database tables.
+ .
+ This package provides the development files for rta.
+
+Package: rta-dbg
+Architecture: any
+Depends:
+ rta (= ${binary:Version}),
+ ${misc:Depends}
+Description: Debugging symbols for rta
+ Library allowing to expose program internal data structures as database tables.
+ .
+ This package provides the debugging symbols for rta.
+
+Package: rta-examples
+Architecture: any
+Depends:
+ rta (= ${binary:Version}),
+ ${misc:Depends}
+Description: Example programs for rta.
+ Library allowing to expose program internal data structures as database tables.
+ .
+ This package provides examples fo rta.
+
+Package: rta-doc
+Architecture: any
+Depends:
+ ${misc:Depends}
+Description: Documentation for rta.
+ Library allowing to expose program internal data structures as database tables.
+ .
+ This package provides documentation for rta.
+
 
