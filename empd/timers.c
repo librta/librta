@@ -25,7 +25,7 @@
  ***************************************************************************/
 
 
-static char const Version_timers_c[] = "$Id$";
+static char const Version_timers_c[] = "$Id: timers.c,v 1.2 2004/04/05 16:29:11 graham Exp $";
 
 /***************************************************************************
  * Timers in Empty Daemon
@@ -69,7 +69,7 @@ static char const Version_timers_c[] = "$Id$";
 #include <stdlib.h>             /* for malloc() */
 #include <stddef.h>             /* for 'offsetof' */
 #include <errno.h>
-#include "/usr/local/include/rta.h"
+#include "rta.h"
 #include "empd.h"
 
 

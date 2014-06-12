@@ -9,12 +9,12 @@
 #include <syslog.h>             /* for log levels */
 #include <stdlib.h>             /* for malloc() */
 #include <errno.h>
-#include "/usr/local/include/rta.h"
+#include "rta.h"
 #include "empd.h"
 #include "app.h"
 
 
-static char const Version_app_c[] = "$Id$";
+static char const Version_app_c[] = "$Id: app.c,v 1.2 2004/04/05 16:29:11 graham Exp $";
 
 
 

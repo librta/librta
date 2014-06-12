@@ -13,7 +13,7 @@
  *   This application demonstrates the use of the rta package
  * using select() for multiplexing.
  **************************************************************/
-#include "../src/rta.h"
+#include "rta.h"
 
     /* Maximum number of UI/Posgres connections */
 #define MX_UI     (20)
@@ -53,8 +53,8 @@ typedef struct ui
   char     rsp[MXRSP]; /* SQL response to the UI program */
   int      o_port;     /* Other-end TCP port number */
   int      o_ip;       /* Other-end IP address */
-  long long nbytin;    /* number of bytes read in */
-  long long nbytout;   /* number of bytes sent out */
+  llong    nbytin;    /* number of bytes read in */
+  llong    nbytout;   /* number of bytes sent out */
   int      ctm;        /* connect time (==time();) */
   int      cdur;       /* duration time (== now()-ctm;) */
 }

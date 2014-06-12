@@ -25,7 +25,7 @@
  ***************************************************************************/
 
 
-static char const Version_select_c[] = "$Id$";
+static char const Version_select_c[] = "$Id: select.c,v 1.2 2004/04/05 16:29:11 graham Exp $";
 
 
 #include <stdio.h>              /* for printf */
@@ -36,7 +36,7 @@ static char const Version_select_c[] = "$Id$";
 #include <syslog.h>             /* for log levels */
 #include <stddef.h>             /* for 'offsetof' */
 #include <errno.h>
-#include "/usr/local/include/rta.h"
+#include "rta.h"
 #include "empd.h"
 
 

@@ -105,7 +105,40 @@
  **************************************************************/
 
 #ifndef RTA_H
-#define RTA_H 1
+#define RTA_H
+
+#if HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+
+/***************************************************************
+ * OS dependent code 
+ ***************************************************************/
+
+#include <limits.h>             /* typically includes PATH_MAX */
+#include <stdlib.h> 		/* includes _MAX_PATH for BorlandC */ 
+
+#ifndef PATH_MAX
+#ifdef _MAX_PATH 
+#define PATH_MAX  _MAX_PATH 
+#endif
+#endif
+
+#ifndef HAVE_STRCASECMP 
+#ifdef __BORLANDC__
+#define strcasecmp strcmpi
+#endif
+#endif
+
+#ifndef llong
+#ifdef __BORLANDC__
+typedef long llong;
+#else
+typedef long long llong;
+#endif
+#endif
+
 
 /***************************************************************
  * - Limits:
@@ -114,8 +147,6 @@
  * limits; just be sure to recompile the rta package using 
  * your new settings.
  **************************************************************/
-
-#include <limits.h>             /* for PATH_MAX */
 
         /** Maximum number of tables allowed in the system.
          * Your data base may not contain more than this number
@@ -587,12 +618,11 @@ void     do_rtafs();
  * overflow on the output buffer of dbcommand().  They are also
  * very useful for web based user interfaces in which viewing
  * the data a page-at-a-time is desirable.
- *     Column and table names are case sensitive.  If a column
- * or table name is one of the reserved words it must be placed
- * in quotes when used.  The reserved words are: AND, FROM, 
+ *     Column and table names are case sensitive and may not be
+ * one of the reserved words.  The reserved words are: AND, FROM, 
  * LIMIT, OFFSET, SELECT, SET, UPDATE, and WHERE.  Reserved 
  * words are *not* case sensitive.  You may use lower case
- * reserved words in your 
+ * reserved words in your SQL statements if you wish.
  *    Comparison operator in the WHERE clause include =, >=,
  * <=, >, and <.
  *    You can use a reserved word, like OFFSET, as a column name
@@ -600,7 +630,7 @@ void     do_rtafs();
  * SQL command (SELECT "offset" FROM tunings ...).   Strings 
  * may contain any of the !@#$%^&*()_+-={}[]\|:;<>?,./~`
  * characters.  If a string contains a double quote, use a 
- * single quote to wrap it (eg 'The sign say "Hi mom!"'), and
+ * single quote to wrap it (eg 'The sign says "Hi mom!"'), and
  * use double quotes to wrap string with embedded single quotes.
  *
  *     Examples:
@@ -664,6 +694,8 @@ void     do_rtafs();
  *     nrows     - number of rows in the table
  *     cols      - pointer to array of column definitions
  *     ncol      - number of columns in the table
+ *     iterator  - subroutine to advance from one row to next
+ *     it_info   - transparent data for the iterator
  *     savefile  - the file used to store non-volatile columns
  *     help      - a description of the table
  *

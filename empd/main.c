@@ -26,7 +26,7 @@
  ***************************************************************************/
 
 
-static char const Version_main_c[] = "$Id$";
+static char const Version_main_c[] = "$Id: main.c,v 1.2 2004/04/05 16:29:11 graham Exp $";
 
 
 #include <stdio.h>                     /* for EOF */
@@ -35,7 +35,7 @@ static char const Version_main_c[] = "$Id$";
 #include <sys/types.h>
 #include <unistd.h>                    /* for getopt() */
 #include <syslog.h>                    /* for log levels */
-#include "/usr/local/include/rta.h"
+#include "rta.h"
 #include "empd.h"
 
 

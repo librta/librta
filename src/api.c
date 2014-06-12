@@ -11,17 +11,31 @@
  * embedded systems.
  **************************************************************/
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>             /* for mkstemp() */
-#include <libgen.h>             /* for dirname() */
 #include <string.h>             /* for strlen() */
-#include <limits.h>             /* for PATH_MAX */
-#include <syslog.h>
 #include <sys/types.h>          /* for stat() */
 #include <sys/stat.h>           /* for stat() */
+
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>             /* for stat() */
+#endif
+
+#ifdef HAVE_LIBGEN_H
+#include <libgen.h>		/* for dirname */
+#endif
+
+#ifdef HAVE_SYSLOG_H
+#include <syslog.h>
+#endif
+
 #include "rta.h"                /* for various constants */
 #include "do_sql.h"             /* for LOC */
+
 
 /* Tbl and Col contain pointers to table and column
  * definitions of all tables and columns in * the system.
@@ -55,8 +69,9 @@ rta_init()
   extern TBLDEF rta_columnsTable;
   extern TBLDEF rta_dbgTable;
   extern TBLDEF rta_statTable;
+#ifdef HAVE_SYSLOG_H
   extern void restart_syslog();
-
+#endif
   for (i = 0; i < MX_TBL; i++) {
     Tbl[i] = (TBLDEF *) 0;
   }
@@ -67,9 +82,10 @@ rta_init()
   (void) rta_add_table(&rta_columnsTable);
   (void) rta_add_table(&rta_dbgTable);
   (void) rta_add_table(&rta_statTable);
-
+#ifdef HAVE_SYSLOG_H
   restart_syslog((char *) 0, (char *) 0, (char *) 0, (void *) 0,
                  (void *) 0, 0);
+#endif
 }
 
 
@@ -85,25 +101,27 @@ rta_init()
 int
 rta_config_dir(char *configdir)
 {
-  struct stat statbuf;      // to verify input is a directory
-  int         len;          // length of the path
+  struct stat statbuf;      /* to verify input is a directory */
+  int         len;          /* length of the path */
 
   /* Initialize the RTA tables if this is the first call to add_table */
   if (Ntbl == -1)
     rta_init();
 
-  /* Perform some sanity checks */
-  if (!stat(configdir, &statbuf) && S_ISDIR(statbuf.st_mode) &&
-    (ConfigDir = strdup(configdir))) {
-    len = strlen(ConfigDir);
-    if (len != 1 && ConfigDir[len -1] == '/')
-      ConfigDir[len - 1] = (char) 0;
 
-    return(0);
+  /* Perform some sanity checks */
+  if (!stat(configdir, &statbuf) && S_ISDIR(statbuf.st_mode)) { 
+
+    ConfigDir = strdup(configdir); 
+    if (ConfigDir) {
+      len = strlen(ConfigDir);
+      if (len != 1 && ConfigDir[len -1] == '/')
+        ConfigDir[len - 1] = (char) 0;
+
+      return(0);
+    }
   }
-  else {
-    return(-1);
-  }
+  return(-1);
 }
 
 /***************************************************************
@@ -341,7 +359,7 @@ dbcommand(char *buf, int *nin, char *out, int *nout)
          'K', int32(length), int32(pid of backend), int32(secret key)
          'Z', int32(length), 'I'   */
 
-      char reply[164] = {
+      unsigned char reply[164] = {
         'R',0x00,0x00,0x00,0x08,0x00,0x00,0x00,0x00,
         'S',0x00,0x00,0x00,0x1e,0x63,0x6c,0x69,0x65,0x6e,0x74,0x5f,0x65,
             0x6e,0x63,0x6f,0x64,0x69,0x6e,0x67,0x00,0x53,0x51,0x4c,0x5f,
@@ -516,7 +534,8 @@ rta_save(TBLDEF *ptbl, char *fname)
         fprintf(ftmp, ", %s ", ptbl->cols[cx].name);
 
       /* compute pointer to actual data */
-      pd = pr + ptbl->cols[cx].offset;
+      /* Borland compiler complains if no cast */
+      pd = (char*)pr + ptbl->cols[cx].offset;
       switch ((ptbl->cols[cx]).type) {
         case RTA_STR:
           if (memchr((char *) pd, '"', ptbl->cols[cx].length))
@@ -537,10 +556,10 @@ rta_save(TBLDEF *ptbl, char *fname)
           fprintf(ftmp, "= %d", **((int **) pd));
           break;
         case RTA_LONG:
-          fprintf(ftmp, "= %lld", *((long long *) pd));
+          fprintf(ftmp, "= %lld", *((llong *) pd));
           break;
         case RTA_PLONG:
-          fprintf(ftmp, "= %lld", **((long long **) pd));
+          fprintf(ftmp, "= %lld", **((llong **) pd));
           break;
         case RTA_PTR:
 
@@ -564,8 +583,10 @@ rta_save(TBLDEF *ptbl, char *fname)
     else {
       if (rx >= ptbl->nrows)
         pr = (void *) NULL;
-      else
-        pr = ptbl->address + (rx * sr);
+      else {
+        /* Borland compiler complains if no cast */
+        pr = (char*)ptbl->address + (rx * sr);
+      }
     }
   }
 
@@ -630,7 +651,7 @@ rta_load(TBLDEF *ptbl, char *fname)
     strcat(path, fname);
   }
 
-  /* Open a temp file in the same directory as the users target file */
+  /* Open the savefile of SQL UPDATE statements */
   fp = fopen(path, "r");
   if (fp == (FILE *) 0) {
     rtastat.nsyserr++;

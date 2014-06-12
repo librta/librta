@@ -25,7 +25,7 @@
  ***************************************************************************/
 
 
-static char const Version_ui_c[] = "$Id$";
+static char const Version_ui_c[] = "$Id: ui.c,v 1.2 2004/04/05 16:29:11 graham Exp $";
 
 
 #include <stdio.h>
@@ -39,7 +39,7 @@ static char const Version_ui_c[] = "$Id$";
 #include <errno.h>
 #include <stddef.h>             /* for 'offsetof' */
 #include <arpa/inet.h>          /* for inet_addr() */
-#include "/usr/local/include/rta.h"
+#include "rta.h"
 #include "empd.h"
 
 

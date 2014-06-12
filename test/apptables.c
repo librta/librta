@@ -19,6 +19,7 @@
  * column.
  **************************************************************/
 
+#include <config.h>
 #include <stddef.h>             /* for 'offsetof' */
 #include "app.h"                /* for table definitions and sizes */
 extern UI ui[];

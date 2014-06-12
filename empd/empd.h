@@ -26,7 +26,7 @@
  ***************************************************************************/
 
 
-static char const Version_empd_h[] = "$Id$";
+static char const Version_empd_h[] = "$Id: empd.h,v 1.4 2004/04/06 20:38:12 graham Exp $";
 
 
 
@@ -46,7 +46,7 @@ static char const Version_empd_h[] = "$Id$";
 
 /* Macro and defines for the logging.  */
 #define LOG(lvl, sect, fmt, args...) if (Logit[sect].thres >= lvl) \
- logit(lvl, sect, "%s:%d: " fmt "\n", __FILE__, __LINE__, ## args)
+ logit(lvl, sect, "%s:%d: " fmt "\n", __FILE__, __LINE__ , ## args)
 
 /* Log section IDs.  We intentionally keep these short */
 #define MN    0    /* main() */

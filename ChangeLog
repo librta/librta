@@ -1,6 +1,13 @@
+
+2004-04-20  Graham Phillips			  Version 1.0.0.
+      Added autoconf support.  Ported rta to Windows.  User may run
+      './configure' and 'make' on Linux and Windows platforms.  Added
+      strndup(), dirname() and mkstemp() for platforms that don't have
+      these methods.  
+
 2004-03-07 Bob Smith                              Version 0.7.2. 
-    - Added a prototype deamon based on RTA.  The daemon is
-      called 'empty deamon' or empd.  This addition prompted
+    - Added a prototype daemon based on RTA.  The daemon is
+      called 'empty daemon' or empd.  This addition prompted
       the addition of rta_config_dir below.
     - Fixed a bug in the iterator for the rta_tables table.
     - Fixed various typo and spelling errors.
@@ -82,5 +89,3 @@
 
 2003-02-19  Bob Smith                             Version 0.5.0.
     - Initial release.
-
-

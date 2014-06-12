@@ -25,14 +25,14 @@
  ***************************************************************************/
 
 
-static char const Version_logit_c[] = "$Id$";
+static char const Version_logit_c[] = "$Id: logit.c,v 1.2 2004/04/05 16:29:11 graham Exp $";
 
 #include <stdio.h>
 #include <sys/syslog.h>
 #include <stddef.h>             /* for 'offsetof' */
 #include <stdarg.h>             /* for va_arg */
 #include <string.h>             /* for strncpy() */
-#include "/usr/local/include/rta.h"
+#include "rta.h"
 #include "empd.h"
 
 

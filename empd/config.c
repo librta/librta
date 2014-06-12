@@ -25,7 +25,7 @@
  ***************************************************************************/
 
 
-static char const Version_config_c[] = "$Id$";
+static char const Version_config_c[] = "$Id: config.c,v 1.2 2004/04/05 16:29:11 graham Exp $";
 
 
 
@@ -44,7 +44,7 @@ static char const Version_config_c[] = "$Id$";
 #include <fcntl.h>              /* for open() */
 #include <sys/file.h>           /* for flock() */
 #include <sys/syslog.h>         /* for log levels */
-#include "/usr/local/include/rta.h"
+#include "rta.h"
 #include "empd.h"
 
 

@@ -81,7 +81,7 @@ struct Sql_Cmd
   COLDEF  *pcol[NCMDCOLS]; /* pointers to cols in COLDEFS */
   char    *updvals[NCMDCOLS]; /* values for column updates */
   int      updints[NCMDCOLS]; /* integer values for updates */
-  long long updlngs[NCMDCOLS]; /* long values for updates */
+  llong    updlngs[NCMDCOLS]; /* long values for updates */
   float    updflot[NCMDCOLS]; /* float values for updates */
   int      nwhrcols;   /* count of columns in where clause */
   char    *whrcols[NCMDCOLS]; /* cols in where */
@@ -89,7 +89,7 @@ struct Sql_Cmd
   COLDEF  *pwhr[NCMDCOLS]; /* pointers to Wcols in COLDEFS */
   char    *whrvals[NCMDCOLS]; /* values in the where clause */
   int      whrints[NCMDCOLS]; /* integer values of whrvals[] */
-  long long whrlngs[NCMDCOLS]; /* long values of whrvals[] */
+  llong    whrlngs[NCMDCOLS]; /* long values of whrvals[] */
   float    whrflot[NCMDCOLS]; /* float values of whrvals[] */
   int      limit;      /* max num rows to output, 0=no_limit */
   int      offset;     /* scan past this # rows before output */
@@ -117,12 +117,12 @@ struct RtaDbg
 /* Define the stats structure */
 struct RtaStat
 {
-  long long nsyserr;   /* count of failed OS calls. */
-  long long nrtaerr;   /* count of internal rta failures. */
-  long long nsqlerr;   /* count of SQL failures. */
-  long long nauth;     /* count of DB authorizations. */
-  long long nupdate;   /* count of UPDATE requests */
-  long long nselect;   /* count of SELECT requests */
+  llong nsyserr;   /* count of failed OS calls. */
+  llong nrtaerr;   /* count of internal rta failures. */
+  llong nsqlerr;   /* count of SQL failures. */
+  llong nauth;     /* count of DB authorizations. */
+  llong nupdate;   /* count of UPDATE requests */
+  llong nselect;   /* count of SELECT requests */
 };
 
 /* Forward references */

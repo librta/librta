@@ -17,16 +17,31 @@
  * column.
  **************************************************************/
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <stdio.h>              /* for printf prototypes */
 #include <stddef.h>             /* for 'offsetof' */
-#include <syslog.h>             /* for LOG_ERR, LOG_USER */
 #include <string.h>             /* for strncmp prototypes */
+
+#ifdef HAVE_SYSLOG_H
+#include <syslog.h>
+#endif
+
 #include "rta.h"                /* for TBLDEF and COLDEF */
 #include "do_sql.h"             /* for struct Sql_Cmd */
+
 
 /* Forward reference for read callbacks and iterators */
 void     restart_syslog();
 void    *get_next_sysrow(void *, void *, int);
+
+#ifndef HAVE_SYSLOG_H
+#define LOG_ERR	 3		/* used in data tables below */
+#define LOG_USER (1<<3)         /* used in data tables below */
+#endif
+
 
 /***************************************************************
  * We define a table which contains the column definitions of
@@ -490,6 +505,7 @@ void
 restart_syslog(char *tblname, char *colname, char *sqlcmd,
                void *prow, void *poldrow,  int rowid)
 {
+#ifdef HAVE_SYSLOG_H
   extern struct RtaDbg rtadbg;
 
   closelog();
@@ -497,6 +513,7 @@ restart_syslog(char *tblname, char *colname, char *sqlcmd,
   if (rtadbg.target == 1 || rtadbg.target == 3) {
     openlog(rtadbg.ident, LOG_ODELAY | LOG_PID, rtadbg.facility);
   }
+#endif
 
   return;
 }
@@ -529,12 +546,12 @@ TBLDEF   rta_dbgTable = {
 
 /* Allocate and initialize the table */
 struct RtaStat rtastat = {
-  (long long) 0,                /* count of failed OS calls. */
-  (long long) 0,                /* count of internal rta failures. */
-  (long long) 0,                /* count of SQL failures. */
-  (long long) 0,                /* count of authorizations. */
-  (long long) 0,                /* count of UPDATE requests */
-  (long long) 0,                /* count of SELECT requests */
+  (llong) 0,                    /* count of failed OS calls. */
+  (llong) 0,                    /* count of internal rta failures. */
+  (llong) 0,                    /* count of SQL failures. */
+  (llong) 0,                    /* count of authorizations. */
+  (llong) 0,                    /* count of UPDATE requests */
+  (llong) 0,                    /* count of SELECT requests */
 };
 
 /* Define the table columns */
@@ -543,7 +560,7 @@ COLDEF   rta_statCols[] = {
       "rta_stat",               /* table name */
       "nsyserr",                /* column name */
       RTA_LONG,                 /* type of data */
-      sizeof(long long),        /* #bytes in col data */
+      sizeof(llong),            /* #bytes in col data */
       offsetof(struct RtaStat, nsyserr), /* offset 2 col strt */
       RTA_READONLY,    /* Flags for read-only/disksave */
       (void (*)()) 0,  /* called before read */
@@ -553,7 +570,7 @@ COLDEF   rta_statCols[] = {
       "rta_stat",               /* table name */
       "nrtaerr",                /* column name */
       RTA_LONG,                 /* type of data */
-      sizeof(long long),        /* #bytes in col data */
+      sizeof(llong),            /* #bytes in col data */
       offsetof(struct RtaStat, nrtaerr), /* offset 2 col strt */
       RTA_READONLY,    /* Flags for read-only/disksave */
       (void (*)()) 0,  /* called before read */
@@ -563,7 +580,7 @@ COLDEF   rta_statCols[] = {
       "rta_stat",               /* table name */
       "nsqlerr",                /* column name */
       RTA_LONG,                 /* type of data */
-      sizeof(long long),        /* #bytes in col data */
+      sizeof(llong),            /* #bytes in col data */
       offsetof(struct RtaStat, nsqlerr), /* offset 2 col strt */
       RTA_READONLY,    /* Flags for read-only/disksave */
       (void (*)()) 0,  /* called before read */
@@ -573,7 +590,7 @@ COLDEF   rta_statCols[] = {
       "rta_stat",               /* table name */
       "nauth",                  /* column name */
       RTA_LONG,                 /* type of data */
-      sizeof(long long),        /* #bytes in col data */
+      sizeof(llong),            /* #bytes in col data */
       offsetof(struct RtaStat, nauth), /* offset 2 col strt */
       RTA_READONLY,    /* Flags for read-only/disksave */
       (void (*)()) 0,  /* called before read */
@@ -584,7 +601,7 @@ COLDEF   rta_statCols[] = {
       "rta_stat",               /* table name */
       "nselect",                /* column name */
       RTA_LONG,                 /* type of data */
-      sizeof(long long),        /* #bytes in col data */
+      sizeof(llong),            /* #bytes in col data */
       offsetof(struct RtaStat, nselect), /* offset 2 col strt */
       RTA_READONLY,    /* Flags for read-only/disksave */
       (void (*)()) 0,  /* called before read */
@@ -594,7 +611,7 @@ COLDEF   rta_statCols[] = {
       "rta_stat",               /* table name */
       "nupdate",                /* column name */
       RTA_LONG,                 /* type of data */
-      sizeof(long long),        /* #bytes in col data */
+      sizeof(llong),            /* #bytes in col data */
       offsetof(struct RtaStat, nupdate), /* offset 2 col strt */
       RTA_READONLY,    /* Flags for read-only/disksave */
       (void (*)()) 0,  /* called before read */

@@ -11,11 +11,19 @@
  * commands received from the UIs.  
  **************************************************************/
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>             /* for va_arg */
 #include <string.h>
+
+#ifdef HAVE_SYSLOG_H
 #include <syslog.h>
+#endif
+
 #include "do_sql.h"
 
 struct Sql_Cmd cmd;
@@ -91,7 +99,9 @@ do_sql(char *buf, int *nbuf)
       break;
 
     default:
+#ifdef HAVE_SYSLOG_H
       syslog(LOG_ERR, "DB error: no SQL cmd\n");
+#endif
       break;
   }
 }
@@ -420,7 +430,7 @@ do_select(char *buf, int *nbuf)
   int      wx;         /* Where clause indeX in for loop */
   void    *pr;         /* Pointer to the row in the table/column */
   void    *pd;         /* Pointer to the Data in the table/column */
-  long long cmp;       /* has actual relation of col and val */
+  llong    cmp;        /* has actual relation of col and val */
   int      dor;        /* DO Row == 1 if we should print row */
   int      npr = 0;    /* Number of output rows */
   char     nprstr[30]; /* string to hold ASCII of npr */
@@ -453,7 +463,7 @@ do_select(char *buf, int *nbuf)
       }
 
       /* compute pointer to actual data */
-      pd = pr + cmd.pwhr[wx]->offset;
+      pd = (char *)pr + cmd.pwhr[wx]->offset;
 
       /* do comparison based on column data type */
       switch (cmd.pwhr[wx]->type) {
@@ -472,10 +482,10 @@ do_select(char *buf, int *nbuf)
           cmp = **((int **) pd) - cmd.whrints[wx];
           break;
         case RTA_LONG:
-          cmp = *((long long *) pd) - cmd.whrlngs[wx];
+          cmp = *((llong *) pd) - cmd.whrlngs[wx];
           break;
         case RTA_PLONG:
-          cmp = **((long long **) pd) - cmd.whrlngs[wx];
+          cmp = **((llong **) pd) - cmd.whrlngs[wx];
           break;
         case RTA_PTR:
           cmp = *((int *) pd) - cmd.whrints[wx];
@@ -537,7 +547,7 @@ do_select(char *buf, int *nbuf)
         }
 
         /* compute pointer to actual data */
-        pd = pr + cmd.pcol[cx]->offset;
+        pd = (char *)pr + cmd.pcol[cx]->offset;
         switch ((cmd.pcol[cx])->type) {
           case RTA_STR:
             /* send 4 byte length.  Include the length */
@@ -560,12 +570,16 @@ do_select(char *buf, int *nbuf)
             buf += n;
             break;
           case RTA_LONG:
-            n = sprintf((buf + 4), "%lld", *((long long *) pd));
+            n = sprintf((buf + 4), "%lld", *((llong *) pd));
             ad_int4(&buf, n);
             buf += n;
             break;
           case RTA_PLONG:
-            n = sprintf((buf + 4), "%lld", **((long long **) pd));
+#ifndef __BORLANDC__
+            n = sprintf((buf + 4), "%lld", *((llong *) pd));
+#else
+            n = sprintf((buf + 4), "%ld", *((llong *) pd));
+#endif
             ad_int4(&buf, n);
             buf += n;
             break;
@@ -597,7 +611,7 @@ do_select(char *buf, int *nbuf)
       if (rx >= cmd.ptbl->nrows)
         pr = (void *) NULL;
       else
-        pr = cmd.ptbl->address + (rx * sr);
+        pr = (char *)cmd.ptbl->address + (rx * sr);
     }
   }
   /* Add 'C', length(11), 'SELECT', NULL to output */
@@ -678,7 +692,7 @@ send_row_description(char *buf, int *nbuf)
         break;
       case RTA_LONG:
       case RTA_PLONG:
-        ad_int2(&buf, sizeof(long long)); /* length */
+        ad_int2(&buf, sizeof(llong)); /* length */
         ad_int4(&buf, -1);      /* type modifier */
         break;
       case RTA_FLOAT:
@@ -781,7 +795,7 @@ do_update(char *buf, int *nbuf)
   void    *pr;         /* Pointer to the row in the table/column */
   void    *pd;         /* Pointer to the Data in the table/column */
   void    *poldrow;    /* Pointer to copy of row before update */
-  long long cmp;       /* has actual relation of col and val */
+  llong    cmp;        /* has actual relation of col and val */
   int      dor;        /* DO Row == 1 if we should update row */
   char    *startbuf;   /* used to compute response length */
   int      cx;         /* Column index while building Data pkt */
@@ -814,7 +828,7 @@ do_update(char *buf, int *nbuf)
       }
 
       /* compute pointer to actual data */
-      pd = pr + cmd.pwhr[wx]->offset;
+      pd = (char *)pr + cmd.pwhr[wx]->offset;
 
       /* do comparison based on column data type */
       switch (cmd.pwhr[wx]->type) {
@@ -832,10 +846,10 @@ do_update(char *buf, int *nbuf)
           cmp = **((int **) pd) - cmd.whrints[wx];
           break;
         case RTA_LONG:
-          cmp = *((long long *) pd) - cmd.whrlngs[wx];
+          cmp = *((llong*) pd) - cmd.whrlngs[wx];
           break;
         case RTA_PLONG:
-          cmp = **((long long **) pd) - cmd.whrlngs[wx];
+          cmp = **((long**) pd) - cmd.whrlngs[wx];
           break;
         case RTA_FLOAT:
           cmp = *((float *) pd) - cmd.whrflot[wx];
@@ -886,7 +900,7 @@ do_update(char *buf, int *nbuf)
       /* Scan the columns doing updates as needed */
       for (cx = 0; cx < cmd.ncols; cx++) {
         /* compute pointer to actual data */
-        pd = pr + cmd.pcol[cx]->offset;
+        pd = (char *)pr + cmd.pcol[cx]->offset;
 
         switch ((cmd.pcol[cx])->type) {
           case RTA_STR:
@@ -903,10 +917,10 @@ do_update(char *buf, int *nbuf)
             **((int **) pd) = cmd.updints[cx];
             break;
           case RTA_LONG:
-            *((long long *) pd) = cmd.updlngs[cx];
+            *((llong *) pd) = cmd.updlngs[cx];
             break;
           case RTA_PLONG:
-            **((long long **) pd) = cmd.updlngs[cx];
+            **((llong **) pd) = cmd.updlngs[cx];
             break;
           case RTA_PTR:
             /* works only if INT and PTR are same size */
@@ -945,7 +959,7 @@ do_update(char *buf, int *nbuf)
       if (rx >= cmd.ptbl->nrows)
         pr = (void *) NULL;
       else
-        pr = cmd.ptbl->address + (rx * sr);
+        pr = (char *)cmd.ptbl->address + (rx * sr);
     }
   }
 
@@ -1058,9 +1072,11 @@ rtalog(char *fname,    /* error detected in file... */
   }
   va_end(ap);
 
+#ifdef HAVE_SYSLOG_H
   /* Send to syslog() if so configured */
   if (rtadbg.target == 1 || rtadbg.target == 3)
     syslog(rtadbg.priority, format, fname, linen, s1, s2);
+#endif
 
   /* Send to stderr if so configured */
   if (rtadbg.target == 2 || rtadbg.target == 3) {
