@@ -9,9 +9,12 @@
  *  which is Copyright (C) 2001  Miklos Szeredi (mszeredi@inf.bme.hu)
  **************************************************************/
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <string.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -19,6 +22,11 @@
 #include <time.h>
 #include <limits.h>             /* for PATH_MAX */
 #include <fuse.h>
+
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+
 #include "rta.h"
 #include "do_sql.h"             /* for column print lengths */
 
@@ -1220,11 +1228,11 @@ sprtcol(int t, int r, COLDEF *pc, char *buf, int nbuf, int quot)
       break;
 
     case RTA_LONG:
-      out = sprintf(buf, "%lld", *((llong *) pd));
+      out = sprintf(buf, "%lld", *((long long *) pd));
       break;
 
     case RTA_PLONG:
-      out = sprintf(buf, "%lld", **((llong **) pd));
+      out = sprintf(buf, "%lld", **((long long **) pd));
       break;
 
     case RTA_PTR:

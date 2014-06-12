@@ -16,7 +16,7 @@
 #define __USE_GNU
 #include <string.h>
 #include "do_sql.h"
-#include "parse.tab.h"
+#include "parse.h"
 
 void dosql_init();
 extern int yylval;

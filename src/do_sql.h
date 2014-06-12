@@ -117,12 +117,12 @@ struct RtaDbg
 /* Define the stats structure */
 struct RtaStat
 {
-  llong nsyserr;       /* count of failed OS calls. */
-  llong nrtaerr;       /* count of internal rta failures. */
-  llong nsqlerr;       /* count of SQL failures. */
-  llong nauth;         /* count of DB authorizations. */
-  llong nupdate;       /* count of UPDATE requests */
-  llong nselect;       /* count of SELECT requests */
+  llong nsyserr;   /* count of failed OS calls. */
+  llong nrtaerr;   /* count of internal rta failures. */
+  llong nsqlerr;   /* count of SQL failures. */
+  llong nauth;     /* count of DB authorizations. */
+  llong nupdate;   /* count of UPDATE requests */
+  llong nselect;   /* count of SELECT requests */
 };
 
 /* Forward references */

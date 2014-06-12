@@ -11,17 +11,31 @@
  * embedded systems.
  **************************************************************/
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>             /* for mkstemp() */
-#include <libgen.h>             /* for dirname() */
 #include <string.h>             /* for strlen() */
-#include <limits.h>             /* for PATH_MAX */
-#include <syslog.h>
 #include <sys/types.h>          /* for stat() */
 #include <sys/stat.h>           /* for stat() */
+
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>             /* for stat() */
+#endif
+
+#ifdef HAVE_LIBGEN_H
+#include <libgen.h>		/* for dirname */
+#endif
+
+#ifdef HAVE_SYSLOG_H
+#include <syslog.h>
+#endif
+
 #include "rta.h"                /* for various constants */
 #include "do_sql.h"             /* for LOC */
+
 
 /* Tbl and Col contain pointers to table and column
  * definitions of all tables and columns in * the system.
@@ -55,8 +69,9 @@ rta_init()
   extern TBLDEF rta_columnsTable;
   extern TBLDEF rta_dbgTable;
   extern TBLDEF rta_statTable;
+#ifdef HAVE_SYSLOG_H
   extern void restart_syslog();
-
+#endif
   for (i = 0; i < MX_TBL; i++) {
     Tbl[i] = (TBLDEF *) 0;
   }
@@ -67,9 +82,10 @@ rta_init()
   (void) rta_add_table(&rta_columnsTable);
   (void) rta_add_table(&rta_dbgTable);
   (void) rta_add_table(&rta_statTable);
-
+#ifdef HAVE_SYSLOG_H
   restart_syslog((char *) 0, (char *) 0, (char *) 0, (void *) 0,
                  (void *) 0, 0);
+#endif
 }
 
 
@@ -92,14 +108,16 @@ rta_config_dir(char *configdir)
   if (Ntbl == -1)
     rta_init();
 
+
   /* Perform some sanity checks */
-  if (!stat(configdir, &statbuf) && S_ISDIR(statbuf.st_mode)) {
-    ConfigDir = strdup(configdir);
+  if (!stat(configdir, &statbuf) && S_ISDIR(statbuf.st_mode)) { 
+
+    ConfigDir = strdup(configdir); 
     if (ConfigDir) {
       len = strlen(ConfigDir);
-      if (len != 1 && ConfigDir[len -1] == '/') {
+      if (len != 1 && ConfigDir[len -1] == '/')
         ConfigDir[len - 1] = (char) 0;
-      }
+
       return(0);
     }
   }
@@ -316,20 +334,6 @@ dbcommand(char *buf, int *nin, char *out, int *nout)
       return (RTA_NOCMD);
     }
 
-    /* The first packet can be a request for an SSL connection.
-       Look for this and return an 'N' to indicate that we do not
-       support SSL.  The packet is '00 00 00 08 04 d2 16 2f'.  Note
-       that '04 d2' and '16 2f' are 1234 and 5678 respectively. */
-    if (length == 8 &&
-        buf[4] == (char) 0x04 && buf[5] == (char) 0xd2 &&
-        buf[6] == (char) 0x16 && buf[7] == (char) 0x2f) {
-      *out = 'N';
-      out++;
-      *nout -= 1;
-      *nin -= length;
-      return (RTA_SUCCESS);
-    }
-
     /* Look for a start-up request packet.  Do a sanity check since the 
        minimum startup packet is 13 bytes (4 length, 4 protocol,
        'user', and a null). */
@@ -530,7 +534,8 @@ rta_save(TBLDEF *ptbl, char *fname)
         fprintf(ftmp, ", %s ", ptbl->cols[cx].name);
 
       /* compute pointer to actual data */
-      pd = (char *)pr + ptbl->cols[cx].offset;
+      /* Borland compiler complains if no cast */
+      pd = (char*)pr + ptbl->cols[cx].offset;
       switch ((ptbl->cols[cx]).type) {
         case RTA_STR:
           if (memchr((char *) pd, '"', ptbl->cols[cx].length))
@@ -578,8 +583,10 @@ rta_save(TBLDEF *ptbl, char *fname)
     else {
       if (rx >= ptbl->nrows)
         pr = (void *) NULL;
-      else
-        pr = (char *)ptbl->address + (rx * sr);
+      else {
+        /* Borland compiler complains if no cast */
+        pr = (char*)ptbl->address + (rx * sr);
+      }
     }
   }
 

@@ -17,16 +17,31 @@
  * column.
  **************************************************************/
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <stdio.h>              /* for printf prototypes */
 #include <stddef.h>             /* for 'offsetof' */
-#include <syslog.h>             /* for LOG_ERR, LOG_USER */
 #include <string.h>             /* for strncmp prototypes */
+
+#ifdef HAVE_SYSLOG_H
+#include <syslog.h>
+#endif
+
 #include "rta.h"                /* for TBLDEF and COLDEF */
 #include "do_sql.h"             /* for struct Sql_Cmd */
+
 
 /* Forward reference for read callbacks and iterators */
 void     restart_syslog();
 void    *get_next_sysrow(void *, void *, int);
+
+#ifndef HAVE_SYSLOG_H
+#define LOG_ERR	 3		/* used in data tables below */
+#define LOG_USER (1<<3)         /* used in data tables below */
+#endif
+
 
 /***************************************************************
  * We define a table which contains the column definitions of
@@ -490,6 +505,7 @@ void
 restart_syslog(char *tblname, char *colname, char *sqlcmd,
                void *prow, void *poldrow,  int rowid)
 {
+#ifdef HAVE_SYSLOG_H
   extern struct RtaDbg rtadbg;
 
   closelog();
@@ -497,6 +513,7 @@ restart_syslog(char *tblname, char *colname, char *sqlcmd,
   if (rtadbg.target == 1 || rtadbg.target == 3) {
     openlog(rtadbg.ident, LOG_ODELAY | LOG_PID, rtadbg.facility);
   }
+#endif
 
   return;
 }

@@ -1,9 +1,6 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
-"http://www.w3.org/TR/REC-html401/loose.dtd">
-<html lang="en">
-<head>
-<meta http-equiv="content-type" content="text/html; charset=UTF-8">
-<title>RTA: Embedded DB API</title>
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/REC-html401/loose.dtd"><html lang="en"><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8"><title>RTA: Embedded DB API</title>
+
 <style type="text/css">
 p {font-size: medium;}
 th {font-size: medium;}
@@ -12,25 +9,25 @@ pre {font-size: medium;}
 h1 {font-family: sans-serif}
 h2 {font-family: sans-serif}
 h3 {font-family: sans-serif}
-</style>
-</head>
+</style></head>
+
 <body>
 <table width="100%" summary="" align="center" bgcolor="#dcefff">
-<tr>
+<tbody><tr>
 <td valign="top" align="left" width="40%">
 <ul>
- <li><a href="index.html">Introduction</a></li>
- <li><a href="FAQ.html">FAQ</a></li>
- <li><a href="apiref.html">API Spec</a></li>
- <li><a href="download.html">Download</a></li>
- <li><a href="quickstart.html">Quick Start</a></li>
- <li><a href="livedemo.html">Live Demo</a></li>
- <li><a href="contact.html">Contact Info</a></li>
+ <li><a href="http://www.runtimeaccess.com/index.html">Introduction</a></li>
+ <li><a href="http://www.runtimeaccess.com/FAQ.html">FAQ</a></li>
+ <li><a href="http://www.runtimeaccess.com/apiref.html">API Spec</a></li>
+ <li><a href="http://www.runtimeaccess.com/download.html">Download</a></li>
+ <li><a href="http://www.runtimeaccess.com/quickstart.html">Quick Start</a></li>
+ <li><a href="http://www.runtimeaccess.com/livedemo.html">Live Demo</a></li>
+ <li><a href="http://www.runtimeaccess.com/contact.html">Contact Info</a></li>
 </ul>
 </td>
-<td align="left" valign=middle>
+<td align="left" valign="middle">
  <h2>Run Time Access</h2></td>
-</tr></table>
+</tr></tbody></table>
 <h2>API Specification</h2> 
 <h3><a name="Preamble">- Preamble</a></h3>
 <p> RTA is a specialized memory resident database interface. It is
@@ -44,7 +41,7 @@ prototypes for the 'RTA' package. The information in this page is
 taken from the rta.h file in the RTA package. The rta.h file is the
 authoritative reference to the API.</p>
 <table summary="">
-<tr>
+<tbody><tr>
 <td valign="top" colspan="2" rowspan="10">INDEX:</td></tr>
 <tr>
 <td></td></tr>
@@ -72,14 +69,14 @@ authoritative reference to the API.</p>
 <tr>
 <td></td>
 <td><a href="#Callbacks">- How to write callback
-routines</a></td></tr></table>
+routines</a></td></tr></tbody></table>
 <hr width="70%">
 <h3><a name="Limits">- Limits</a></h3>
  <p>Here are the defines which describe the internal limits set in the
 RTA package. You are welcome to change these limits; just be sure
 to recompile the RTA package using your new settings.</p>
 <table summary="defines used to set limits in RTA" width="95%">
-<tr>
+<tbody><tr>
 <th>#define</th>
 <th>Value</th>
 <th>Description</th></tr>
@@ -126,7 +123,7 @@ characters are silently truncated to MX_LN_SZ characters.</td></tr>
 <tr>
 <td valign="top"></td>
 <td valign="top"></td>
-<td></td></tr></table>
+<td></td></tr></tbody></table>
 <hr width="70%">
 <h3><a name="Structures">- Data Structures</a></h3>
 <p>Each column and table in the database must be described in a data
@@ -137,29 +134,29 @@ a table. A table description has an array of COLDEFs to describe
 the columns in the table.</p>
 <table summary="the COLDEF structure" width="95%">
 <caption>The COLDEF Structure</caption>
-<tr>
+<tbody><tr>
 <th>Type/Name</th>
 <th>Description</th></tr>
 <tr>
-<td valign="top">char&nbsp;*table</td>
+<td valign="top">char *table</td>
 <td>The name of the table that has this column.</td></tr>
 <tr>
-<td valign="top">char&nbsp;*name</td>
+<td valign="top">char *name</td>
 <td>The name of the column. Must be at most MXCOLNAME characters in
 length and must be unique within a table. The same column name may
 be used in more than one table.</td></tr>
 <tr>
-<td valign="top">int&nbsp;type</td>
+<td valign="top">int type</td>
 <td>The data type of the column. Must be int, long, string, pointer
 to void, pointer to int, pointer to long, or pointer to string. The
 DB types are defined immediately following this
 structure.</td></tr>
 <tr>
-<td valign="top">int&nbsp;length</td>
+<td valign="top">int length</td>
 <td>The number of bytes in the string if the above type is RTA_STR
 or RTA_PSTR.</td></tr>
 <tr>
-<td valign="top">int&nbsp;offset</td>
+<td valign="top">int offset</td>
 <td>Number of bytes from the start of the structure to this column.
 For example, a structure with an int, a 20 character string, and a
 long, would have the offset of the long set to 24. Use of the
@@ -167,13 +164,13 @@ function offsetof() is encouraged. If you have structure members
 that do not start on word boundaries and you do not want to use
 offsetof(), then consider using -fpack-struct with gcc.</td></tr>
 <tr>
-<td valign="top">int&nbsp;flags</td>
+<td valign="top">int flags</td>
 <td>Boolean flags which describe attributes of the columns. The
 flags are defined after this structure and include a "read-only"
 flag and a flag to indicate that updates to this column should
 cause a table save. (See table savefile described below.)</td></tr>
 <tr>
-<td valign="top">void&nbsp;(*readcb)&nbsp;()</td>
+<td valign="top">void (*readcb) ()</td>
 <td>Read callback. This routine is called before the column value
 is used. Input values include the table name, the column name, the
 input SQL command, a pointer to the row, and the (zero indexed) row
@@ -182,7 +179,7 @@ that is being read. This routine is called *each* time the column
 is read so the following would produce two calls:<br>
  SELECT intime FROM inns WHERE intime &gt;= 100;</td></tr>
 <tr>
-<td valign="top">void&nbsp;(*writecb)&nbsp;()</td>
+<td valign="top">void (*writecb) ()</td>
 <td>Write callback. This routine is called after an UPDATE in which
 the column is written. Input values include the table name, the
 column name, the SQL command, a pointer to the row, and
@@ -196,16 +193,16 @@ UPDATE ethers SET mask="255.255.255.0", addr = "192.168.1.10"
 WHERE name = "eth1"; The callback is called for each row
 modified.</td></tr>
 <tr>
-<td valign="top">char&nbsp;*help</td>
+<td valign="top">char *help</td>
 <td>A brief description of the column. This should include the
 meaning of the data in the column, the limits, if any, and the
 default values. Include a brief description of the side effects of
 changes. This field is particularly important for tables which are
 part of the "boundary" between the UI developers and the
-application programmers.</td></tr></table>
+application programmers.</td></tr></tbody></table>
 <table summary="COLDEF flags and data types" width="95%">
 <caption>COLDEF Types and Flags</caption>
-<tr>
+<tbody><tr>
 <td valign="top">RTA_STR</td>
 <td>String refers to an array of char. The 'length' of column must
 contain the number of bytes in the array.</td></tr>
@@ -248,7 +245,7 @@ described in the TBLDEF section below.</td></tr>
 <td>Flag: If the readonly flag is set, any writes to the column
 will fail and a debug log message will be sent. (For unit test you
 may find it very handy to leave this bit clear to get better test
-coverage of the corner cases.)</td></tr></table>
+coverage of the corner cases.)</td></tr></tbody></table>
 <br>
 <br>
  
@@ -256,30 +253,30 @@ coverage of the corner cases.)</td></tr></table>
 passed into the DB system by the rta_add_table() subroutine.</p>
 <table summary="the TBLDEF structure" width="95%">
 <caption>The TBLDEF Structure</caption>
-<tr>
+<tbody><tr>
 <th>Type/Name</th>
 <th>Description</th></tr>
 <tr>
-<td valign="top">char&nbsp;*name</td>
+<td valign="top">char *name</td>
 <td>The name of the table. Must be less than than MXTLBNAME
 characters in length. Must be unique within the DB.</td></tr>
 <tr>
-<td valign="top">void&nbsp;*address</td>
+<td valign="top">void *address</td>
 <td>Address of the first element of the first row of the array of
 struct that make up the table.  This may be set to zero if an 
 iterator is defined for the table.</td></tr>
 <tr>
-<td valign="top">int&nbsp;rowlen</td>
+<td valign="top">int rowlen</td>
 <td>The number of bytes in each row of the table. This is usually a
 sizeof() of the structure associated with the table. (The idea is
 that we can get to data element E in row R with ... data =
 *(address + (R * rowlen) + offset(E))</td></tr>
 <tr>
-<td valign="top">int&nbsp;nrows</td>
+<td valign="top">int nrows</td>
 <td>Number of rows in the table.  This may be set to zero if an
 iterator is defined for the table.</td></tr>
 <tr>
-<td valign="top">void&nbsp;*iterator</td>
+<td valign="top">void *iterator</td>
 <td>A function which, given a pointer to one row, return a 
 pointer to the next row.  The iterator is called as 
 <tt>iterator(void *prow, void *it_info, int rowid);</tt><br>
@@ -302,7 +299,7 @@ the implementation of rta_tables and rta_columns, since they
 use an iterator as well.
 </td></tr>
 <tr>
-<td valign="top">void&nbsp;*it_info</td>
+<td valign="top">void *it_info</td>
 <td>The value of it_info defined in the TBLDEF is passed
 each time the iterator is called on this table.  This lets
 you define, for example, one iterator function for all of
@@ -311,32 +308,32 @@ use it_info to determine which table the
 iterator should use.
 </td></tr>
 <tr>
-<td valign="top">COLDEF&nbsp;*cols</td>
+<td valign="top">COLDEF *cols</td>
 <td>An array of COLDEF structures which describe the columns in the
 table. These must be in statically allocated memory since the RTA
 system references them while running.</td></tr>
 <tr>
-<td valign="top">int&nbsp;ncol</td>
+<td valign="top">int ncol</td>
 <td>The number of columns in the table. That is, the number of
 COLDEFs defined by 'cols'.</td></tr>
 <tr>
-<td valign="top">char&nbsp;*savefile</td>
+<td valign="top">char *savefile</td>
 <td>Save file. Path and name of a file which stores the
 non-volatile part of the table. The file has all of the UPDATE
 statements needed to rebuild the table. The file is rewritten in
 its entirety each time a 'savetodisk' column is updated. No file
 save is attempted if the savefile is blank.</td></tr>
 <tr>
-<td valign="top">char&nbsp;*help</td>
+<td valign="top">char *help</td>
 <td>Help text. A description of the table, how it is used, and what
 its intent is. A brief note to describe how it relate to other
 parts of the system and description of important callbacks is nice
-thing to include here.</td></tr></table>
+thing to include here.</td></tr></tbody></table>
 <hr width="70%">
 <h3><a name="Subroutines">- Subroutines</a></h3>
  <p>Here is a summary of the few routines in the RTA API:</p>
 <table summary="list of API subroutines">
-<tr>
+<tbody><tr>
 <td>dbcommand()</td>
 <td>process data stream from Postgres clients</td></tr>
 <tr>
@@ -357,7 +354,7 @@ thing to include here.</td></tr></table>
 <tr>
 <td>do_rtafs()</td>
 <td>process file system commands</td></tr>
-</table>
+</tbody></table>
 <br>
 <br>
  
@@ -377,8 +374,7 @@ When the routine returns nout has been decremented by the size of
 the response placed in the output buffer. An error message is
 generated if the number of available bytes in the output buffer is
 too small to hold the response from the SQL command.</p>
-<pre>
-int
+<pre>int
 dbcommand(char *cmd - the buffer with the Postgres packet
           int  *nin - on entry, the number of bytes in 'cmd',
                       on exit, the number of bytes remaining in cmd
@@ -405,8 +401,7 @@ another table by the same name already exists in the DB or if the
 table is defined without any columns. If a 'savefile' is specified,
 it is loaded. (See the rta_load() command below for more
 details.)</p>
-<pre>
-int
+<pre>int
 rta_add_table(TBLDEF *ptbl  -pointer to the TBLDEF to add);
 Return: RTA_SUCCESS   - table added
         RTA_ERROR     - error
@@ -427,8 +422,7 @@ the SQL command.</p>
 order to invoke the write callbacks. (The output buffer has the
 results encoded in the Postgres protocol and might not be too
 useful directly.)</p>
-<pre>
-void
+<pre>void
 SQL_string(char *cmd - the buffer with the SQL command
            char *out - the buffer to hold responses back to client,
            int *nout - on entry, the number of free bytes in 'out'
@@ -450,8 +444,7 @@ rename() it.</p>
 <p>As a general warning, note that any disk I/O can cause a program
 to block briefly and so saving and loading tables might cause your
 program to block.</p>
-<pre>
-int
+<pre>int
 rta_save(TBLDEF *ptbl - pointer to the TBLDEF structure for the
                         table to save,
          char *fname  - null terminated string with the path and
@@ -465,8 +458,7 @@ Return: RTA_SUCCESS   - table saved
 Load a table from a file of UPDATE commands. The file format is a
 series of UPDATE commands with one command per line. Any write
 callbacks are executed as the update occurs.</p>
-<pre>
-int
+<pre>int
 rta_load(TBLDEF *ptbl   - pointer to the table to be loaded,
          char *fname  - string with name of the load file);
 Return: RTA_SUCCESS   - table loaded
@@ -486,8 +478,7 @@ line.</p>
 it is not prepended with the configuration directory.</p>
 <p>This call is optional.  If it is not used the current working
 directory is used instead.  </p>
-<pre>
-int
+<pre>int
 rta_config_dir(char *configdir - path to the configuration files);
 Return: RTA_SUCCESS   - config path set
         RTA_ERROR     - error, (not a valid directory?)
@@ -507,8 +498,7 @@ of the librtafs library.</p>
 be the same as the owner and group of the program that does the mount.
 For example, if your mount point is owned by Apache, then your the
 UID of your program must be Apache as well.</p>
-<pre>
-int
+<pre>int
 rtafs_init(char *mountpoint  - desired mount point);
 Return: int fd        - file descriptor or -1
 </pre>
@@ -520,8 +510,7 @@ mounted by the rtafs_init() call.  This routine should be called
 when there is activity on the file descriptor returned from rtafs_init().
 It has no input or output parameters This routine is part
 of the librtafs library.
-<pre>
-void
+</p><pre>void
 do_rtafs();
 </pre>
 <br>
@@ -533,8 +522,7 @@ do_rtafs();
 <p>Neither the RTA UPDATE nor the RTA SELECT adhere to the Postgres
 equivalents. Joins are not allowed, and the WHERE clause supports
 only the AND relation. There are no locks or transactions.</p>
-<pre>
-<b>SELECT:
+<pre><b>SELECT:
     SELECT column_list FROM table [where_clause] [limit_clause]
 </b>
 </pre>
@@ -565,8 +553,7 @@ string contains a double quote, use a single quote to wrap it (eg
 'The sign says "Hi mom!"'), and use double quotes to wrap a string
 with embedded single quotes.</p>
 <p>Examples:</p>
-<pre>
- SELECT * FROM rta_tables
+<pre> SELECT * FROM rta_tables
 
  SELECT destIP FROM conns WHERE fd != 0
 
@@ -581,8 +568,7 @@ with embedded single quotes.</p>
        LIMIT 100 OFFSET 0
 </pre>
 
-<pre>
-<b>UPDATE:
+<pre><b>UPDATE:
     UPDATE table SET update_list [where_clause] [limit_clause]
 </b>
 </pre>
@@ -597,8 +583,7 @@ can be really useful for stepping through a table one row at a
 time. To change only the n'th row of a table, use a limit clause
 like 'LIMIT 1 OFFSET n' (n is zero-indexed).</p>
 <p>Examples:</p>
-<pre>
- UPDATE conn SET lport = 0;
+<pre> UPDATE conn SET lport = 0;
 
  UPDATE ethers SET mask = "255.255.255.0",  
                    addr = "192.168.1.10"    
@@ -611,8 +596,8 @@ like 'LIMIT 1 OFFSET n' (n is zero-indexed).</p>
 <h3><a name="Internal">- Internal DB tables</a></h3>
 <p>The RTA API has five tables visible to the application:</p>
 <table summary="">
-<tr>
-<td rowspan="5">&nbsp;&nbsp;&nbsp;</td>
+<tbody><tr>
+<td rowspan="5">   </td>
 <td>rta_tables:</td>
 <td>- a table of all tables in the DB</td></tr>
 <tr>
@@ -623,15 +608,15 @@ like 'LIMIT 1 OFFSET n' (n is zero-indexed).</p>
 <td>- controls what gets logged from rta</td></tr>
 <tr>
 <td>egp_stats:</td>
-<td>- simple usage and error statistics</td></tr></table>
+<td>- simple usage and error statistics</td></tr></tbody></table>
 <p>The rta_tables table gives SQL access to all internal and
 registered tables. The data in the table is exactly that of the
 TBLDEF structures registered with rta_add_table(). This table is
 used for the generic table editor application. The columns of
 rta_tables are:</p>
 <table summary="">
-<tr>
-<td rowspan="10">&nbsp;&nbsp;&nbsp;</td>
+<tbody><tr>
+<td rowspan="10">   </td>
 <td>name</td>
 <td>- the name of the table</td></tr>
 <tr>
@@ -660,7 +645,7 @@ rta_tables are:</p>
 <td>- the file used to store non-volatile columns</td></tr>
 <tr>
 <td>help</td>
-<td>- a description of the table</td></tr></table>
+<td>- a description of the table</td></tr></tbody></table>
 <br>
 <br>
  
@@ -669,8 +654,8 @@ in the DB. The data in the table is exactly that of the COLDEF
 structures registered with rta_add_table(). This table is used for
 the generic table editor. The columns of rta_columns are:</p>
 <table summary="">
-<tr>
-<td rowspan="9">&nbsp;&nbsp;&nbsp;</td>
+<tbody><tr>
+<td rowspan="9">   </td>
 <td>table</td>
 <td>- the name of the column's table</td></tr>
 <tr>
@@ -696,7 +681,7 @@ the generic table editor. The columns of rta_columns are:</p>
 <td>- pointer to subroutine called after writes</td></tr>
 <tr>
 <td>help</td>
-<td>- a description of the column</td></tr></table>
+<td>- a description of the column</td></tr></tbody></table>
 <br>
 <br>
  
@@ -708,8 +693,8 @@ need to set the values in your main program to make them seem
 persistent. (Try something like "SQL_string("UPDATE rta_dbgconfig
 SET dbg ....").) The columns of rta_dbgconfig are:</p>
 <table summary="">
-<tr>
-<td rowspan="8">&nbsp;&nbsp;&nbsp;</td>
+<tbody><tr>
+<td rowspan="8">   </td>
 <td valign="top">syserr</td>
 <td>- integer, 0 means no log, 1 means log. This logs OS call
 errors like malloc() failures. Default is 1.</td></tr>
@@ -765,7 +750,7 @@ log messages. This specifies the ident string to use when sending
 RTA debug messages. This is normally set to the process or command
 name. The default is "rta". Changes to this do not take effect
 until dbg_target is updated. This can be at most MXDBGIDENT
-characters in length.</td></tr></table>
+characters in length.</td></tr></tbody></table>
 <br>
 <br>
  
@@ -775,8 +760,8 @@ are read-only, and are set to zero the first time a table is
 added with rta_add_table().  The columns of
 rta_stats are:</p>
 <table summary="">
-<tr>
-<td rowspan="8">&nbsp;&nbsp;&nbsp;</td>
+<tbody><tr>
+<td rowspan="8">   </td>
 <td>nsyserr</td>
 <td>- count of failed OS calls.</td></tr>
 <tr>
@@ -793,7 +778,7 @@ rta_stats are:</p>
 <td>- count of UPDATE requests</td></tr>
 <tr>
 <td>nselect</td>
-<td>- count of SELECT requests</td></tr></table>
+<td>- count of SELECT requests</td></tr></tbody></table>
 <br>
 <br>
  
@@ -803,7 +788,7 @@ rta_stats are:</p>
 package. The first type is the error messages returned in response
 to a failed SQL request. The messages of this type are:</p>
 <table summary="" width="95%">
-<tr>
+<tbody><tr>
 <td valign="top" rowspan="2">1)</td>
 <td><tt>"ERROR: Relation '%s' does not exist"</tt></td></tr>
 <tr>
@@ -846,7 +831,7 @@ The %s is replaced by the column name.</td></tr>
 <tr>
 <td>This reply indicates that an attempt to UPDATE a column marked
 as read-only. The %s is replaced by the column
-name.</td></tr></table>
+name.</td></tr></tbody></table>
 <p>The other type of error messages are internal debug messages.
 Debug messages are logged using the standard syslog() facility
 available on all Linux systems. The default syslog "facility" used
@@ -863,8 +848,7 @@ messages. These are the messages that will appear in the syslog and
 on the stderr output. The "%s %d" at the start of each error string
 is replaced by the file name and line number where the error is
 detected.</p>
-<pre>
-         "System" errors 
+<pre>         "System" errors 
 "%s %d: Can not allocate memory\n"
 "%s %d: Table save failure.  Can not open %s\n"
 "%s %d: Table load failure.  Can not open %s\n"
@@ -901,22 +885,22 @@ been updated. Both read and write callbacks return nothing (are of
 type void). Read callbacks have the following calling parameters:</p>
 
 <table summary="" align="center" width="90%" cellspacing="1">
-<tr>
+<tbody><tr>
 <td valign="top">char *tblname</td>
-<td>&nbsp;&nbsp;the name of the table referenced</td></tr>
+<td>  the name of the table referenced</td></tr>
 <tr>
 <td valign="top">char *colname</td>
-<td>&nbsp;&nbsp;the name of the column referenced</td></tr>
+<td>  the name of the column referenced</td></tr>
 <tr>
 <td valign="top">char *sqlcmd</td>
-<td>&nbsp;&nbsp;the text of the SQL command</td></tr>
+<td>  the text of the SQL command</td></tr>
 <tr>
 <td valign="top">void *pr</td>
-<td>&nbsp;&nbsp;pointer to the row being read or written</td></tr>
+<td>  pointer to the row being read or written</td></tr>
 <tr>
-<td valign="top">int&nbsp;&nbsp;&nbsp;&nbsp; rowid</td>
-<td>&nbsp;&nbsp;the zero-indexed row number of the row being read
-or written</td></tr></table>
+<td valign="top">int     rowid</td>
+<td>  the zero-indexed row number of the row being read
+or written</td></tr></tbody></table>
 <br>
 <br>
  
@@ -939,36 +923,31 @@ value.  </p>
 Write callbacks are passed the following parameters:</p>
 
 <table summary="" align="center" width="90%" cellspacing="1">
-<tr>
+<tbody><tr>
 <td valign="top">char *tblname</td>
-<td>&nbsp;&nbsp;the name of the table referenced</td></tr>
+<td>  the name of the table referenced</td></tr>
 <tr>
 <td valign="top">char *colname</td>
-<td>&nbsp;&nbsp;the name of the column referenced</td></tr>
+<td>  the name of the column referenced</td></tr>
 <tr>
 <td valign="top">char *sqlcmd</td>
-<td>&nbsp;&nbsp;the text of the SQL command</td></tr>
+<td>  the text of the SQL command</td></tr>
 <tr>
 <td valign="top">void *pr</td>
-<td>&nbsp;&nbsp;pointer to the row being read or written</td></tr>
+<td>  pointer to the row being read or written</td></tr>
 <tr>
-<td valign="top">int&nbsp;&nbsp;&nbsp;&nbsp; rowid</td>
-<td>&nbsp;&nbsp;the zero-indexed row number of the row being read
+<td valign="top">int     rowid</td>
+<td>  the zero-indexed row number of the row being read
 or written</td></tr>
 <tr>
 <td valign="top">void *poldrow</td>
-<td>&nbsp;&nbsp;pointer to a copy of the row before any changes</td></tr>
-</table>
+<td>  pointer to a copy of the row before any changes</td></tr>
+</tbody></table>
 <br>
 <br>
  
 <p>
-      <a href="http://validator.w3.org/check/referer"><img border="0"
-          src="http://www.w3.org/Icons/valid-html401"
-          alt="Valid HTML 4.01!" height="31" width="88"></a>
+      <a href="http://validator.w3.org/check/referer"><img border="0" src="apiref_files/valid-html401.png" alt="Valid HTML 4.01!" height="31" width="88"></a>
 </p>
 
-</body>
-</html>
-
-
+</body></html>

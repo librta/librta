@@ -1,9 +1,6 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
-"http://www.w3.org/TR/REC-html401/loose.dtd">
-<html lang="en">
-<head>
-<meta http-equiv="content-type" content="text/html; charset=UTF-8">
-<title>RTA: Embedded DB API</title>
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/REC-html401/loose.dtd"><html lang="en"><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8"><title>RTA: Embedded DB API</title>
+
 <style type="text/css">
 p {font-size: medium;}
 th {font-size: medium;}
@@ -12,25 +9,25 @@ pre {font-size: medium;}
 h1 {font-family: sans-serif}
 h2 {font-family: sans-serif}
 h3 {font-family: sans-serif}
-</style>
-</head>
+</style></head>
+
 <body>
 <table width="100%" summary="" align="center" bgcolor="#dcefff">
-<tr>
+<tbody><tr>
 <td valign="top" align="left" width="40%">
 <ul>
- <li><a href="index.html">Introduction</a></li>
- <li><a href="FAQ.html">FAQ</a></li>
- <li><a href="apiref.html">API Spec</a></li>
- <li><a href="download.html">Download</a></li>
- <li><a href="quickstart.html">Quick Start</a></li>
- <li><a href="livedemo.html">Live Demo</a></li>
- <li><a href="contact.html">Contact Info</a></li>
+ <li><a href="http://www.runtimeaccess.com/index.html">Introduction</a></li>
+ <li><a href="http://www.runtimeaccess.com/FAQ.html">FAQ</a></li>
+ <li><a href="http://www.runtimeaccess.com/apiref.html">API Spec</a></li>
+ <li><a href="http://www.runtimeaccess.com/download.html">Download</a></li>
+ <li><a href="http://www.runtimeaccess.com/quickstart.html">Quick Start</a></li>
+ <li><a href="http://www.runtimeaccess.com/livedemo.html">Live Demo</a></li>
+ <li><a href="http://www.runtimeaccess.com/contact.html">Contact Info</a></li>
 </ul>
 </td>
-<td align="left" valign=middle>
+<td align="left" valign="middle">
  <h2>Run Time Access</h2></td>
-</tr></table>
+</tr></tbody></table>
  <h2>Quick Start</h2> 
 <p>This page gives a brief tutorial on the use of the RTA package by
 building a trivial application which uses RTA. We define the task,
@@ -41,22 +38,22 @@ using the database interface.</p>
 package and librtafs to give a virtual file system interface to 
 the application.</p>
 
-<ul compact type="circle">
+<ul compact="compact" type="circle">
 <li><a href="#app">Problem Statement</a>
-<li><a href="#tbl">Table Definitions</a>
-<li><a href="#db">Database Interface</a>
+</li><li><a href="#tbl">Table Definitions</a>
+</li><li><a href="#db">Database Interface</a>
     <ul>
     <li><a href="#dbcode">C Code</a>
-    <li><a href="#dbbuild">Build and Link</a>
-    <li><a href="#dbtest">Test</a>
-    </ul>
-<li><a href="#fs">File System Interface</a>
+    </li><li><a href="#dbbuild">Build and Link</a>
+    </li><li><a href="#dbtest">Test</a>
+    </li></ul>
+</li><li><a href="#fs">File System Interface</a>
     <ul>
     <li><a href="#fscode">C Code</a>
-    <li><a href="#fsbuild">Build and Link</a>
-    <li><a href="#fstest">Test</a>
-    </ul>
-    </ul>
+    </li><li><a href="#fsbuild">Build and Link</a>
+    </li><li><a href="#fstest">Test</a>
+    </li></ul>
+    </li></ul>
 <br>
 <br>
  
@@ -70,8 +67,7 @@ call back on the writeable string does two things: it replaces any
 '&lt;' and '&gt;' characters with a '.', and it copies the reversed
 string into the the read-only string.</p>
 <p>The structure would be defined as:</p>
-<pre>
-#define NOTE_LEN   30
+<pre>#define NOTE_LEN   30
 struct MyData {
     int    myint;
     float  myfloat;
@@ -80,8 +76,7 @@ struct MyData {
 };
 </pre>
 <p>We allocate storage for the data as:</p>
-<pre>
-#define ROW_COUNT  20
+<pre>#define ROW_COUNT  20
 struct MyData mydata[ROW_COUNT];
 </pre>
 <p>Externally, we want this array of structures to be seen as a
@@ -94,8 +89,7 @@ to build a COLDEF structure for each of the four columns, and to
 build a TBLDEF structure for "mydata", the array of structures.</p>
 <p>We use an array of four COLDEFs to describe our columns. This is
 pretty simple:</p>
-<pre>
-COLDEF mycolumns[] = {
+<pre>COLDEF mycolumns[] = {
   {
     "mytable",          /* the table name */
     "myint",            /* the column name */
@@ -149,8 +143,7 @@ COLDEF mycolumns[] = {
 table name, column name, type, size, position in the struct, flags,
 read and write callbacks, and a short string to describe it.</p>
 <p>We define the table in a similar way:</p>
-<pre>
-TBLDEF mytbldef {
+<pre>TBLDEF mytbldef {
     "mytable",           /* table name */
     mydata,              /* address of table */
     sizeof(struct MyData), /* length of each row */
@@ -170,10 +163,9 @@ string can be. </p>
 <h3><a name="db">Database Interface</a></h3>
 <h4><a name="dbcode">C Code</a></h4>
 <p>The source code for our simple application is available here as
-<a href="myappdb.c">myappdb.c</a>. The first section of code of note is
+<a href="http://www.runtimeaccess.com/myappdb.c">myappdb.c</a>. The first section of code of note is
 the list of include files:</p>
-<pre>
-#include &lt;stdio.h&gt;
+<pre>#include &lt;stdio.h&gt;
 #include &lt;stdlib.h&gt;
 #include &lt;stddef.h&gt;             /* for 'offsetof' */
 #include &lt;string.h&gt;             /* for 'strlen' */
@@ -187,8 +179,7 @@ you install it. </p>
 <p>We have already presented the code for the structures and arrays
 of structures. Let's look at the code in the main() program to
 perform all initialization:</p>
-<pre>
-int main()
+<pre>int main()
 {
     int   i;                   /* a loop counter */
     int   srvfd;               /* FD for our server socket */
@@ -229,8 +220,7 @@ We have to accept TCP connections from Postgres clients.</p>
 blocking IO, ignores error conditions, and makes wildly optimistic
 assumptions about socket IO. My goal is to make the code
 understandable by getting it into as few lines as possible.</p>
-<pre>
-    /* We now need to open a socket to listen for incoming
+<pre>    /* We now need to open a socket to listen for incoming
      * client connections. */
     adrlen = sizeof (struct sockaddr_in);
     (void) memset ((void *) &amp;srvskt, 0, (size_t) adrlen);
@@ -247,8 +237,7 @@ commands, processing them with dbcommand(), and then writing any
 results back to the client. While a connection can close for
 errors, we normally expect the client to request an orderly close
 to the connection.:</p>
-<pre>
-    /* Loop forever accepting client connections */
+<pre>    /* Loop forever accepting client connections */
     while (1) {
         connfd = accept(srvfd, (struct sockaddr *) &amp;cliskt, &amp;adrlen);
         if (connfd &lt; 0) {
@@ -289,8 +278,7 @@ update data to the columns. Our write callback on the 'notes' field
 is called after the data has been written. It loops through the
 string replacing greater-than and less-than symbols with a period,
 and copying a reverse of the string into the 'seton' field.</p>
-<pre>
-void reverse_str(char *tbl, char *col, char *sql, int rowid)
+<pre>void reverse_str(char *tbl, char *col, char *sql, int rowid)
 {
     int   i,j;                 /* loop counters */
 
@@ -312,19 +300,17 @@ to download, build, and run the sample application.</p>
 <p>Download the RTA package from the download page 
 given above.  Untar it.  Go to the src directory
 and do a make.  </p>
-<pre>
-    # tar -xzf rta-0.7.0.tgz
+<pre>    # tar -xzf rta-0.7.0.tgz
     # cd rta-0.7.0
     # cd src
     # make librtadb.so.2
 </pre>
 <p>Download the myappdb.c file (available 
-<a href=myappdb.c>here</a>).  Place the file
+<a href="http://www.runtimeaccess.com/myappdb.c">here</a>).  Place the file
 in the test directory.  Build it with the
 command:
 </p>
-<pre>
-    # gcc myappdb.c -o myappdb -L../src -lrtadb
+<pre>    # gcc myappdb.c -o myappdb -L../src -lrtadb
 </pre>
 <p>Note that we are telling the application that the
 library it needs is in the sibling <tt>src</tt>
@@ -332,8 +318,7 @@ directory.</p>
 <p>To run the application we will need to tell
 it where to find the shared object library.  From
 the <tt>test</tt> directory enter:</p>
-<pre>
-    # export LD_LIBRARY_PATH=/home/rta-0.7.0/src
+<pre>    # export LD_LIBRARY_PATH=/home/rta-0.7.0/src
     # ./myappdb &amp;
 </pre>
 <p>That is all there is to it.  Please use the contact
@@ -355,11 +340,9 @@ rta_tables, rta_columns, rta_dbg, and
 rta_stat.  See the API section for a description
 of these tables.</p>
 <p>To start psql to our application enter:</p>
-<pre>
-    # psql -h localhost -p 8888
-</pre><p>Postgres should respond with:<p>
-<pre>
-    Welcome to psql, the PostgreSQL interactive terminal.
+<pre>    # psql -h localhost -p 8888
+</pre><p>Postgres should respond with:</p><p>
+</p><pre>    Welcome to psql, the PostgreSQL interactive terminal.
 
     Type:  \copyright for distribution terms
            \h for help with SQL commands
@@ -369,8 +352,7 @@ of these tables.</p>
 </pre>
 <p>Let's try some SQL commands to play with the tables.</p>
 <p>Give me a list of the tables:</p>
-<pre>
-    SELECT name FROM rta_tables;
+<pre>    SELECT name FROM rta_tables;
         name     
     -------------
      rta_tables
@@ -383,8 +365,7 @@ of these tables.</p>
 <p>You do not need to use upper case for the SQL keywords.
 The psql program accepts both upper and lower case.</p>
 <p>Display the contents of mytable:</p>
-<pre>
-    SELECT * FROM mytable;
+<pre>    SELECT * FROM mytable;
      myint |       myfloat        | notes | seton 
     -------+----------------------+-------+-------
      0     |         0.0000000000 |       | 
@@ -411,20 +392,17 @@ The psql program accepts both upper and lower case.</p>
 </pre>
 <p>Set all of the myint values to 44 and display
 the new table:</p>
-<pre>
-    UPDATE mytable SET myint=44;
+<pre>    UPDATE mytable SET myint=44;
     UPDATE 20
     SELECT * FROM mytable;
 </pre>
 <p>Note that psql tells us how many rows were modified.</p>
 <p>Set the notes field to "hi mom!"</p>
-<pre>
-    UPDATE mytable SET notes="hi mom!";
+<pre>    UPDATE mytable SET notes="hi mom!";
     UPDATE 20
 </pre>
 <p>Set the notes field of only row 0 to "&lt;b&gt;hi mom!&lt;/b&gt;":</p>
-<pre>
-    UPDATE mytable SET notes="&lt;b&gt;hi mom!&lt;/b&gt;" LIMIT 1 OFFSET 0;
+<pre>    UPDATE mytable SET notes="&lt;b&gt;hi mom!&lt;/b&gt;" LIMIT 1 OFFSET 0;
     UPDATE 1
 </pre>
 <p>The <tt>LIMIT</tt> says how many rows to change, and the
@@ -432,20 +410,18 @@ the new table:</p>
 LIMIT is all rows, and the default OFFSET is zero.</p>
 <p>Turn on the trace of all SQL commands and send the output to
 both stderr and syslog:</p>
-<pre>
-    UPDATE rta_dbg SET trace=1, target=3;
+<pre>    UPDATE rta_dbg SET trace=1, target=3;
 </pre>
 <p>You should now see all the commands echoed on the standard
 error output of the program.  The commands are also being sent
 to your syslog facility.</p>
 
 <h5>C</h5>
-<p>The C program presented here,<a href=rta_client.c> 
+<p>The C program presented here,<a href="http://www.runtimeaccess.com/rta_client.c"> 
 rta_client.c</a>, illustrates how to get data out of our
 application from a C program.  You need the postgresql-devel
 package to build this program.  Build and run the program with:</p>
-<pre>
-    # gcc rta_client.c -o rta_client -lpq
+<pre>    # gcc rta_client.c -o rta_client -lpq
     # ./rta_client
 </pre>
 <p>The program sets the field myint to a value of 44 and then gets
@@ -457,7 +433,7 @@ that the returned data is always a string.  You need to scan it
 into a variable for other processing.</p>
 
 <h5>PHP</h5>
-<p>The PHP program presented here,<a href=rta_client.txt> 
+<p>The PHP program presented here,<a href="http://www.runtimeaccess.com/rta_client.txt"> 
 rta_client.php</a>, illustrates how to get data out of our
 application from a PHP program.  You need the php-pgsql
 package to run this program.  If you are running Apache, check
@@ -481,14 +457,13 @@ application running on the <i>Live Demo</i> link above.
 <h4><a name="fscode">C Code</a></h4>
 <p>The steps to build myapp with the file system interface are
 similar to those of the database interface.
-First let's consider the C code, <a href=myappfs.c>myappfs.c</a>.</p>
+First let's consider the C code, <a href="http://www.runtimeaccess.com/myappfs.c">myappfs.c</a>.</p>
 <p>The table definitions are exactly those shown above and are not
 included in this listing.  The file system package is built on top
 of the database package and we still use the calls to rta_init()
 and rta_add_table().  The two new calls are to rtafs_init() and
 do_rtafs().</p>
-<code>
-int main()
+<code></code><pre>int main()
 {
     fd_set   rfds;       /* read bit masks for select statement */
     int   i;             /* a loop counter */
@@ -524,7 +499,7 @@ int main()
         }
     }
 }
-</code>
+</pre>
 <p>We use a select() to detect arrival of a file system command
 and use do_rtafs() to do the read and execution of the command.
 You can use routines in the FUSE package directly if you want
@@ -540,7 +515,7 @@ has the same UID and GID as the user running the program.
 <h4><a name="fsbuild">Build and Link</a></h4>
 <p>Before compiling myappfs.c we need to build librtafs.so and
 to do that we need the FUSE package installed.  FUSE is available
-from:<br> &nbsp;&nbsp; &nbsp;&nbsp;
+from:<br>      
 <a href="http://prdownloads.sourceforge.net/avf/fuse-1.0.tar.gz">
 http://prdownloads.sourceforge.net/avf/fuse-1.0.tar.gz</a></p>
 <p>FUSE uses the usual download, <tt>./configure</tt>,
@@ -557,18 +532,15 @@ library.</p>
 </pre>
 <p>Copy the myappfs.c program to the <tt>test</tt> directory and compile
 it with the command:</p>
-<pre>
-    # gcc myappfs.c -o myappfs -L../src -lrtadb -lrtafs
+<pre>    # gcc myappfs.c -o myappfs -L../src -lrtadb -lrtafs
 </pre>
 <p>As before, make sure sure the RTA libraries are installed
 in one of the system library directories or explicitly tell
 the system to look for the libraries in the <tt>src</tt> directory:
-<pre>
-    # export LD_LIBRARY_PATH=/home/rta-0.7.0/src
+</p><pre>    # export LD_LIBRARY_PATH=/home/rta-0.7.0/src
 </pre>
 <p>Make sure that <tt>/tmp/mydir</tt> exists and run the program.</p>
-<pre>
-    # mkdir /tmp/mydir
+<pre>    # mkdir /tmp/mydir
     # ./myappfs &amp;
 </pre>
 <br>
@@ -617,7 +589,7 @@ and with strings enclosed in quotes.</p>
 </pre>
 <p>Either <tt>cat</tt> or <tt>echo</tt> can change a column
 or a row.
-<pre>    # echo "Babylon 5" &gt; /tmp/mydir/mytable/notes/0000
+</p><pre>    # echo "Babylon 5" &gt; /tmp/mydir/mytable/notes/0000
 </pre>
 <p>There is no way to update the whole table at once, but
 it is pretty easy to update each row, one at a time.</p>
@@ -634,10 +606,7 @@ quotes to surround strings.</p>
 <br>
 
 <p>
-      <a href="http://validator.w3.org/check/referer"><img border="0"
-          src="http://www.w3.org/Icons/valid-html401"
-          alt="Valid HTML 4.01!" height="31" width="88"></a>
+      <a href="http://validator.w3.org/check/referer"><img border="0" src="quickstart_files/valid-html401.png" alt="Valid HTML 4.01!" height="31" width="88"></a>
 </p>
 
-</body>
-</html>
+</body></html>

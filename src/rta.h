@@ -107,6 +107,39 @@
 #ifndef RTA_H
 #define RTA_H
 
+#if HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+
+/***************************************************************
+ * OS dependent code 
+ ***************************************************************/
+
+#include <limits.h>             /* typically includes PATH_MAX */
+#include <stdlib.h> 		/* includes _MAX_PATH for BorlandC */ 
+
+#ifndef PATH_MAX
+#ifdef _MAX_PATH 
+#define PATH_MAX  _MAX_PATH 
+#endif
+#endif
+
+#ifndef HAVE_STRCASECMP 
+#ifdef __BORLANDC__
+#define strcasecmp strcmpi
+#endif
+#endif
+
+#ifndef llong
+#ifdef __BORLANDC__
+typedef long llong;
+#else
+typedef long long llong;
+#endif
+#endif
+
+
 /***************************************************************
  * - Limits:
  *     Here are the defines which describe the internal limits
@@ -114,8 +147,6 @@
  * limits; just be sure to recompile the rta package using 
  * your new settings.
  **************************************************************/
-
-#include <limits.h>             /* for PATH_MAX */
 
         /** Maximum number of tables allowed in the system.
          * Your data base may not contain more than this number
@@ -255,9 +286,8 @@ COLDEF;
 #define RTA_INT          2
 
         /** Long.  This is the compiler/architecture native
-         * long long.  On Linux/gcc/Pentium a llong is 64
-         * bits.  Define 'llong' to suit your needs.  */
-typedef long long llong;
+         * long long.  On Linux/gcc/Pentium a long long is 64
+         * bits.  */
 #define RTA_LONG         3
 
         /** Pointer to string.  Pointer to an array of char, or

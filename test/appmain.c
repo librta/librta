@@ -21,20 +21,39 @@
  *  -allocate storage for tables and variables
  *  -main() routine
  *  -other routines in alphabetical order
- *  -includes, defines, and forward references */
+ *  -includes, defines, and forward references 
+ */
+
+#include <config.h>
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/select.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/syslog.h>
-#include <netinet/in.h>
 #include <string.h>
-#include <unistd.h>
 #include <fcntl.h>
 #include <time.h>               /* for time() function */
 #include <errno.h>
+#include <sys/types.h>
+
+#ifndef __BORLANDC__
+#include <unistd.h>             /* Borland doesn't have this header */
+#include <sys/fcntl.h>          /* Borland doesn't have this header */
+#endif
+
+#ifdef __BORLANDC__
+#define WIN32
+#endif
+
+#ifdef WIN32
+#include <winsock2.h>
+#endif
+
+#ifndef WIN32
+#include <sys/select.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#endif
+
+
 #include "app.h"
 
 #define  DB_PORT    8888
@@ -48,6 +67,20 @@ int      listen_on_port(int port);
 void     reverse_str(char *tbl, char *col, char *sql, void *pr, int rowid,
                      void *por);
 void    *get_next_conn(void *prow, void *it_data, int rowid);
+
+/* system independent wrappers */
+int      sys_net_init();
+int      getLastError(void);
+int      sys_socket(int domain, int type, int protocol);
+int      sys_bind(int sockfd, struct sockaddr *my_addr, int addrlen);
+int      sys_listen(int s, int backlog);
+int      sys_accept(int s, struct sockaddr *addr, int *addrlen);
+int      sys_select(int n, fd_set *readfds, fd_set *writefds, fd_set *exceptfds,
+             struct timeval *timeout);
+int 	 sys_send(int s, const void *msg, size_t len, int flags);
+int      sys_recv(int s, void *buf, size_t len, int flags);
+void     set_nonblocking(int fd);
+
 extern TBLDEF UITables[];
 extern int nuitables;
 
@@ -70,17 +103,27 @@ main()
   fd_set   wfds;       /* write bit masks for select statement */
   int      mxfd;       /* Maximum FD for the select statement */
   int      newui_fd = -1; /* FD to TCP socket accept UI conns */
+#ifdef HAVE_LIBFUSE
   int      rtafs_fd = -1; /* FD to fuse interface to file system */
+#endif 
   int      i;          /* generic loop counter */
   UI      *pui;        /* pointer to a UI struct */
   UI      *nextpui;    /* points to next UI in list */
 
 
-
-  /* Comment out the following if you are not using the fuse */
-  /* package. */
+#ifdef HAVE_LIBFUSE
   /* Init the file system interface */
+  fprintf(stdout, "Built with libfuse support.\n"); 
   rtafs_fd = rtafs_init("/tmp/app");
+#else
+  fprintf(stdout, "Built without libfuse support.\n"); 
+#endif
+
+  if (sys_net_init() < 0) 
+  {
+    fprintf(stderr, "Unable to load network module.\n");
+    exit(1); 
+  }
 
   for (i = 0; i < nuitables; i++)
   {
@@ -98,12 +141,14 @@ main()
     FD_ZERO(&wfds);
     mxfd = 0;
 
+#ifdef HAVE_LIBFUSE
     /* Listen for file-system requests if FD is valid */
     if (rtafs_fd >= 0)
     {
       FD_SET(rtafs_fd, &rfds);
       mxfd = (rtafs_fd > mxfd) ? rtafs_fd : mxfd;
     }
+#endif
 
     /* open UI/DB/manager listener if needed */
     if (newui_fd < 0)
@@ -131,19 +176,19 @@ main()
     }
 
     /* Wait for some something to do */
-    (void) select(mxfd + 1, &rfds, &wfds,
+    (void) sys_select(mxfd + 1, &rfds, &wfds,
       (fd_set *) 0, (struct timeval *) 0);
 
     /* ....after the select call.  We have activity. Search through
        the open fd's to find what to do. */
 
-    /* Comment out the following if you are not using */
-    /* the fuse package. */
+#ifdef HAVE_LIBFUSE
     /* Handle file-system requests */
     if ((rtafs_fd >= 0) && (FD_ISSET(rtafs_fd, &rfds)))
     {
       do_rtafs();
     }
+#endif
 
     /* Handle new UI/DB/manager connection requests */
     if ((newui_fd >= 0) && (FD_ISSET(newui_fd, &rfds)))
@@ -189,16 +234,14 @@ accept_ui_session(int srvfd)
   int      newuifd;    /* New UI FD */
   int      adrlen;     /* length of an inet socket address */
   struct sockaddr_in cliskt; /* socket to the UI/DB client */
-  int      flags;      /* helps set non-blocking IO */
   UI      *pnew;       /* pointer to the new UI struct */
   UI      *pui;        /* pointer to a UI struct */
 
-
   /* Accept the connection */
   adrlen = sizeof(struct sockaddr_in);
-  newuifd = accept(srvfd, (struct sockaddr *) &cliskt, &adrlen); 
+  newuifd = sys_accept(srvfd, (struct sockaddr *) &cliskt, &adrlen); 
   if (newuifd < 0) {
-    syslog(LOG_ERR, "Manager accept() error");
+    fprintf(stderr, "Manager accept() error");
     return;
   }
 
@@ -206,7 +249,8 @@ accept_ui_session(int srvfd)
      Are we at our limit?  If so, drop the oldest conn. */
   if (nui >= MX_UI)
   {
-    syslog(LOG_WARNING, "no manager connections");
+
+    fprintf(stderr, "no manager connections");
 
     /* oldest conn is one at head of linked list.  Close it and
        promote next oldest to the top of the linked list.  */
@@ -223,7 +267,9 @@ accept_ui_session(int srvfd)
   {
     /* Unable to allocate memory for new connection.  Log it,
        then drop new connection.  Try to go on.... */
-    syslog(LOG_ERR, "Unable to allocate memory");
+
+    fprintf(stderr, "Unable to allocate memory");
+
     close(newuifd);
     return;
   }
@@ -248,9 +294,8 @@ accept_ui_session(int srvfd)
 
   /* UI struct is now at end of list.  Fill it in.  */
   pnew->fd = newuifd;
-  flags = fcntl(pnew->fd, F_GETFL, 0);
-  flags |= O_NONBLOCK;
-  (void) fcntl(pnew->fd, F_SETFL, flags);
+  set_nonblocking(pnew->fd);
+  
   pnew->o_ip = (int) cliskt.sin_addr.s_addr;
   pnew->o_port = (int) ntohs(cliskt.sin_port);
   pnew->cmdindx = 0;
@@ -305,7 +350,8 @@ handle_ui_request(UI *pui)
   /* We read data from the connection into the buffer in the ui struct. 
      Once we've read all of the data we can, we call the DB routine to
      parse out the SQL command and to execute it. */
-  ret = read(pui->fd, &(pui->cmd[pui->cmdindx]), (MXCMD - pui->cmdindx));
+
+  ret = sys_recv(pui->fd, &(pui->cmd[pui->cmdindx]), (MXCMD - pui->cmdindx),0);
 
   /* shutdown manager conn on error or on zero bytes read */
   if (ret <= 0)
@@ -361,13 +407,14 @@ handle_ui_output(UI *pui)
 
   if (pui->rspfree < MXRSP)
   {
-    ret = write(pui->fd, pui->rsp, (MXRSP - pui->rspfree));
+    ret = sys_send(pui->fd, pui->rsp, (MXRSP - pui->rspfree),0);
     if (ret < 0)
     {
       /* log a failure to talk to a DB/UI connection */
+      int err_num = getLastError();
       fprintf(stderr,
         "error #%d on ui write to port #%d on IP=%d\n",
-        errno, pui->o_port, pui->o_ip);
+        err_num, pui->o_port, pui->o_ip);
       close(pui->fd);
       /* Free the UI struct */
       if (pui->prevconn)
@@ -413,27 +460,28 @@ listen_on_port(int port)
   int      srvfd;      /* FD for our listen server socket */
   struct sockaddr_in srvskt;
   int      adrlen;
-  int      flags;
 
   adrlen = sizeof(struct sockaddr_in);
   (void) memset((void *) &srvskt, 0, (size_t) adrlen);
   srvskt.sin_family = AF_INET;
   srvskt.sin_addr.s_addr = INADDR_ANY;
   srvskt.sin_port = htons(port);
-  if ((srvfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+
+  srvfd = sys_socket(AF_INET, SOCK_STREAM, IPPROTO_TCP); 
+  if (srvfd < 0)
   {
-    fprintf(stderr, "Unable to get socket for port %d.", port);
+    fprintf(stderr, "Unable to get socket for port %d.\n", port);
     exit(1);
   }
-  flags = fcntl(srvfd, F_GETFL, 0);
-  flags |= O_NONBLOCK;
-  (void) fcntl(srvfd, F_SETFL, flags);
-  if (bind(srvfd, (struct sockaddr *) &srvskt, adrlen) < 0)
+
+  set_nonblocking(srvfd);
+
+  if (sys_bind(srvfd, (struct sockaddr *) &srvskt, adrlen) < 0)
   {
     fprintf(stderr, "Unable to bind to port %d\n", port);
     exit(1);
   }
-  if (listen(srvfd, 1) < 0)
+  if (sys_listen(srvfd, 1) < 0)
   {
     fprintf(stderr, "Unable to listen on port %d\n", port);
     exit(1);
@@ -489,3 +537,184 @@ get_next_conn(void *prow, void *it_data, int rowid)
 
   return((void *) ((UI *)prow)->nextconn);
 }
+
+/***************************************************************
+ * system independent wrapper to load Window's wsock.dll network
+ * library
+ * Returns -1 on error.
+ * Upon error, getLastError() can be used to retrieve a specific 
+ * error code. 
+ ***************************************************************/
+int 
+sys_net_init()
+{
+#ifdef WIN32 
+        WORD wVersionRequested;
+        WSADATA wsaData;
+        int err;
+        wVersionRequested = MAKEWORD( 1, 1);
+        err = WSAStartup( wVersionRequested, &wsaData );
+        if ( err != 0 )
+        {
+                return -1;
+        }
+#endif
+        return 0;
+}
+
+
+/***************************************************************
+ * system independent wrapper for socket() 
+ * Returns -1 on error.
+ * Upon error, getLastError() can be used to retrieve a specific 
+ * error code. 
+ ***************************************************************/
+int
+sys_socket(int domain, int type, int protocol) 
+{
+  int s = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP); 
+#if WIN32
+  if (s == INVALID_SOCKET)
+      return -1;
+#endif
+  return s; 
+}
+
+
+/***************************************************************
+ * system independent wrapper for bind() 
+ * Returns -1 on error.
+ * Upon error, getLastError() can be used to retrieve a specific 
+ * error code. 
+ ***************************************************************/
+int 
+sys_bind(int sockfd, struct sockaddr *my_addr, int addrlen)
+{
+  int rc = bind(sockfd, my_addr, addrlen); 
+  /* Both WIN32 and Unix return zero on success */
+  if (rc != 0)
+    return -1;
+  return 0;
+}
+
+
+/***************************************************************
+ * system independent wrapper for listen() 
+ * Returns -1 on error.
+ * Upon error, getLastError() can be used to retrieve a specific 
+ * error code. 
+ ***************************************************************/
+int 
+sys_listen(int s, int backlog)
+{
+  int rc = listen(s, backlog); 
+  /* Both WIN32 and Unix return zero on success */
+  if (rc != 0)
+    return -1;
+  return 0;
+}
+
+/***************************************************************
+ * system independent wrapper for accept() 
+ * Returns -1 on error.
+ * Upon error, getLastError() can be used to retrieve a specific 
+ * error code. 
+ ***************************************************************/
+int 
+sys_accept(int s, struct sockaddr *addr, int *addrlen)
+{
+  int fd = accept(s, addr, addrlen);
+#if WIN32
+  if (fd == INVALID_SOCKET)
+      return -1;
+#endif
+  return fd;
+}
+
+
+/***************************************************************
+ * system independent wrapper for select() 
+ * Returns -1 on error.
+ * Upon error, getLastError() can be used to retrieve a specific 
+ * error code. 
+ ***************************************************************/
+int
+sys_select(int n, fd_set *readfds, fd_set *writefds, fd_set *exceptfds,
+       struct timeval *timeout)
+{
+  int num_fds = select(n, readfds, writefds, exceptfds, timeout);
+#if WIN32
+  if (num_fds == INVALID_SOCKET)
+      return -1;
+#endif
+  return num_fds; 
+}
+
+/***************************************************************
+ * system independent wrapper for send() 
+ * Returns -1 on error.
+ * Upon error, getLastError() can be used to retrieve a specific 
+ * error code. 
+ ***************************************************************/
+int sys_send(int s, const void *msg, size_t len, int flags)
+{
+   int rc = send(s, msg, len, flags);
+#if WIN32
+   if (rc == SOCKET_ERROR)
+      return -1;
+#endif
+   return rc;
+}
+
+
+/***************************************************************
+ * system independent wrapper for recv() 
+ * Returns -1 on error.
+ * Upon error, getLastError() can be used to retrieve a specific 
+ * error code. 
+ ***************************************************************/
+int sys_recv(int s, void *buf, size_t len, int flags)
+{
+   int rc = recv(s, buf, len, flags);
+#if WIN32
+   if (rc == SOCKET_ERROR)
+      return -1;
+#endif
+   return rc;
+}
+
+
+
+/***************************************************************
+ * system independent wrapper to set file/socket into 
+ * non-blocking mode. 
+ ***************************************************************/
+void
+set_nonblocking(int fd)
+{
+#ifdef WIN32
+  unsigned long flags = 1;
+  ioctlsocket(fd, FIONBIO, &flags);
+#else
+  int      flags;
+  flags = fcntl(fd, F_GETFL, 0);
+  flags |= O_NONBLOCK;
+  (void) fcntl(fd, F_SETFL, flags);
+#endif
+}
+
+/***************************************************************
+ * system independent wrapper to determine error codes for system
+ * calls. 
+ * Note that Windows maintains error information per thread. 
+ ***************************************************************/
+int
+getLastError(void)
+{
+#ifdef WIN32
+   return WSAGetLastError();
+#else
+   return errno;
+#endif
+}
+

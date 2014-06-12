@@ -11,11 +11,19 @@
  * commands received from the UIs.  
  **************************************************************/
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>             /* for va_arg */
 #include <string.h>
+
+#ifdef HAVE_SYSLOG_H
 #include <syslog.h>
+#endif
+
 #include "do_sql.h"
 
 struct Sql_Cmd cmd;
@@ -91,7 +99,9 @@ do_sql(char *buf, int *nbuf)
       break;
 
     default:
+#ifdef HAVE_SYSLOG_H
       syslog(LOG_ERR, "DB error: no SQL cmd\n");
+#endif
       break;
   }
 }
@@ -420,7 +430,7 @@ do_select(char *buf, int *nbuf)
   int      wx;         /* Where clause indeX in for loop */
   void    *pr;         /* Pointer to the row in the table/column */
   void    *pd;         /* Pointer to the Data in the table/column */
-  llong cmp;           /* has actual relation of col and val */
+  llong    cmp;        /* has actual relation of col and val */
   int      dor;        /* DO Row == 1 if we should print row */
   int      npr = 0;    /* Number of output rows */
   char     nprstr[30]; /* string to hold ASCII of npr */
@@ -565,7 +575,11 @@ do_select(char *buf, int *nbuf)
             buf += n;
             break;
           case RTA_PLONG:
-            n = sprintf((buf + 4), "%lld", **((llong **) pd));
+#ifndef __BORLANDC__
+            n = sprintf((buf + 4), "%lld", *((llong *) pd));
+#else
+            n = sprintf((buf + 4), "%ld", *((llong *) pd));
+#endif
             ad_int4(&buf, n);
             buf += n;
             break;
@@ -781,7 +795,7 @@ do_update(char *buf, int *nbuf)
   void    *pr;         /* Pointer to the row in the table/column */
   void    *pd;         /* Pointer to the Data in the table/column */
   void    *poldrow;    /* Pointer to copy of row before update */
-  llong cmp;           /* has actual relation of col and val */
+  llong    cmp;        /* has actual relation of col and val */
   int      dor;        /* DO Row == 1 if we should update row */
   char    *startbuf;   /* used to compute response length */
   int      cx;         /* Column index while building Data pkt */
@@ -832,10 +846,10 @@ do_update(char *buf, int *nbuf)
           cmp = **((int **) pd) - cmd.whrints[wx];
           break;
         case RTA_LONG:
-          cmp = *((llong *) pd) - cmd.whrlngs[wx];
+          cmp = *((llong*) pd) - cmd.whrlngs[wx];
           break;
         case RTA_PLONG:
-          cmp = **((llong **) pd) - cmd.whrlngs[wx];
+          cmp = **((long**) pd) - cmd.whrlngs[wx];
           break;
         case RTA_FLOAT:
           cmp = *((float *) pd) - cmd.whrflot[wx];
@@ -1058,9 +1072,11 @@ rtalog(char *fname,    /* error detected in file... */
   }
   va_end(ap);
 
+#ifdef HAVE_SYSLOG_H
   /* Send to syslog() if so configured */
   if (rtadbg.target == 1 || rtadbg.target == 3)
     syslog(rtadbg.priority, format, fname, linen, s1, s2);
+#endif
 
   /* Send to stderr if so configured */
   if (rtadbg.target == 2 || rtadbg.target == 3) {
