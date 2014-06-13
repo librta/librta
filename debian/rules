@@ -1,18 +1,12 @@
 #!/usr/bin/make -f
 
-export DH_VERBOSE=1
-export DH_OPTIONS=-v
+export DH_VERBOSE = 1
+export DH_OPTIONS = -v
 
 # Top directory of the source code.
 SRCTOP    := $(shell if [ "$$PWD" != "" ]; then echo $$PWD; else pwd; fi)
 # Destination directory where files will be installed.
 DESTDIR   = $(SRCTOP)/debian
-
-# Definition of directories
-BIN_DIR = $(DESTDIR)/usr/bin
-SHARE_DIR = $(DESTDIR)/usr/share/$(package)
-DOCS_DIR = $(DESTDIR)/usr/share/doc/$(package)
-MAN_DIR = $(DESTDIR)/usr/share/man/man3
 
 ifneq (,$(wildcard /usr/share/dpkg/default.mk))
   include /usr/share/dpkg/default.mk
@@ -60,15 +54,16 @@ clean:
 	  make clean; \
 	  cd ..; \
 	done
-	rm -fr debian/rta*
-	rm -f debian/files
-	rm -f debian/substvars
+	rm -fr debian/rta debian/rta-dev debian/rta-doc debian/rta-dbg debian/rta-examples
+	rm -f debian/*.log debian/files debian/substvars
 
 build: build-stamp
 build-stamp: $(foreach v,$(PKGS),build-stamp-$(v))
 	dh_testdir
 	touch $@
 
+# Actually the only build that happens is in the main source tree.
+# But we have a hook to add more build actions when needed.
 build-stamp-%: PKG=$*
 build-stamp-%:
 	dh_testdir
@@ -76,10 +71,6 @@ build-stamp-%:
 	@echo "*** Debian *** building package $(PKG)"
 	if [ $(PKG) = rta ]; then            \
 	  $(MAKE) -C src;                    \
-        elif [ $(PKG) = rta-examples ]; then \
-	  $(MAKE) -C test;                   \
-	else                                 \
-	  :;                                 \
 	fi
 	touch $@
 
@@ -99,11 +90,41 @@ install-stamp-rta:
 	dh_installdirs
 	$(MAKE) -C src install DESTDIR=$(DESTDIR)/rta INSTDIR=usr
 	rm -fr $(DESTDIR)/rta/usr/include
-	rm -fr $(DESTDIR)/rta/usr/lib/*.a
+	rm -f $(DESTDIR)/rta/usr/lib/*.a
 	touch $@
 
 install-stamp-rta-dev:
-install-stamp-rta-dbg:
+	dh_testdir
+	dh_testroot
+	@echo "*** Debian *** installing package rta-dev"
+	dh_installdirs
+	$(MAKE) -C src install DESTDIR=$(DESTDIR)/rta-dev INSTDIR=usr
+	rm -f $(DESTDIR)/rta-dev/usr/lib/*.so*
+	touch $@
+
 install-stamp-rta-doc:
+	dh_testdir
+	dh_testroot
+	dh_installdirs
+	install -m 644 doc/* $(DESTDIR)/rta-doc/usr/share/doc/rta-doc
+	touch $@
+
 install-stamp-rta-examples:
+	dh_testdir
+	dh_testroot
+	dh_installdirs
+	install -m 644 table_editor/* $(DESTDIR)/rta-examples/usr/share/doc/rta-examples/table_editor
+	install -m 644 test/* $(DESTDIR)/rta-examples/usr/share/doc/rta-examples/test
+	touch $@
+
+install-stamp-rta-dbg:
+	dh_testdir
+	dh_testroot
+	dh_installdirs
+	touch $@
+
+.PHONY: override_dh_strip
+
+override_dh_strip:
+        dh_strip --dbg-package=rta-dbg
 

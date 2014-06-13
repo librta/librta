@@ -62,7 +62,7 @@ standard: clean
 	 rm $$i~ ; \
 	done
 
-install:
+install: default
 	-mkdir -p $(DESTDIR)/$(INSTLIBDIR)
 	-mkdir -p $(DESTDIR)/$(INSTINCDIR)
 	install -m 644 librta* $(DESTDIR)/$(INSTLIBDIR);
