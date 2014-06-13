@@ -1,6 +1,18 @@
 #!/usr/bin/make -f
 
-export DH_OPTIONS
+export DH_VERBOSE=1
+export DH_OPTIONS=-v
+
+# Top directory of the source code.
+SRCTOP    := $(shell if [ "$$PWD" != "" ]; then echo $$PWD; else pwd; fi)
+# Destination directory where files will be installed.
+DESTDIR   = $(SRCTOP)/debian/$(package)
+
+# Definition of directories
+BIN_DIR = $(DESTDIR)/usr/bin
+SHARE_DIR = $(DESTDIR)/usr/share/$(package)
+DOCS_DIR = $(DESTDIR)/usr/share/doc/$(package)
+MAN_DIR = $(DESTDIR)/usr/share/man/man3
 
 ifneq (,$(wildcard /usr/share/dpkg/default.mk))
   include /usr/share/dpkg/default.mk
@@ -42,10 +54,62 @@ all:
 
 clean:
 	dh_testdir
-	dh_testroot
+	rm -f *-stamp-rta*
 	for i in src test; do \
 	  cd $$i; \
 	  make clean; \
 	  cd ..; \
 	done
+	rm -fr debian/rta*
+	rm -f debian/files
+	rm -f debian/substvars
+
+build: build-stamp-arch
+build-arch: build-stamp-arch
+build-stamp-arch: $(foreach v,$(VARIANTS),$(shell echo "v - $v"))
+build-stamp-arch: $(foreach v,$(VARIANTS),build-stamp-$(v))
+	dh_testdir
+	touch $@
+
+build-stamp-rta: CURCFLAGS=$(CFLAGS_$*)
+build-stamp-rta:
+	dh_testdir
+	dh_prep -p rta
+	@echo "*** DEBIAN *** BUILDING VARIANT $*"
+	$(MAKE) -C src
+	touch $@
+
+build-stamp-rta-dev: CURCFLAGS=$(CFLAGS_$*)
+build-stamp-rta-dev:
+	dh_testdir
+	dh_prep -p rta-dev
+	@echo "*** DEBIAN *** BUILDING VARIANT $*"
+	$(MAKE) -C src
+	touch $@
+
+build-stamp-rta-doc: CURCFLAGS=$(CFLAGS_$*)
+build-stamp-rta-doc:
+	dh_testdir
+	dh_prep -p rta-doc
+	@echo "*** DEBIAN *** BUILDING VARIANT $*"
+	$(MAKE) -C src
+	touch $@
+
+build-stamp-rta-dbg: CURCFLAGS=$(CFLAGS_$*)
+build-stamp-rta-dbg:
+	dh_testdir
+	dh_prep -p rta-dbg
+	@echo "*** DEBIAN *** BUILDING VARIANT $*"
+	$(MAKE) -C src
+	touch $@
+
+build-stamp-rta-examples: CURCFLAGS=$(CFLAGS_$*)
+build-stamp-rta-examples:
+	dh_testdir
+	dh_prep -p rta-examples
+	@echo "*** DEBIAN *** BUILDING VARIANT $*"
+	$(MAKE) -C test
+	touch $@
+
+install: $(foreach v,$(VARIANTS),install-stamp-$(v))
 
