@@ -36,9 +36,9 @@ Description: Debugging symbols for rta
  This package provides the debugging symbols for rta.
 
 Package: rta-examples
-Architecture: any
+Architecture: all
 Depends:
- rta (= ${binary:Version}),
+ rta-dev (= ${binary:Version}),
  ${misc:Depends}
 Recommends:
  libpq-dev
@@ -48,7 +48,7 @@ Description: Example programs for rta.
  This package provides examples fo rta.
 
 Package: rta-doc
-Architecture: any
+Architecture: all
 Depends:
  ${misc:Depends}
 Recommends:

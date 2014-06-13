@@ -15,7 +15,7 @@
 # We use the default make rules for .c and .l 
 
 CC = gcc
-OPT = -c -I. -I../src
+OPT = -c -I.
 DEBUG = -g -DDEBUG -DYYDEBUG -Wall
 CFLAGS = $(OPT) $(DEBUG)
 APPOBJS   = appmain.o apptables.o
@@ -24,10 +24,10 @@ APPOBJS   = appmain.o apptables.o
 default: app rta_client
 
 app: $(APPOBJS) 
-	$(CC) $(APPOBJS) -g -o $@ -L../src -Wl,-rpath=../src -lrtadb
+	$(CC) $(APPOBJS) -g -o $@ -lrtadb
 
 app-static: $(APPOBJS) 
-	$(CC) $(APPOBJS) -g -o $@ ../src/librtadb.a
+	$(CC) $(APPOBJS) -g -o $@ /usr/include/librtadb.a
 
 rta_client: rta_client.o
 	$(CC) -g rta_client.c -o $@ -lpq

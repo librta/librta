@@ -13,7 +13,7 @@
  *   This application demonstrates the use of the rta package
  * using select() for multiplexing.
  **************************************************************/
-#include "../src/rta.h"
+#include "rta.h"
 
     /* Maximum number of UI/Posgres connections */
 #define MX_UI     (20)

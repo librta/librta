@@ -20,12 +20,6 @@ PKGS+=rta-examples
 # So, the DEB_BUILD_OPTIONS 'nocheck' can be ignored.
 MAKETEST := no
 
-ifeq ($(DEB_VENDOR),Ubuntu)
-  :
-else
-  :
-endif
-
 # nothing to do per default
 all:
 
@@ -63,7 +57,8 @@ build-indep: build
 
 install: install-stamp
 install-stamp: $(foreach v,$(PKGS),install-stamp-$(v))
-	dh_testdir
+	dh_compress -X.c
+	dh_md5sums
 	touch $@
 
 install-stamp-rta:
@@ -75,9 +70,9 @@ install-stamp-rta:
 	rm -fr $(DESTDIR)/rta/usr/include
 	rm -f $(DESTDIR)/rta/usr/lib/*.a
 	dh_strip --dbg-package=rta-dbg
+	install -m 644 README $(DESTDIR)/rta/usr/share/doc/rta
 	install -m 644 debian/copyright $(DESTDIR)/rta/usr/share/doc/rta
 	install -m 644 debian/changelog $(DESTDIR)/rta/usr/share/doc/rta/changelog.Debian
-	gzip -9 -f $(DESTDIR)/rta/usr/share/doc/rta/changelog.Debian
 	touch $@
 
 install-stamp-rta-dev:
@@ -86,18 +81,18 @@ install-stamp-rta-dev:
 	@echo "*** Debian *** installing package rta-dev"
 	$(MAKE) -C src install DESTDIR=$(DESTDIR)/rta-dev INSTDIR=usr
 	rm -f $(DESTDIR)/rta-dev/usr/lib/*.so*
+	install -m 644 README $(DESTDIR)/rta-dev/usr/share/doc/rta-dev
 	install -m 644 debian/copyright $(DESTDIR)/rta-dev/usr/share/doc/rta-dev
 	install -m 644 debian/changelog $(DESTDIR)/rta-dev/usr/share/doc/rta-dev/changelog.Debian
-	gzip -9 -f $(DESTDIR)/rta-dev/usr/share/doc/rta-dev/changelog.Debian
 	touch $@
 
 install-stamp-rta-doc:
 	dh_testdir
 	dh_testroot
 	install -m 644 doc/* $(DESTDIR)/rta-doc/usr/share/doc/rta-doc/html
+	install -m 644 README $(DESTDIR)/rta-doc/usr/share/doc/rta-doc
 	install -m 644 debian/copyright $(DESTDIR)/rta-doc/usr/share/doc/rta-doc
 	install -m 644 debian/changelog $(DESTDIR)/rta-doc/usr/share/doc/rta-doc/changelog.Debian
-	gzip -9 -f $(DESTDIR)/rta-doc/usr/share/doc/rta-doc/changelog.Debian
 	touch $@
 
 install-stamp-rta-examples:
@@ -105,29 +100,26 @@ install-stamp-rta-examples:
 	dh_testroot
 	install -m 644 table_editor/* $(DESTDIR)/rta-examples/usr/share/doc/rta-examples/table_editor
 	install -m 644 test/* $(DESTDIR)/rta-examples/usr/share/doc/rta-examples/test
+	mv $(DESTDIR)/rta-examples/usr/share/doc/rta-examples/test/Makefile.pkg $(DESTDIR)/rta-examples/usr/share/doc/rta-examples/test/Makefile
+	install -m 644 README $(DESTDIR)/rta-examples/usr/share/doc/rta-examples
 	install -m 644 debian/copyright $(DESTDIR)/rta-examples/usr/share/doc/rta-examples
 	install -m 644 debian/changelog $(DESTDIR)/rta-examples/usr/share/doc/rta-examples/changelog.Debian
-	gzip -9 -f $(DESTDIR)/rta-examples/usr/share/doc/rta-examples/changelog.Debian
 	touch $@
 
 install-stamp-rta-dbg:
 	dh_testdir
 	dh_testroot
+	install -m 644 README $(DESTDIR)/rta-dbg/usr/share/doc/rta-dbg
 	install -m 644 debian/copyright $(DESTDIR)/rta-dbg/usr/share/doc/rta-dbg
 	install -m 644 debian/changelog $(DESTDIR)/rta-dbg/usr/share/doc/rta-dbg/changelog.Debian
-	gzip -9 -f $(DESTDIR)/rta-dbg/usr/share/doc/rta-dbg/changelog.Debian
 	touch $@
 
-binary-indep:
+binary-indep: binary
 
-install: install-stamp
-install-stamp: $(foreach v,$(PKGS),install-stamp-$(v))
-	dh_testdir
-	touch $@
+binary-arch: binary
 
-install-stamp-rta:
-binary-arch: install binary-stamp-arch
-binary-stamp-arch: $(foreach v,$(PKGS),binary-stamp-$(v))
+binary: install binary-stamp
+binary-stamp: $(foreach v,$(PKGS),binary-stamp-$(v))
 	dh_testdir
 	touch $@
 
@@ -156,7 +148,5 @@ binary-stamp-rta-dbg:
 	dpkg-deb -b $(DESTDIR)/rta-dbg ../
 	touch $@
 
-binary: binary-indep binary-arch
-
-.PHONY: binary binary-arch binary-indep clean build
+.PHONY: binary binary-arch binary-indep clean build build-arch build-indep
 
