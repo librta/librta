@@ -6,7 +6,7 @@ export DH_OPTIONS=-v
 # Top directory of the source code.
 SRCTOP    := $(shell if [ "$$PWD" != "" ]; then echo $$PWD; else pwd; fi)
 # Destination directory where files will be installed.
-DESTDIR   = $(SRCTOP)/debian/$(package)
+DESTDIR   = $(SRCTOP)/debian
 
 # Definition of directories
 BIN_DIR = $(DESTDIR)/usr/bin
@@ -33,11 +33,11 @@ else
   DEB_VERSION_UPSTREAM := $(shell dpkg-parsechangelog | sed -n '/^Version:/{s/Version: *\([^:]*:\)\?\([^-]*\)-.*/\2/;p;q}')
 endif
 
-VARIANTS=rta
-VARIANTS+=rta-dev
-VARIANTS+=rta-doc
-VARIANTS+=rta-dbg
-VARIANTS+=rta-examples
+PKGS=rta
+PKGS+=rta-dev
+PKGS+=rta-doc
+PKGS+=rta-dbg
+PKGS+=rta-examples
 
 # There is no runnable test.
 # So, the DEB_BUILD_OPTIONS 'nocheck' can be ignored.
@@ -54,7 +54,7 @@ all:
 
 clean:
 	dh_testdir
-	rm -f *-stamp-rta*
+	rm -f *-stamp*
 	for i in src test; do \
 	  cd $$i; \
 	  make clean; \
@@ -64,52 +64,46 @@ clean:
 	rm -f debian/files
 	rm -f debian/substvars
 
-build: build-stamp-arch
-build-arch: build-stamp-arch
-build-stamp-arch: $(foreach v,$(VARIANTS),$(shell echo "v - $v"))
-build-stamp-arch: $(foreach v,$(VARIANTS),build-stamp-$(v))
+build: build-stamp
+build-stamp: $(foreach v,$(PKGS),build-stamp-$(v))
 	dh_testdir
 	touch $@
 
-build-stamp-rta: CURCFLAGS=$(CFLAGS_$*)
-build-stamp-rta:
+build-stamp-%: PKG=$*
+build-stamp-%:
 	dh_testdir
-	dh_prep -p rta
-	@echo "*** DEBIAN *** BUILDING VARIANT $*"
-	$(MAKE) -C src
+	dh_prep -p $(PKG)
+	@echo "*** Debian *** building package $(PKG)"
+	if [ $(PKG) = rta ]; then            \
+	  $(MAKE) -C src;                    \
+        elif [ $(PKG) = rta-examples ]; then \
+	  $(MAKE) -C test;                   \
+	else                                 \
+	  :;                                 \
+	fi
 	touch $@
 
-build-stamp-rta-dev: CURCFLAGS=$(CFLAGS_$*)
-build-stamp-rta-dev:
+build-arch: build
+
+build-indep: build
+
+install: install-stamp
+install-stamp: $(foreach v,$(PKGS),install-stamp-$(v))
 	dh_testdir
-	dh_prep -p rta-dev
-	@echo "*** DEBIAN *** BUILDING VARIANT $*"
-	$(MAKE) -C src
 	touch $@
 
-build-stamp-rta-doc: CURCFLAGS=$(CFLAGS_$*)
-build-stamp-rta-doc:
+install-stamp-rta:
 	dh_testdir
-	dh_prep -p rta-doc
-	@echo "*** DEBIAN *** BUILDING VARIANT $*"
-	$(MAKE) -C src
+	dh_testroot
+	@echo "*** Debian *** installing package rta"
+	dh_installdirs
+	$(MAKE) -C src install DESTDIR=$(DESTDIR)/rta INSTDIR=usr
+	rm -fr $(DESTDIR)/rta/usr/include
+	rm -fr $(DESTDIR)/rta/usr/lib/*.a
 	touch $@
 
-build-stamp-rta-dbg: CURCFLAGS=$(CFLAGS_$*)
-build-stamp-rta-dbg:
-	dh_testdir
-	dh_prep -p rta-dbg
-	@echo "*** DEBIAN *** BUILDING VARIANT $*"
-	$(MAKE) -C src
-	touch $@
-
-build-stamp-rta-examples: CURCFLAGS=$(CFLAGS_$*)
-build-stamp-rta-examples:
-	dh_testdir
-	dh_prep -p rta-examples
-	@echo "*** DEBIAN *** BUILDING VARIANT $*"
-	$(MAKE) -C test
-	touch $@
-
-install: $(foreach v,$(VARIANTS),install-stamp-$(v))
+install-stamp-rta-dev:
+install-stamp-rta-dbg:
+install-stamp-rta-doc:
+install-stamp-rta-examples:
 
