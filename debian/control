@@ -3,7 +3,7 @@ Maintainer: Frederic Roussel <fr.frasc@gmail.com>
 Section: libs
 Priority: optional
 Standards-Version: 3.9.5
-Build-Depends: debhelper (>= 7.0.50)
+Build-Depends: debhelper (>= 7.0.50), flex, bison
 Homepage: http://www.linuxappliancedesign.com/projects/rta
 
 Package: rta
