@@ -14,20 +14,34 @@
 ################################################################
 # We use the default make rules for .c and .l 
 
-CC = gcc
-OPT = -c -I. -I../src
-DEBUG = -g -DDEBUG -DYYDEBUG -Wall
-CFLAGS = $(OPT) $(DEBUG)
-APPOBJS   = appmain.o apptables.o
+# If you installed this Makefile using a pre-built package
+# then 'DEV' will be false.
+DEV := $(shell [ -f ../src/rta.h ] || echo false)
 
+ifeq ($(DEV), false)
+  # variables set if installed with a package.
+  OPT       := -c
+  LDOPTS    := -lrtadb
+  STATICLIB := /usr/include/librtadb.a
+else
+  # internal development
+  OPT       := -c -I../src
+  LDOPTS    := -L../src -Wl,-rpath=../src -lrtadb
+  STATICLIB := ../src/librtadb.a
+endif
+
+CC        = gcc
+DEBUG     = -g -DDEBUG -Wall
+CFLAGS    = $(OPT) $(DEBUG)
+APPOBJS   = appmain.o apptables.o
 
 default: app rta_client
 
 app: $(APPOBJS) 
-	$(CC) $(APPOBJS) -g -o $@ -L../src -Wl,-rpath=../src -lrtadb
+	$(CC) $(APPOBJS) -g -o $@ $(LDOPTS)
 
 app-static: $(APPOBJS) 
-	$(CC) $(APPOBJS) -g -o $@ ../src/librtadb.a
+	$(CC) $(APPOBJS) -g -o $@ $(STATICLIB)
 
 rta_client: rta_client.o
 	$(CC) -g rta_client.c -o $@ -lpq
@@ -37,8 +51,6 @@ appmain.o: appmain.c app.h
 
 apptables.o: apptables.c app.h
 	$(CC) $(CFLAGS) $< -o $@
-
-
 
 standard: clean
 	for i in *.h *.c ; \

@@ -22,9 +22,10 @@ MAKETEST := no
 
 export DEBUG=
 
-# nothing to do per default
+#----- nothing to do per default
 all:
 
+#----- clean the build
 clean:
 	dh_testdir
 	rm -f *-stamp*
@@ -36,9 +37,16 @@ clean:
 	rm -fr debian/rta debian/rta-dev debian/rta-doc debian/rta-dbg debian/rta-examples
 	rm -f debian/*.log debian/files debian/substvars
 
+#----- build for all packages
+
+# Provides the require build-arch and build-indep entries.
+build-arch: build
+
+build-indep: build
+
 build: build-stamp
+
 build-stamp: $(foreach v,$(PKGS),build-stamp-$(v))
-	dh_testdir
 	touch $@
 
 # Actually the only compilation that happens is in the main source tree.
@@ -53,11 +61,10 @@ build-stamp-%:
 	fi
 	touch $@
 
-build-arch: build
-
-build-indep: build
+#----- install the result of the build into the package staging directoty.
 
 install: install-stamp
+
 install-stamp: $(foreach v,$(PKGS),install-stamp-$(v))
 	for i in $(PKGS); do \
 	  install -m 644 README $(DESTDIR)/$$i/usr/share/doc/$$i; \
@@ -78,21 +85,27 @@ install-stamp-rta:
 	touch $@
 
 install-stamp-rta-dev:
+	@echo "*** Debian *** installing package rta-dev"
 	$(MAKE) -C src install-dev DESTDIR=$(DESTDIR)/rta-dev INSTDIR=usr
 	touch $@
 
 install-stamp-rta-doc:
+	@echo "*** Debian *** installing package rta-doc"
 	install -m 644 doc/* $(DESTDIR)/rta-doc/usr/share/doc/rta-doc/html
 	touch $@
 
 install-stamp-rta-examples:
+	@echo "*** Debian *** installing package rta-examples"
 	install -m 644 table_editor/* $(DESTDIR)/rta-examples/usr/share/doc/rta-examples/table_editor
 	install -m 644 test/* $(DESTDIR)/rta-examples/usr/share/doc/rta-examples/test
-	mv $(DESTDIR)/rta-examples/usr/share/doc/rta-examples/test/Makefile.pkg $(DESTDIR)/rta-examples/usr/share/doc/rta-examples/test/Makefile
 	touch $@
 
 install-stamp-rta-dbg:
+	@echo "*** Debian *** installing package rta-dbg"
+	@echo "actually generated with 'dh_strip' earlier"
 	touch $@
+
+#----- generate the binary packages.
 
 binary-indep: binary
 
@@ -101,14 +114,15 @@ binary-arch: binary
 binary: install binary-stamp
 
 binary-stamp: $(foreach v,$(PKGS),binary-stamp-$(v))
-	dh_testdir
 	touch $@
 
 binary-stamp-%: PKG=$*
 binary-stamp-%:
+	dh_testdir
+	dh_testroot
 	dpkg-gencontrol -P$(DESTDIR)/$(PKG) -p$(PKG)
 	dpkg-deb -b $(DESTDIR)/$(PKG) ../
 	touch $@
 
-.PHONY: binary binary-arch binary-indep clean build build-arch build-indep
+.PHONY: binary binary-arch binary-indep clean build build-arch build-indep install
 
