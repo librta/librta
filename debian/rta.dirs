@@ -1,4 +1,3 @@
-/usr/lib
-/usr/include
-/usr/share/doc/rta
 /DEBIAN
+/usr/lib
+/usr/share/doc/rta

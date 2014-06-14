@@ -20,6 +20,8 @@ PKGS+=rta-examples
 # So, the DEB_BUILD_OPTIONS 'nocheck' can be ignored.
 MAKETEST := no
 
+export DEBUG=
+
 # nothing to do per default
 all:
 
@@ -39,7 +41,7 @@ build-stamp: $(foreach v,$(PKGS),build-stamp-$(v))
 	dh_testdir
 	touch $@
 
-# Actually the only build that happens is in the main source tree.
+# Actually the only compilation that happens is in the main source tree.
 # But we have a hook to add more build actions when needed.
 build-stamp-%: PKG=$*
 build-stamp-%:
@@ -57,7 +59,12 @@ build-indep: build
 
 install: install-stamp
 install-stamp: $(foreach v,$(PKGS),install-stamp-$(v))
-	dh_compress -X.c
+	for i in $(PKGS); do \
+	  install -m 644 README $(DESTDIR)/$$i/usr/share/doc/$$i; \
+	  install -m 644 debian/copyright $(DESTDIR)/$$i/usr/share/doc/$$i; \
+	  install -m 644 debian/changelog $(DESTDIR)/$$i/usr/share/doc/$$i/changelog.Debian; \
+	done
+	dh_compress -X.c -X.php
 	dh_md5sums
 	touch $@
 
@@ -66,52 +73,25 @@ install-stamp-rta:
 	dh_testroot
 	dh_installdirs
 	@echo "*** Debian *** installing package rta"
-	$(MAKE) -C src install DESTDIR=$(DESTDIR)/rta INSTDIR=usr
-	rm -fr $(DESTDIR)/rta/usr/include
-	rm -f $(DESTDIR)/rta/usr/lib/*.a
+	$(MAKE) -C src install-so DESTDIR=$(DESTDIR)/rta INSTDIR=usr
 	dh_strip --dbg-package=rta-dbg
-	install -m 644 README $(DESTDIR)/rta/usr/share/doc/rta
-	install -m 644 debian/copyright $(DESTDIR)/rta/usr/share/doc/rta
-	install -m 644 debian/changelog $(DESTDIR)/rta/usr/share/doc/rta/changelog.Debian
 	touch $@
 
 install-stamp-rta-dev:
-	dh_testdir
-	dh_testroot
-	@echo "*** Debian *** installing package rta-dev"
-	$(MAKE) -C src install DESTDIR=$(DESTDIR)/rta-dev INSTDIR=usr
-	rm -f $(DESTDIR)/rta-dev/usr/lib/*.so*
-	install -m 644 README $(DESTDIR)/rta-dev/usr/share/doc/rta-dev
-	install -m 644 debian/copyright $(DESTDIR)/rta-dev/usr/share/doc/rta-dev
-	install -m 644 debian/changelog $(DESTDIR)/rta-dev/usr/share/doc/rta-dev/changelog.Debian
+	$(MAKE) -C src install-dev DESTDIR=$(DESTDIR)/rta-dev INSTDIR=usr
 	touch $@
 
 install-stamp-rta-doc:
-	dh_testdir
-	dh_testroot
 	install -m 644 doc/* $(DESTDIR)/rta-doc/usr/share/doc/rta-doc/html
-	install -m 644 README $(DESTDIR)/rta-doc/usr/share/doc/rta-doc
-	install -m 644 debian/copyright $(DESTDIR)/rta-doc/usr/share/doc/rta-doc
-	install -m 644 debian/changelog $(DESTDIR)/rta-doc/usr/share/doc/rta-doc/changelog.Debian
 	touch $@
 
 install-stamp-rta-examples:
-	dh_testdir
-	dh_testroot
 	install -m 644 table_editor/* $(DESTDIR)/rta-examples/usr/share/doc/rta-examples/table_editor
 	install -m 644 test/* $(DESTDIR)/rta-examples/usr/share/doc/rta-examples/test
 	mv $(DESTDIR)/rta-examples/usr/share/doc/rta-examples/test/Makefile.pkg $(DESTDIR)/rta-examples/usr/share/doc/rta-examples/test/Makefile
-	install -m 644 README $(DESTDIR)/rta-examples/usr/share/doc/rta-examples
-	install -m 644 debian/copyright $(DESTDIR)/rta-examples/usr/share/doc/rta-examples
-	install -m 644 debian/changelog $(DESTDIR)/rta-examples/usr/share/doc/rta-examples/changelog.Debian
 	touch $@
 
 install-stamp-rta-dbg:
-	dh_testdir
-	dh_testroot
-	install -m 644 README $(DESTDIR)/rta-dbg/usr/share/doc/rta-dbg
-	install -m 644 debian/copyright $(DESTDIR)/rta-dbg/usr/share/doc/rta-dbg
-	install -m 644 debian/changelog $(DESTDIR)/rta-dbg/usr/share/doc/rta-dbg/changelog.Debian
 	touch $@
 
 binary-indep: binary
@@ -119,33 +99,15 @@ binary-indep: binary
 binary-arch: binary
 
 binary: install binary-stamp
+
 binary-stamp: $(foreach v,$(PKGS),binary-stamp-$(v))
 	dh_testdir
 	touch $@
 
-binary-stamp-rta:
-	dpkg-gencontrol -P$(DESTDIR)/rta -prta
-	dpkg-deb -b $(DESTDIR)/rta ../
-	touch $@
-
-binary-stamp-rta-dev:
-	dpkg-gencontrol -P$(DESTDIR)/rta-dev -prta-dev
-	dpkg-deb -b $(DESTDIR)/rta-dev ../
-	touch $@
-
-binary-stamp-rta-doc:
-	dpkg-gencontrol -P$(DESTDIR)/rta-doc -prta-doc
-	dpkg-deb -b $(DESTDIR)/rta-doc ../
-	touch $@
-
-binary-stamp-rta-examples:
-	dpkg-gencontrol -P$(DESTDIR)/rta-examples -prta-examples
-	dpkg-deb -b $(DESTDIR)/rta-examples ../
-	touch $@
-
-binary-stamp-rta-dbg:
-	dpkg-gencontrol -P$(DESTDIR)/rta-dbg -prta-dbg
-	dpkg-deb -b $(DESTDIR)/rta-dbg ../
+binary-stamp-%: PKG=$*
+binary-stamp-%:
+	dpkg-gencontrol -P$(DESTDIR)/$(PKG) -p$(PKG)
+	dpkg-deb -b $(DESTDIR)/$(PKG) ../
 	touch $@
 
 .PHONY: binary binary-arch binary-indep clean build build-arch build-indep
