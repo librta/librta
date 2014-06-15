@@ -3,7 +3,7 @@ Maintainer: Frederic Roussel <fr.frasc@gmail.com>
 Section: libs
 Priority: optional
 Standards-Version: 3.9.5
-Build-Depends: debhelper (>= 7.0.50), flex, bison
+Build-Depends: debhelper (> 9), flex, bison
 Homepage: http://www.linuxappliancedesign.com/projects/rta
 
 Package: rta
@@ -27,6 +27,8 @@ Description: Development files for rta
 
 Package: rta-dbg
 Architecture: any
+Section: debug
+Priority: extra
 Depends:
  rta (= ${binary:Version}),
  ${misc:Depends}
@@ -38,9 +40,9 @@ Description: Debugging symbols for rta
 Package: rta-examples
 Architecture: all
 Depends:
- rta-dev (= ${binary:Version}),
  ${misc:Depends}
 Recommends:
+ rta-dev (= ${binary:Version}),
  libpq-dev
 Description: Example programs for rta.
  Library allowing to expose program internal data structures as database tables.
