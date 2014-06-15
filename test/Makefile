@@ -24,7 +24,7 @@ ifeq ($(DEV), false)
   LDOPTS    := -lrtadb
   STATICLIB := /usr/include/librtadb.a
 else
-  # internal development
+  # for library internal development.
   OPT       := -c -I../src
   LDOPTS    := -L../src -Wl,-rpath=../src -lrtadb
   STATICLIB := ../src/librtadb.a
@@ -35,7 +35,7 @@ DEBUG     = -g -DDEBUG -Wall
 CFLAGS    = $(OPT) $(DEBUG)
 APPOBJS   = appmain.o apptables.o
 
-default: app rta_client
+all: app app-static rta_client
 
 app: $(APPOBJS) 
 	$(CC) $(APPOBJS) -g -o $@ $(LDOPTS)
