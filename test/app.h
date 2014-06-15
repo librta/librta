@@ -1,6 +1,6 @@
 /***************************************************************
  * Run Time Access
- * Copyright (C) 2003-2006 Robert W Smith (bsmith@linuxtoys.org)
+ * Copyright (C) 2003-2014 Robert W Smith (bsmith@linuxtoys.org)
  *
  *  This program is distributed under the terms of the GNU LGPL.
  *  See the file COPYING file.
@@ -13,7 +13,7 @@
  *   This application demonstrates the use of the rta package
  * using select() for multiplexing.
  **************************************************************/
-#include "../src/rta.h"
+#include "rta.h"
 
     /* Maximum number of UI/Posgres connections */
 #define MX_UI     (20)

@@ -1,6 +1,6 @@
 ################################################################
  # Run Time Access
- # Copyright (C) 2003-2006 Robert W Smith (bsmith@linuxtoys.org)
+ # Copyright (C) 2003-2014 Robert W Smith (bsmith@linuxtoys.org)
  #
  #  This program is distributed under the terms of the GNU LGPL.
  #  See the file COPYING file.
@@ -14,26 +14,29 @@
 ################################################################
 # We use the default make rules for .c and .l 
 
-CC = gcc
-OPT =  -fPIC -c -I.
-DEBUG = -g -O -ggdb -DDEBUG -DYYDEBUG -ggdb -Wall
-CFLAGS = $(OPT) $(DEBUG) -D_GNU_SOURCE
+CC    ?= gcc
+DEBUG ?= -DDEBUG -DYYDEBUG
+OPT    = -fPIC -Wall -D_GNU_SOURCE
+ifdef CFLAGS
+  CFLAGS += $(OPT) $(DEBUG)
+else
+  CFLAGS = -g -O2 $(OPT) $(DEBUG)
+endif
+
 OBJS   = api.o token.o parse.tab.o do_sql.o rtatables.o
 LIBS   = 
 
-INSTDIR ?= /usr/local
+INSTDIR    ?= /usr/local
 INSTLIBDIR ?= $(INSTDIR)/lib
 INSTINCDIR ?= $(INSTDIR)/include
-
 
 default: librtadb.so.3 librtadb.a
 
 librtadb.so.3: $(OBJS)
-	gcc -ggdb -Wall -shared -Wl,-soname,librtadb.so.3 \
-		-o librtadb.so.3.0  $(OBJS) $(LIBS) -lc
+	$(CC) -g -Wall -shared -Wl,-soname,librtadb.so.3 \
+		-o librtadb.so.3.0 $(OBJS)
 	ln -sf librtadb.so.3.0 librtadb.so.3
 	ln -sf librtadb.so.3.0 librtadb.so
-	ar -rcs librtadb.a $(OBJS)
 
 librtadb.a: $(OBJS)
 	ar -rcs librtadb.a $(OBJS)
@@ -53,29 +56,31 @@ do_sql.o: do_sql.c do_sql.h rta.h
 rtatables.o: rtatables.c do_sql.h rta.h
 
 standard: clean
-	for i in *.h *.c ; \
-	do \
-	 indent  -bad -bap -nbbb -br -cdw -cli2 -cbi0 -saf -nut \
-		-sai -saw -di9 -nbc -bfda -bls -lp -ci2 -i2 -nbbo -l72 \
+	for i in *.h *.c ;                                              \
+	do                                                              \
+	 indent  -bad -bap -nbbb -br -cdw -cli2 -cbi0 -saf -nut         \
+		-sai -saw -di9 -nbc -bfda -bls -lp -ci2 -i2 -nbbo -l72  \
 		-fca -nbfda -nbfde -nlp -bbo -sob -cd24 -ts0 -npcs -nut \
-		-T RTA_TBLDEF -T RTA_COLDEF $$i ; \
-	 rm $$i~ ; \
+		-T RTA_TBLDEF -T RTA_COLDEF $$i ;                       \
+	 rm $$i~ ;                                                      \
 	done
 
-install:
+install: install-so install-dev
+
+install-so: default
+	-mkdir -p $(DESTDIR)/$(INSTLIBDIR)
+	install -m 644 librta*.so.3.0 $(DESTDIR)/$(INSTLIBDIR)
+	ln -sf librtadb.so.3.0 $(DESTDIR)/$(INSTLIBDIR)/librtadb.so.3
+	ln -sf librtadb.so.3.0 $(DESTDIR)/$(INSTLIBDIR)/librtadb.so
+
+install-dev: default
 	-mkdir -p $(DESTDIR)/$(INSTLIBDIR)
 	-mkdir -p $(DESTDIR)/$(INSTINCDIR)
-	install -m 644 librta* $(DESTDIR)/$(INSTLIBDIR);
+	install -m 644 librta*.a $(DESTDIR)/$(INSTLIBDIR)
 	install -m 644 rta.h $(DESTDIR)/$(INSTINCDIR)
-	-test -f librtadb.so.3 && ln -sf \
-	    $(DESTDIR)/$(INSTLIBDIR)/librtadb.so.3.0 \
-	    $(DESTDIR)/$(INSTLIBDIR)/librtadb.so.3
-	-test -f librtadb.so.3 && ln -sf \
-	    $(DESTDIR)/$(INSTLIBDIR)/librtadb.so.3.0 \
-	    $(DESTDIR)/$(INSTLIBDIR)/librtadb.so
 
 uninstall:
-	rm $(DESTDIR)/$(INSTLIBDIR)/librta*;
+	rm $(DESTDIR)/$(INSTLIBDIR)/librta*
 	rm $(DESTDIR)/$(INSTINCDIR)/rta.h
 
 clean: 
