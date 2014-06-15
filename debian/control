@@ -49,6 +49,7 @@ Description: Example programs for rta.
 
 Package: rta-doc
 Architecture: all
+Section: doc
 Depends:
  ${misc:Depends}
 Recommends:
