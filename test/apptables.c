@@ -1,5 +1,5 @@
 /***************************************************************
- * Run Time Access
+ * Run Time Access Library
  * Copyright (C) 2003-2014 Robert W Smith (bsmith@linuxtoys.org)
  *
  *  This program is distributed under the terms of the GNU LGPL.
@@ -10,7 +10,7 @@
  * apptables.c --
  *
  * Overview:
- *    The "rta" package provides a Postgres-like API into our
+ *    The "librta" package provides a Postgres-like API into our
  * system tables and variables.  We need to describe each of our
  * tables as if it were a data base table.  We describe each
  * table in general in an array of RTA_TBLDEF structures with one

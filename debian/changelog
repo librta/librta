@@ -1,3 +1,9 @@
+librta (1.1.0~pre1-1) UNRELEASED; urgency=low
+
+  * Change of name to librta.
+
+ -- Frederic Roussel <frasc@gmail.com>  Mon, 16 Jun 2014 15:01:09 -0700
+
 rta (0.8.2~pre2-1) UNRELEASED; urgency=low
 
   * Cleanup in debian files.

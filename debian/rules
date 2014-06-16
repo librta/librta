@@ -10,11 +10,11 @@ DESTDIR   = $(SRCTOP)/debian
 
 include /usr/share/dpkg/default.mk
 
-PKGS=rta
-PKGS+=rta-dev
-PKGS+=rta-doc
-PKGS+=rta-dbg
-PKGS+=rta-examples
+PKGS=librta3
+PKGS+=librta3-dev
+PKGS+=librta3-doc
+PKGS+=librta3-dbg
+PKGS+=librta3-examples
 
 # There is no runnable test.
 # So, the DEB_BUILD_OPTIONS 'nocheck' can be ignored.
@@ -58,7 +58,7 @@ build-stamp-%:
 	dh_testdir
 	dh_prep -p $(PKG)
 	@echo "*** Debian *** building package $(PKG)"
-	if [ $(PKG) = rta ]; then            \
+	if [ $(PKG) = librta3 ]; then            \
 	  $(MAKE) -C src;                    \
 	fi
 	touch $@
@@ -83,33 +83,33 @@ install-stamp: $(foreach v,$(PKGS),install-stamp-$(v))
 	dh_md5sums
 	touch $@
 
-install-stamp-rta:
+install-stamp-librta3:
 	dh_testdir
 	dh_testroot
 	dh_installdirs
-	@echo "*** Debian *** installing package rta"
-	$(MAKE) -C src install-so DESTDIR=$(DESTDIR)/rta INSTDIR=usr
-	dh_strip --dbg-package=rta-dbg
+	@echo "*** Debian *** installing package librta3"
+	$(MAKE) -C src install-so DESTDIR=$(DESTDIR)/librta3 INSTDIR=usr
+	dh_strip --dbg-package=librta3-dbg
 	touch $@
 
-install-stamp-rta-dev:
-	@echo "*** Debian *** installing package rta-dev"
-	$(MAKE) -C src install-dev DESTDIR=$(DESTDIR)/rta-dev INSTDIR=usr
+install-stamp-librta3-dev:
+	@echo "*** Debian *** installing package librta3-dev"
+	$(MAKE) -C src install-dev DESTDIR=$(DESTDIR)/librta3-dev INSTDIR=usr
 	touch $@
 
-install-stamp-rta-doc:
-	@echo "*** Debian *** installing package rta-doc"
-	install -m 644 doc/* $(DESTDIR)/rta-doc/usr/share/doc/rta-doc/html
+install-stamp-librta3-doc:
+	@echo "*** Debian *** installing package librta3-doc"
+	install -m 644 doc/* $(DESTDIR)/librta3-doc/usr/share/doc/librta3-doc/html
 	touch $@
 
-install-stamp-rta-examples:
-	@echo "*** Debian *** installing package rta-examples"
-	install -m 644 table_editor/* $(DESTDIR)/rta-examples/usr/share/doc/rta-examples/table_editor
-	install -m 644 test/* $(DESTDIR)/rta-examples/usr/share/doc/rta-examples/test
+install-stamp-librta3-examples:
+	@echo "*** Debian *** installing package librta3-examples"
+	install -m 644 table_editor/* $(DESTDIR)/librta3-examples/usr/share/doc/librta3-examples/table_editor
+	install -m 644 test/* $(DESTDIR)/librta3-examples/usr/share/doc/librta3-examples/test
 	touch $@
 
-install-stamp-rta-dbg:
-	@echo "*** Debian *** installing package rta-dbg"
+install-stamp-librta3-dbg:
+	@echo "*** Debian *** installing package librta3-dbg"
 	@echo "actually generated with 'dh_strip' earlier"
 	touch $@
 

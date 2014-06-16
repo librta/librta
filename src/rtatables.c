@@ -1,5 +1,5 @@
 /***************************************************************
- * Run Time Access
+ * Run Time Access Library
  * Copyright (C) 2003-2014 Robert W Smith (bsmith@linuxtoys.org)
  *
  *  This program is distributed under the terms of the GNU LGPL.
@@ -8,7 +8,7 @@
 
 /***************************************************************
  * Overview:
- *    The "rta" package provides a Postgres-like API into our
+ *    The "librta" package provides a Postgres-like API into our
  * system tables and variables.  We need to describe each of our
  * tables as if it were a data base table.  We describe each
  * table in general in an array of RTA_TBLDEF structures with one
@@ -21,7 +21,7 @@
 #include <stddef.h>             /* for 'offsetof' */
 #include <syslog.h>             /* for LOG_ERR, LOG_USER */
 #include <string.h>             /* for strncmp prototypes */
-#include "rta.h"                /* for RTA_TBLDEF and RTA_COLDEF */
+#include "librta.h"                /* for RTA_TBLDEF and RTA_COLDEF */
 #include "do_sql.h"             /* for struct Sql_Cmd */
 
 /* Forward reference for read callbacks and iterators */
@@ -62,7 +62,7 @@ RTA_COLDEF   rta_columnsCols[] = {
       "The name of the column.  Must be unique within a table "
       "definition but may be replicated in other tables.  The "
       "maximum string length of the column name is set by "
-      "RTA_MXCOLNAME defined in the rta.h file."},
+      "RTA_MXCOLNAME defined in the librta.h file."},
   {
       "rta_columns",            /* table name */
       "type",                   /* column name */
@@ -74,7 +74,7 @@ RTA_COLDEF   rta_columnsCols[] = {
       (int (*)()) 0,  /* called after write */
       "The data type of the column.  Types include string, "
       "integer, long, pointer, pointer to string, pointer to "
-      "integer, and pointer to long.  See rta.h for more details."},
+      "integer, and pointer to long.  See librta.h for more details."},
   {
       "rta_columns",            /* table name */
       "length",                 /* column name */
@@ -112,7 +112,7 @@ RTA_COLDEF   rta_columnsCols[] = {
       (int (*)()) 0,  /* called after write */
       "Flags associated with the column include flags to indicate "
       "read-only status and whether or not the data should be "
-      "included in the save file.  See rta.h for the associated "
+      "included in the save file.  See librta.h for the associated "
       "defines and details."},
   {
       "rta_columns",            /* table name */
@@ -196,7 +196,7 @@ RTA_COLDEF   rta_tablesCols[] = {
       (int (*)()) 0,  /* called after write */
       "The name of the table.  This must be unique in the system. "
       " Table names can be at most RTA_MXTBLNAME characters in length."
-      "  See rta.h for details.  Note that some table names are "
+      "  See librta.h for details.  Note that some table names are "
       "reserved for internal use."},
   {
       "rta_tables",             /* table name */
@@ -383,7 +383,7 @@ get_next_sysrow(void *pui, void *it_info, int rowid)
 /***************************************************************
  *     The rta_dbg table controls which errors generate
  * debug log messages, the priority, and the facility of the
- * syslog() messages sent.  The rta package generates no user
+ * syslog() messages sent.  The librta package generates no user
  * level log * messages, only debug messages.  All of the fields
  * in this table are volatile.  You will need to set the values
  * in your main program to make them seem persistent.
@@ -396,13 +396,13 @@ get_next_sysrow(void *pui, void *it_info, int rowid)
 /* Allocate and initialize the table */
 struct RtaDbg rta_dbg = {
   1,                            /* log system errors */
-  1,                            /* log rta errors */
+  1,                            /* log librta errors */
   1,                            /* log SQL errors */
   0,                            /* no log of SQL cmds */
   1,                            /* log to syslog() only */
   LOG_ERR,                      /* see sys/syslog.h */
   LOG_USER,                     /* see sys/syslog.h */
-  "rta"                         /* see 'man openlog' */
+  "librta"                      /* see 'man openlog' */
 };
 
 /* Define the table columns */
@@ -428,7 +428,7 @@ RTA_COLDEF   rta_dbgCols[] = {
       (int (*)()) 0,  /* called before read */
       (int (*)()) 0,  /* called after write */
       "A non-zero value causes a call to syslog() for all errors "
-      "internal to the rta package."},
+      "internal to the librta package."},
   {
       "rta_dbg",                /* table name */
       "sqlerr",                 /* column name */
@@ -498,7 +498,7 @@ RTA_COLDEF   rta_dbgCols[] = {
       (int (*)()) 0,  /* called before read */
       (int (*)()) 0,  /* called after write */
       "The syslog() 'ident'.  Please see 'man openlog' for "
-      "details.  Default is 'rta'.  An update of the target "
+      "details.  Default is 'librta'.  An update of the target "
       "field is required for this to take effect."},
 };
 
@@ -548,7 +548,7 @@ RTA_TBLDEF   rta_dbgTable = {
   "Configure of debug logging.  A callback on the 'target' "
     "field closes and reopens syslog().  None of the values "
     "in this table are saved to disk.  If you want non-default "
-    "values you need to change the rta source or do an "
+    "values you need to change the librta source or do an "
     "rta_SQL_string() to set the values when you initialize your "
     "program."
 };
@@ -563,7 +563,7 @@ RTA_TBLDEF   rta_dbgTable = {
 /* Allocate and initialize the table */
 struct RtaStat rta_stat = {
   (llong) 0,                    /* count of failed OS calls. */
-  (llong) 0,                    /* count of internal rta failures. */
+  (llong) 0,                    /* count of internal librta failures. */
   (llong) 0,                    /* count of SQL failures. */
   (llong) 0,                    /* count of authorizations. */
   (llong) 0,                    /* count of UPDATE requests */
@@ -591,7 +591,7 @@ RTA_COLDEF   rta_statCols[] = {
       RTA_READONLY,    /* Flags for read-only/disksave */
       (int (*)()) 0,  /* called before read */
       (int (*)()) 0,  /* called after write */
-      "Count of internal rta failures."},
+      "Count of internal librta failures."},
   {
       "rta_stat",               /* table name */
       "nsqlerr",                /* column name */
@@ -668,5 +668,5 @@ RTA_TBLDEF   rta_statTable = {
   rta_statCols,                 /* Column definitions */
   sizeof(rta_statCols) / sizeof(RTA_COLDEF), /* # columns */
   "",                           /* save file name */
-  "Usage and error counts for the rta package."
+  "Usage and error counts for the librta package."
 };

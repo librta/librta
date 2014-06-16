@@ -1,5 +1,5 @@
 /***************************************************************
- * Run Time Access
+ * Run Time Access Library
  * Copyright (C) 2003-2014 Robert W Smith (bsmith@linuxtoys.org)
  *
  *  This program is distributed under the terms of the GNU LGPL.
@@ -13,7 +13,7 @@
 #ifndef DO_SQL_H
 #define DO_SQL_H 1
 
-#include "rta.h"
+#include "librta.h"
 
     /* types of SQL statements recognized */
 #define RTA_SELECT    0
@@ -100,7 +100,7 @@ struct Sql_Cmd
 struct RtaDbg
 {
   int      syserr;     /* !=0 to log system errors */
-  int      rtaerr;     /* !=0 to log rta errors */
+  int      rtaerr;     /* !=0 to log librta errors */
   int      sqlerr;     /* !=0 to log SQL errors */
   int      trace;      /* !=0 to log SQL commands */
   int      target;     /* 0=off, 1=syslog, 2=stderr, 3=both */
@@ -113,7 +113,7 @@ struct RtaDbg
 struct RtaStat
 {
   llong nsyserr;       /* count of failed OS calls. */
-  llong nrtaerr;       /* count of internal rta failures. */
+  llong nrtaerr;       /* count of internal librta failures. */
   llong nsqlerr;       /* count of SQL failures. */
   llong nauth;         /* count of DB authorizations. */
   llong nupdate;       /* count of UPDATE requests */

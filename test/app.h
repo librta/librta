@@ -1,5 +1,5 @@
 /***************************************************************
- * Run Time Access
+ * Run Time Access Library
  * Copyright (C) 2003-2014 Robert W Smith (bsmith@linuxtoys.org)
  *
  *  This program is distributed under the terms of the GNU LGPL.
@@ -10,10 +10,10 @@
  * app.h --
  *
  * Overview:
- *   This application demonstrates the use of the rta package
+ *   This application demonstrates the use of the librta package
  * using select() for multiplexing.
  **************************************************************/
-#include "rta.h"
+#include "librta.h"
 
     /* Maximum number of UI/Posgres connections */
 #define MX_UI     (20)

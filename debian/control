@@ -1,12 +1,12 @@
-Source: rta
+Source: librta
 Maintainer: Frederic Roussel <fr.frasc@gmail.com>
 Section: libs
 Priority: optional
 Standards-Version: 3.9.5
 Build-Depends: debhelper (>= 9), flex, bison
-Homepage: http://www.linuxappliancedesign.com/projects/rta
+Homepage: http://www.librta.org
 
-Package: rta
+Package: librta3
 Architecture: any
 Depends:
  ${misc:Depends},
@@ -14,52 +14,53 @@ Depends:
 Description: Run-Time Access
  Library allowing to expose program internal data structures as database tables.
 
-Package: rta-dev
+Package: librta3-dev
 Architecture: any
+Section: libdevel
 Depends:
  ${misc:Depends},
  ${shlibs:Depends},
- rta (= ${binary:Version}),
+ librta3 (= ${binary:Version}),
  libpq-dev
-Description: Development files for rta
+Description: Development files for librta3
  Library allowing to expose program internal data structures as database tables.
  .
- This package provides the development files for rta.
+ This package provides the development files for librta3.
 
-Package: rta-dbg
+Package: librta3-dbg
 Architecture: any
 Section: debug
 Priority: extra
 Depends:
  ${misc:Depends},
  ${shlibs:Depends},
- rta (= ${binary:Version})
-Description: Debugging symbols for rta
+ librta3 (= ${binary:Version})
+Description: Debugging symbols for librta3
  Library allowing to expose program internal data structures as database tables.
  .
- This package provides the debugging symbols for rta.
+ This package provides the debugging symbols for librta3.
 
-Package: rta-examples
+Package: librta3-examples
 Architecture: all
 Depends:
  ${misc:Depends}
 Recommends:
- rta-dev (= ${binary:Version}),
+ librta3-dev (= ${binary:Version}),
  libpq-dev
-Description: Example programs for rta.
+Description: Example programs for librta3.
  Library allowing to expose program internal data structures as database tables.
  .
- This package provides examples fo rta.
+ This package provides examples fo librta3.
 
-Package: rta-doc
+Package: librta3-doc
 Architecture: all
 Section: doc
 Depends:
  ${misc:Depends}
 Recommends:
  libpq-dev
-Description: Documentation for rta.
+Description: Documentation for librta3.
  Library allowing to expose program internal data structures as database tables.
  .
- This package provides documentation for rta.
+ This package provides documentation for librta3.
 
