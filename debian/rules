@@ -34,8 +34,10 @@ clean:
 	  make clean; \
 	  cd ..; \
 	done
-	rm -fr debian/rta debian/rta-dev debian/rta-doc debian/rta-dbg debian/rta-examples
-	rm -f debian/*.log debian/files debian/substvars
+	for i in $(PKGS); do \
+	  rm -fr debian/$$i; \
+	done
+	rm -f debian/files debian/*.log debian/*.substvars debian/*.debhelper
 
 #----- build for all packages
 
@@ -70,8 +72,8 @@ install-stamp: $(foreach v,$(PKGS),install-stamp-$(v))
 	for i in $(PKGS); do \
 	  install -m 644 README $(DESTDIR)/$$i/usr/share/doc/$$i; \
 	  install -m 644 debian/copyright $(DESTDIR)/$$i/usr/share/doc/$$i; \
-	  install -m 644 debian/changelog $(DESTDIR)/$$i/usr/share/doc/$$i/changelog.Debian; \
 	done
+	dh_installchangelogs ChangeLog
 	dh_compress -X.c -X.php
 	dh_fixperms
 	dh_makeshlibs
