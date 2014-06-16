@@ -11,7 +11,7 @@ Architecture: any
 Depends:
  ${misc:Depends},
  ${shlibs:Depends}
-Description: Run-Time Access
+Description: Run-Time Access Library
  Library allowing to expose program internal data structures as database tables.
 
 Package: librta3-dev
