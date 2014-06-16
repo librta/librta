@@ -1,5 +1,5 @@
 /***************************************************************
- * Run Time Access
+ * Run Time Access Library
  * Copyright (C) 2003-2014 Robert W Smith (bsmith@linuxtoys.org)
  *
  *  This program is distributed under the terms of the GNU LGPL.
@@ -7,12 +7,12 @@
  **************************************************************/
 
 /***************************************************************
- * rta.h  -- DB API for your internal structures and tables
+ * librta.h  -- DB API for your internal structures and tables
  **************************************************************/
 
 /** ************************************************************
  * - Preamble:
- * "rta" is a specialized memory resident data base interface.
+ * "librta" is a specialized memory resident data base interface.
  * It is not a stand-alone server but a library which attaches
  * to a program and offers up the program's internal structures
  * and arrays as data base tables.  It uses a subset of the 
@@ -20,7 +20,7 @@
  * for "C", PHP, and the Postgres command line tool, psql.
  *
  *    This file contains the defines, structures, and function
- * prototypes for the 'rta' package.
+ * prototypes for the 'librta' package.
  *
  * INDEX: 
  *        - Preamble
@@ -28,8 +28,8 @@
  *        - Limits
  *        - Data Structures
  *        - Subroutines
- *        - rta UPDATE and SELECT syntax
- *        - rta INSERT and DELETE syntax
+ *        - librta UPDATE and SELECT syntax
+ *        - librta INSERT and DELETE syntax
  *        - Internal DB tables
  *        - List of all error messages
  *        - How to code callback routines
@@ -55,7 +55,7 @@
  * statistics be sent over an RS-232 serial line.  The VGA
  * console, SNMP MIBs,  and LDAP are also popular management
  * interfaces.
- *     The rta package helps solve these problems by giving
+ *     The librta package helps solve these problems by giving
  * real-time access to the data structures and arrays inside a
  * running program.  With minimal effort, we make a program's
  * data structures appear as Postgres tables in a Postgres data
@@ -75,7 +75,7 @@
  * You might then define an array of these structures as:
  *    struct tcpconn Conns[MX_CONN];
  *
- *     The rta package allows any programming language with a 
+ *     The librta package allows any programming language with a 
  * Postgres binding to query your table of TCP connections....
  *    SELECT lport, dport FROM Conns WHERE fd != -1;
  *    UPDATE Conns SET dport = 0 WHERE fd = -1;
@@ -94,7 +94,7 @@
  *
  *     Some effort is required.  In order to make your arrays
  * and structures available to the data base API, you need to
- * tell rta about the tables and columns in the data base. 
+ * tell librta about the tables and columns in the data base. 
  * Table information includes things like the name, start
  * address, number of rows and the length of each row.  Column
  * information includes things like the associated table name,
@@ -102,7 +102,7 @@
  * any special functions called when the column is read or
  * written (callbacks).
  *
- *   This document describes the API offered by the rta package.
+ *   This document describes the API offered by the librta package.
  **************************************************************/
 
 #ifndef RTA_H
@@ -111,8 +111,8 @@
 /***************************************************************
  * - Limits:
  *     Here are the defines which describe the internal limits
- * set in the rta package.  You are welcome to change these 
- * limits; just be sure to recompile the rta package using 
+ * set in the librta package.  You are welcome to change these 
+ * limits; just be sure to recompile the librta package using 
  * your new settings.
  **************************************************************/
 
@@ -363,7 +363,7 @@ typedef struct
 
         /** An array of RTA_COLDEF structures which describe each
          * column in the table.  These must be in statically
-         * allocated memory since the rta system references
+         * allocated memory since the librta system references
          * them while running.  */
   RTA_COLDEF  *cols;
 
@@ -390,7 +390,7 @@ RTA_TBLDEF;
 
 /***************************************************************
  * - Subroutines
- * Here is a summary of the few routines in the rta API:
+ * Here is a summary of the few routines in the librta API:
  *    rta_dbcommand()  - I/F to Postgres clients
  *    rta_add_table()  - add a table and its columns to the DB
  *    rta_SQL_string() - execute an SQL statement in the DB
@@ -404,7 +404,7 @@ RTA_TBLDEF;
  *
  * The main application accepts TCP connections from Postgres
  * clients and passes the stream of bytes (encoded SQL requests)
- * from the client into the rta system via this routine.  If the
+ * from the client into the librta system via this routine.  If the
  * input buffer contains a complete command, it is executed, nin
  * is decrement by the number of bytes consumed, and RTA_SUCCESS
  * is returned.  If there is not a complete command, RTA_NOCMD
@@ -556,9 +556,9 @@ int      rta_load(RTA_TBLDEF *, char *);
 
 
 /** ************************************************************
- * - rta UPDATE and SELECT syntax
- *     rta IS AN API, *NOT* A DATABASE!
- * Neither the rta UPDATE nor the rta SELECT adhere to the
+ * - librta UPDATE and SELECT syntax
+ *     librta IS AN API, *NOT* A DATABASE!
+ * Neither the librta UPDATE nor the librta SELECT adhere to the
  * Postgres equivalents.  Joins are not allowed, and the WHERE
  * clause supports only the AND relation.  There are no locks
  * or transactions.
@@ -635,12 +635,12 @@ int      rta_load(RTA_TBLDEF *, char *);
  **************************************************************/
 
 /** ************************************************************
- * - rta INSERT and DELETE syntax
- *     rta IS AN API, *NOT* A DATABASE!
- * Neither the rta INSERT nor the rta DELETE adhere to the
+ * - librta INSERT and DELETE syntax
+ *     librta IS AN API, *NOT* A DATABASE!
+ * Neither the librta INSERT nor the librta DELETE adhere to the
  * Postgres equivalents.  An insert requires both the column list
  * and the values section and does not support "default" specified
- * in the command.  The rta DELETE does not support "ONLY" or "USING"
+ * in the command.  The librta DELETE does not support "ONLY" or "USING"
  * clauses, and the WHERE clause supports only the AND relation.
  * There are no locks or transactions.
  *
@@ -688,10 +688,10 @@ int      rta_load(RTA_TBLDEF *, char *);
 
 /** ************************************************************
  * - Internal DB tables
- *     rta has four tables visible to the application:
+ *     librta has four tables visible to the application:
  *  rta_tables:      - a table of all tables in the DB
  *  rta_columns:     - a table of all columns in the DB
- *  rta_logconfig:   - controls what gets logged from rta
+ *  rta_logconfig:   - controls what gets logged from librta
  *  rta_stats:       - simple usage and error statistics
  *
  *     The rta_tables table gives SQL access to all internal and
@@ -729,7 +729,7 @@ int      rta_load(RTA_TBLDEF *, char *);
  *
  *     The rta_dbgconfig table controls which errors generate
  * debug log messages.  See the logging section below for the
- * exact mapping.  The rta package generates no user level log
+ * exact mapping.  The librta package generates no user level log
  * messages, only debug messages.  All of the fields in this 
  * table are volatile.  You will need to set the values in your
  * main program to make them seem persistent.  (Try something
@@ -740,7 +740,7 @@ int      rta_load(RTA_TBLDEF *, char *);
  *              failures.  Default is 1.
  *     rtaerr - integer, 0 means no log, 1 means log.
  *              Enables logging of errors internal to the
- *              rta package itself.  Default is 1.
+ *              librta package itself.  Default is 1.
  *     sqlerr - integer, 0 means no log, 1 means log.
  *              Log any SQL request which generates an
  *              error reply.  Error replies occur if an SQL
@@ -758,7 +758,7 @@ int      rta_load(RTA_TBLDEF *, char *);
  *              causes a close and an open of syslog().
  *     priority - integer.  Syslog() requires a priority as
  *              part of all log messages.  This specifies
- *              the priority to use when sending rta debug
+ *              the priority to use when sending librta debug
  *              messages.  Changes to this do not take
  *              effect until dbg_target is updated.
  *              0:  LOG_EMERG
@@ -772,16 +772,16 @@ int      rta_load(RTA_TBLDEF *, char *);
  *              Default is 3.
  *     facility - integer.  Syslog() requires a facility as
  *              part of all log messages.  This specifies
- *              the facility to use when sending rta debug
+ *              the facility to use when sending librta debug
  *              messages.  It is best to use the defines in
  *              .../sys/syslog.h to set this.  The default
  *              is LOG_USER.  Changes to this do not take
  *              effect until dbg_target is updated.
  *     ident  - string.  Syslog() requires an 'ident' string as
  *              part of all log messages.  This specifies
- *              the ident string to use when sending rta debug
+ *              the ident string to use when sending librta debug
  *              messages.  This is normally set to the process
- *              or command name.  The default is "rta".  Changes
+ *              or command name.  The default is "librta".  Changes
  *              to this do not take effect until dbg_target
  *              is updated.  This can be at most RTA_MXDBGIDENT
  *              characters in length.
@@ -791,7 +791,7 @@ int      rta_load(RTA_TBLDEF *, char *);
  * of type long, are read-only, and are set to zero by the 
  * first call to rta_add_table.  The columns of rta_stats are:
  *     nsyserr    - count of failed OS calls. 
- *     nrtaerr    - count of internal rta failures.
+ *     nrtaerr    - count of internal librta failures.
  *     nsqlerr    - count of SQL failures.
  *     nauth      - count of authorizations. (==#connections)
  *     nupdate    - count of UPDATE or file write requests
@@ -804,7 +804,7 @@ int      rta_load(RTA_TBLDEF *, char *);
 /** ************************************************************
  * - List of all messages
  *      There are two types of error messages available in the
- * rta package.  The first type is the error messages returned
+ * librta package.  The first type is the error messages returned
  * as part of an SQL request.  The messages of this type are:
  *
  * 1)  "ERROR:  Relation '%s' does not exist"
@@ -1006,7 +1006,7 @@ int      rta_load(RTA_TBLDEF *, char *);
 
 /***************************************************************
  * - Future enhancements:
- *    Several enhancements are possible for the rta package:
+ *    Several enhancements are possible for the librta package:
  * - printf format string in the column definition
  * - ability to register more than one trigger per column
  * - secure login maintaining Postgres compatibility

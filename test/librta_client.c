@@ -1,5 +1,5 @@
 /***************************************************************
- * Run Time Access
+ * Run Time Access Library
  * Copyright (C) 2003-2014 Robert W Smith (bsmith@linuxtoys.org)
  *
  *  This program is distributed under the terms of the GNU LGPL.
@@ -8,7 +8,7 @@
 
 /*
  *  libpq sample program
- *  gcc rta_client.c -o rta_client -lpq
+ *  gcc librta_client.c -o librta_client -lpq
  */
  
 #include <stdio.h>
