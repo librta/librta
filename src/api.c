@@ -1,5 +1,5 @@
 /***************************************************************
- * Run Time Access
+ * Run Time Access Library
  * Copyright (C) 2003-2014 Robert W Smith (bsmith@linuxtoys.org)
  *
  *  This program is distributed under the terms of the GNU LGPL.
@@ -20,7 +20,7 @@
 #include <sys/types.h>          /* for stat() */
 #include <sys/stat.h>           /* for stat() */
 #include <unistd.h>             /* for stat() */
-#include "rta.h"                /* for various constants */
+#include "librta.h"                /* for various constants */
 #include "do_sql.h"             /* for LOC */
 
 /* rta_Tbl and rta_Col contain pointers to table and column

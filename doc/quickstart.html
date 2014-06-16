@@ -437,13 +437,13 @@ error output of the program.  The commands are also being sent
 to your syslog facility.</p>
 
 <h5>C</h5>
-<p>The C program presented here,<a href=rta_client.c> 
-rta_client.c</a>, illustrates how to get data out of our
+<p>The C program presented here,<a href=librta_client.c> 
+librta_client.c</a>, illustrates how to get data out of our
 application from a C program.  You need the postgresql-devel
 package to build this program.  Build and run the program with:</p>
 <pre>
-    # gcc rta_client.c -o rta_client -lpq
-    # ./rta_client
+    # gcc librta_client.c -o librta_client -lpq
+    # ./librta_client
 </pre>
 <p>The program sets the field myint to a value of 44 and then gets
 and prints the fields myint, myfloat, and notes for all twenty
@@ -454,8 +454,8 @@ that the returned data is always a string.  You need to scan it
 into a variable for other processing.</p>
 
 <h5>PHP</h5>
-<p>The PHP program presented here,<a href=rta_client.txt> 
-rta_client.php</a>, illustrates how to get data out of our
+<p>The PHP program presented here,<a href=librta_client.txt> 
+librta_client.php</a>, illustrates how to get data out of our
 application from a PHP program.  You need the php-pgsql
 package to run this program.  If you are running Apache, check
 for the PHP interpreter in modules directory.

@@ -1,5 +1,5 @@
 ################################################################
- # Run Time Access
+ # Run Time Access Library
  # Copyright (C) 2003-2014 Robert W Smith (bsmith@linuxtoys.org)
  #
  #  This program is distributed under the terms of the GNU LGPL.
@@ -7,7 +7,7 @@
 ################################################################
 
 ################################################################
-# Makefile -- to make the sample application for rta.
+# Makefile -- to make the sample application for librta.
 #    Add or remove debug stuff to meet your needs.  
 #    The "standard" target runs the source through indent to
 # give the source a standardized look.
@@ -16,18 +16,18 @@
 
 # If you installed this Makefile using a pre-built package
 # then 'DEV' will be false.
-DEV := $(shell [ -f ../src/rta.h ] || echo false)
+DEV := $(shell [ -f ../src/librta.h ] || echo false)
 
 ifeq ($(DEV), false)
   # variables set if installed with a package.
   OPT       := -c
-  LDOPTS    := -lrtadb
-  STATICLIB := /usr/include/librtadb.a
+  LDOPTS    := -lrta
+  STATICLIB := /usr/lib/librta.a
 else
   # for library internal development.
   OPT       := -c -I../src
-  LDOPTS    := -L../src -Wl,-rpath=../src -lrtadb
-  STATICLIB := ../src/librtadb.a
+  LDOPTS    := -L../src -Wl,-rpath=../src -lrta
+  STATICLIB := ../src/librta.a
 endif
 
 CC        = gcc
@@ -35,7 +35,7 @@ DEBUG     = -g -DDEBUG -Wall
 CFLAGS    = $(OPT) $(DEBUG)
 APPOBJS   = appmain.o apptables.o
 
-all: app app-static rta_client
+all: app app-static librta_client
 
 app: $(APPOBJS) 
 	$(CC) $(APPOBJS) -g -o $@ $(LDOPTS)
@@ -43,8 +43,8 @@ app: $(APPOBJS)
 app-static: $(APPOBJS) 
 	$(CC) $(APPOBJS) -g -o $@ $(STATICLIB)
 
-rta_client: rta_client.o
-	$(CC) -g rta_client.c -o $@ -lpq
+librta_client: librta_client.o
+	$(CC) -g librta_client.c -o $@ -lpq
 
 appmain.o: appmain.c app.h
 	$(CC) $(CFLAGS) $< -o $@
@@ -63,5 +63,5 @@ standard: clean
 	done
 
 clean: 
-	rm -rf *.o app app-static rta_client
+	rm -rf *.o app app-static librta_client
 
