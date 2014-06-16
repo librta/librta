@@ -65,6 +65,7 @@ build-stamp-%:
 
 install: install-stamp
 
+#	dpkg-gencontrol -P$(DESTDIR)/$(PKG) -p$(PKG)
 install-stamp: $(foreach v,$(PKGS),install-stamp-$(v))
 	for i in $(PKGS); do \
 	  install -m 644 README $(DESTDIR)/$$i/usr/share/doc/$$i; \
@@ -72,6 +73,11 @@ install-stamp: $(foreach v,$(PKGS),install-stamp-$(v))
 	  install -m 644 debian/changelog $(DESTDIR)/$$i/usr/share/doc/$$i/changelog.Debian; \
 	done
 	dh_compress -X.c -X.php
+	dh_fixperms
+	dh_makeshlibs
+	dh_shlibdeps
+	dh_installdeb
+	dh_gencontrol
 	dh_md5sums
 	touch $@
 
@@ -120,7 +126,6 @@ binary-stamp-%: PKG=$*
 binary-stamp-%:
 	dh_testdir
 	dh_testroot
-	dpkg-gencontrol -P$(DESTDIR)/$(PKG) -p$(PKG)
 	dpkg-deb -b $(DESTDIR)/$(PKG) ../
 	touch $@
 

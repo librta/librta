@@ -36,7 +36,7 @@ librtadb.so.3: $(OBJS)
 	$(CC) -g -Wall -shared -Wl,-soname,librtadb.so.3 \
 		-o librtadb.so.3.0 $(OBJS)
 	ln -sf librtadb.so.3.0 librtadb.so.3
-	ln -sf librtadb.so.3.0 librtadb.so
+	ln -sf librtadb.so.3 librtadb.so
 
 librtadb.a: $(OBJS)
 	ar -rcs librtadb.a $(OBJS)
@@ -71,13 +71,14 @@ install-so: default
 	-mkdir -p $(DESTDIR)/$(INSTLIBDIR)
 	install -m 644 librta*.so.3.0 $(DESTDIR)/$(INSTLIBDIR)
 	ln -sf librtadb.so.3.0 $(DESTDIR)/$(INSTLIBDIR)/librtadb.so.3
-	ln -sf librtadb.so.3.0 $(DESTDIR)/$(INSTLIBDIR)/librtadb.so
 
+# the librtadb.so symlink is needed only for development.
 install-dev: default
 	-mkdir -p $(DESTDIR)/$(INSTLIBDIR)
 	-mkdir -p $(DESTDIR)/$(INSTINCDIR)
 	install -m 644 librta*.a $(DESTDIR)/$(INSTLIBDIR)
 	install -m 644 rta.h $(DESTDIR)/$(INSTINCDIR)
+	ln -sf librtadb.so.3 $(DESTDIR)/$(INSTLIBDIR)/librtadb.so
 
 uninstall:
 	rm $(DESTDIR)/$(INSTLIBDIR)/librta*
