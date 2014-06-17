@@ -67,7 +67,6 @@ build-stamp-%:
 
 install: install-stamp
 
-#	dpkg-gencontrol -P$(DESTDIR)/$(PKG) -p$(PKG)
 install-stamp: $(foreach v,$(PKGS),install-stamp-$(v))
 	for i in $(PKGS); do \
 	  install -m 644 README $(DESTDIR)/$$i/usr/share/doc/$$i; \
@@ -95,6 +94,13 @@ install-stamp-librta3:
 install-stamp-librta3-dev:
 	@echo "*** Debian *** installing package librta3-dev"
 	$(MAKE) -C src install-dev DESTDIR=$(DESTDIR)/librta3-dev INSTDIR=usr
+	mkdir -p $(DESTDIR)/librta3-dev/usr/share/pkgconfig
+	( \
+	    PREFIX=/usr; \
+	    VERSION=`dpkg-parsechangelog --show-field version | cut -d- -f1`; \
+	    HOMEPAGE=`grep Homepage: debian/control | cut -f2 -d' '`; \
+	    sed -e "s|PREFIX|$$PREFIX|" -e "s|HOMEPAGE|$$HOMEPAGE|" -e "s|VERSION|$$VERSION|" data/librta.pc  > $(DESTDIR)/librta3-dev/usr/share/pkgconfig/librta.pc; \
+	)
 	touch $@
 
 install-stamp-librta3-doc:
