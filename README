@@ -1,9 +1,9 @@
-RTA gives you run time access to the data in your program.
+LIBRTA gives you run time access to the data in your program.
 It is intended for embedded system developers and can 
 greatly simplify user-interface programs by separating the
 daemon proper from the UI programs.
 
-RTA is not a stand-alone database server, but a library
+LIBRTA is not a stand-alone database server, but a library
 which you build into your program and to make your program's
 internal arrays and data structures look like tables in a
 database.  It uses a subset of the Postgres protocol and is
@@ -14,9 +14,8 @@ This release is compatible with the PostgreSQL 8.1, 8.0, and
 7.4 protocols.  It is *not* compatible with the earlier 7.3
 and 7.2 protocols.
 
-Please see http://www.linuxappliancedesign.com for more
+Please see http://www.librta.org for more
 information and a working example.
-
 
 /***************************************************************
  * Run Time Access
