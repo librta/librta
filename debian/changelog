@@ -1,3 +1,9 @@
+librta (1.1.0-1) UNRELEASED; urgency=low
+
+  * Version 1.1.0.
+
+ -- Frederic Roussel <frasc@fr.frasc@gmail.com>  Sun, 22 Jun 2014 14:21:01 -0700
+
 librta (1.1.0~pre1-1) UNRELEASED; urgency=low
 
   * Change of name to librta.
