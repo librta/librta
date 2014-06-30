@@ -97,7 +97,7 @@ install-stamp-librta3-dev:
 	mkdir -p $(DESTDIR)/librta3-dev/usr/share/pkgconfig
 	( \
 	    PREFIX=/usr; \
-	    VERSION=`dpkg-parsechangelog --show-field version | cut -d- -f1`; \
+	    VERSION=`head -1 debian/changelog | sed -e 's/.*(//' -e s/') .*//' |  cut -d- -f1`; \
 	    HOMEPAGE=`grep Homepage: debian/control | cut -f2 -d' '`; \
 	    sed -e "s|PREFIX|$$PREFIX|" -e "s|HOMEPAGE|$$HOMEPAGE|" -e "s|VERSION|$$VERSION|" data/librta.pc  > $(DESTDIR)/librta3-dev/usr/share/pkgconfig/librta.pc; \
 	)
