@@ -1,4 +1,4 @@
-librta (1.1.0-3) stable; urgency=low
+librta (1.1.0-3) precise; urgency=low
 
   * Make release for stable distribution.
 
