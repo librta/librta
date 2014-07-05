@@ -18,14 +18,15 @@
 # then 'DEV' will be false.
 DEV := $(shell [ -f ../src/librta.h ] || echo false)
 
+PGINC     = -I/usr/include/postgresql -I/usr/include/pgsql
 ifeq ($(DEV), false)
   # variables set if installed with a package.
-  OPT       := -c
+  OPT       := -c $(PGINC)
   LDOPTS    := -lrta
   STATICLIB := /usr/lib/librta.a
 else
   # for library internal development.
-  OPT       := -c -I../src
+  OPT       := -c $(PGINC) -I../src
   LDOPTS    := -L../src -Wl,-rpath=../src -lrta
   STATICLIB := ../src/librta.a
 endif
@@ -44,7 +45,7 @@ app-static: $(APPOBJS)
 	$(CC) $(APPOBJS) -g -o $@ $(STATICLIB)
 
 librta_client: librta_client.o
-	$(CC) -g librta_client.c -o $@ -lpq
+	$(CC) -g librta_client.o -o $@ -lpq
 
 appmain.o: appmain.c app.h
 	$(CC) $(CFLAGS) $< -o $@
