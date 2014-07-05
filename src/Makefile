@@ -17,7 +17,7 @@
 # CPU architecture for the build host.
 HOST_ARCH := $(shell uname -m)
 # Normalized CPU architecture for the target.
-TARGET_ARCH ?= $(TARGET_ARCH:i%86=i386)
+PKG_ARCH = $(TGT_ARCH:i%86=i386)
 
 CC    ?= gcc
 DEBUG ?= -DDEBUG -DYYDEBUG
@@ -29,11 +29,11 @@ else
 endif
 
 # Add flags to cross compile, depending on the bitness.
-ifeq ($(TARGET_ARCH), i386)
+ifeq ($(PKG_ARCH), i386)
   ifeq ($(HOST_ARCH), x86_64)
     CC += -m32
   endif
-else ($(TARGET_ARCH), x86_64)
+else ifeq ($(PKG_ARCH), x86_64)
   ifeq ($(HOST_ARCH), i386)
     CC += -m64
   endif
