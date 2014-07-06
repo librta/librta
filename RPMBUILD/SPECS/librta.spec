@@ -7,11 +7,12 @@
 %define release		1
 %define buildroot	%{_topdir}/ROOT
 %define prefix		/usr
+%define homepage	http://www.librta.org
 
 BuildRoot:		%{buildroot}
 Summary: 		Run Time Access Library
 Vendor:                 Demand Peripherals
-URL:			http://www.librta.org
+URL:			%{homepage}
 Packager:		Frederic Roussel <fr.frasc@gmail.com>
 License: 		LGPL-2.1+
 Name: 			%{name}
@@ -58,12 +59,21 @@ cd %{_base}/src; %{__make} TGT_ARCH=%{_target_cpu}
 # the debuginfo must be revisited.
 %install
 cd %{_base}/src; %{__make} install INSTDIR=%{buildroot}/%{prefix}
-cd %{buildroot}/%{prefix}/lib; %{__mkdir} -p debug/%{prefix}/lib; %{__objcopy} --only-keep-debug librta.so.3.0 debug/usr/lib/librta.so.debug; %{__strip} -g librta.so.3.0; %{__objcopy} --add-gnu-debuglink=debug/usr/lib/librta.so.debug librta.so.3.0
+cd %{buildroot}/%{prefix}/lib; %{__mkdir} -p debug/%{prefix}/lib; %{__objcopy} --only-keep-debug %{name}.so.3.0 debug/usr/lib/%{name}.so.debug; %{__strip} -g %{name}.so.3.0; %{__objcopy} --add-gnu-debuglink=debug/usr/lib/%{name}.so.debug %{name}.so.3.0
+%{__mkdir} -p %{buildroot}/usr/share/doc/librta
+%{__cp} %{_base}/COPYING %{_base}/README %{_base}/ChangeLog %{buildroot}/usr/share/doc/librta
+%{__mkdir} -p %{buildroot}/usr/share/doc/librta-devel
+%{__cp} %{_base}/COPYING %{_base}/README %{_base}/ChangeLog %{buildroot}/usr/share/doc/librta-devel
 %{__mkdir} -p %{buildroot}/usr/share/doc/librta-examples
+%{__cp} %{_base}/COPYING %{_base}/README %{_base}/ChangeLog %{buildroot}/usr/share/doc/librta-examples
 %{__cp} -a %{_base}/test %{buildroot}/usr/share/doc/librta-examples
 %{__cp} -a %{_base}/table_editor %{buildroot}/usr/share/doc/librta-examples
 %{__mkdir} -p %{buildroot}/usr/share/doc/librta-doc/html
+%{__cp} %{_base}/COPYING %{_base}/README %{_base}/ChangeLog %{buildroot}/usr/share/doc/librta-doc
 %{__cp} -a %{_base}/doc/* %{buildroot}/usr/share/doc/librta-doc/html
+%{__mkdir} -p %{buildroot}/usr/share/pkgconfig
+%{__cp} %{_base}/data/librta.pc %{buildroot}/usr/share/pkgconfig
+%{__sed} -i -e "s|PREFIX|%{prefix}|" -e "s|HOMEPAGE|%{homepage}|" -e "s|VERSION|%{version}|" %{buildroot}/usr/share/pkgconfig/librta.pc
 
 %debug_package
 
@@ -78,11 +88,18 @@ ldconfig
 /usr/lib/librta.so.3
 /usr/lib/librta.so.3.0
 /usr/lib/librta.so
+/usr/share/doc/librta/COPYING
+/usr/share/doc/librta/README
+/usr/share/doc/librta/ChangeLog
 
 %files devel
 %defattr(-,root,root)
 /usr/lib/librta.a
 /usr/include/librta.h
+/usr/share/pkgconfig/librta.pc
+/usr/share/doc/librta-devel/COPYING
+/usr/share/doc/librta-devel/README
+/usr/share/doc/librta-devel/ChangeLog
 
 %files doc
 /usr/share/doc/librta-doc/html/BadUnixModel.png
@@ -98,6 +115,9 @@ ldconfig
 /usr/share/doc/librta-doc/html/livedemo.html
 /usr/share/doc/librta-doc/html/myappdb.c
 /usr/share/doc/librta-doc/html/quickstart.html
+/usr/share/doc/librta-doc/COPYING
+/usr/share/doc/librta-doc/README
+/usr/share/doc/librta-doc/ChangeLog
 
 %files examples
 /usr/share/doc/librta-examples/table_editor/rta_apps.html
@@ -112,6 +132,9 @@ ldconfig
 /usr/share/doc/librta-examples/test/appmain.c
 /usr/share/doc/librta-examples/test/apptables.c
 /usr/share/doc/librta-examples/test/librta_client.c
+/usr/share/doc/librta-examples/COPYING
+/usr/share/doc/librta-examples/README
+/usr/share/doc/librta-examples/ChangeLog
 
 %clean
 cd %{_base}/src; %{__make} clean
