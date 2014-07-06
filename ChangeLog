@@ -1,3 +1,8 @@
+2014-06-22  Frederic Roussel          Version 1.1.0
+    - same functionality as 0.8.2
+    - debian packaging in place. it is on a separate branch: rta-debian
+    - renaming to librta
+
 2010-10-25  Bob Smith                 Version 0.8.1
     - Fixed a bug in DELETE processing.
 
