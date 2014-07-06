@@ -20,6 +20,9 @@ Release: 		%{release}
 Source: 		%{name}-%{version}.tar.gz
 Prefix: 		%{prefix}
 Group: 			System Environment/Libraries
+%if "%{_host_vendor}" != "pc"
+BuildRequires:          flex, bison
+%endif
 
 %description
 LIBRTA gives you run time access to the data in your program.
@@ -27,10 +30,11 @@ It is intended for embedded system developers and can
 greatly simplify user-interface programs by separating the
 daemon proper from the UI programs.
 
-%package dev
+%package devel
 Summary:                Run Time Access Library
 Group:                  System Environment/Libraries
-%description dev
+Requires:		postgresql-devel
+%description devel
 Run Time Access Library - development files
 
 %package doc
@@ -42,27 +46,26 @@ Run Time Access Library - documentation files
 %package examples
 Summary:                Run Time Access Library
 Group:                  System Environment/Libraries
+Requires:               %{name}-devel
 %description examples
 Run Time Access Library - examples
 
 %prep
-mkdir -p %{buildroot}
-mkdir -p %{buildroot}/ROOT
-mkdir -p %{buildroot}/BUILD
-mkdir -p %{buildroot}/RPMS
-mkdir -p %{buildroot}/SOURCES
-mkdir -p %{buildroot}/SRPMS
 
 %build
-cd %{_base}/src; make
+cd %{_base}/src; %{__make} TGT_ARCH=%{_target_cpu}
 
+# the debuginfo must be revisited.
 %install
-cd %{_base}/src; make install INSTDIR=%{buildroot}/%{prefix}
-mkdir -p %{buildroot}/usr/share/doc/librta-examples
-cp -a %{_base}/test %{buildroot}/usr/share/doc/librta-examples
-cp -a %{_base}/table_editor %{buildroot}/usr/share/doc/librta-examples
-mkdir -p %{buildroot}/usr/share/doc/librta-doc/html
-cp -a %{_base}/doc/* %{buildroot}/usr/share/doc/librta-doc/html
+cd %{_base}/src; %{__make} install INSTDIR=%{buildroot}/%{prefix}
+cd %{buildroot}/%{prefix}/lib; %{__mkdir} -p debug/%{prefix}/lib; %{__objcopy} --only-keep-debug librta.so.3.0 debug/usr/lib/librta.so.debug; %{__strip} -g librta.so.3.0; %{__objcopy} --add-gnu-debuglink=debug/usr/lib/librta.so.debug librta.so.3.0
+%{__mkdir} -p %{buildroot}/usr/share/doc/librta-examples
+%{__cp} -a %{_base}/test %{buildroot}/usr/share/doc/librta-examples
+%{__cp} -a %{_base}/table_editor %{buildroot}/usr/share/doc/librta-examples
+%{__mkdir} -p %{buildroot}/usr/share/doc/librta-doc/html
+%{__cp} -a %{_base}/doc/* %{buildroot}/usr/share/doc/librta-doc/html
+
+%debug_package
 
 %post
 ldconfig
@@ -76,7 +79,7 @@ ldconfig
 /usr/lib/librta.so.3.0
 /usr/lib/librta.so
 
-%files dev
+%files devel
 %defattr(-,root,root)
 /usr/lib/librta.a
 /usr/include/librta.h
@@ -109,4 +112,8 @@ ldconfig
 /usr/share/doc/librta-examples/test/appmain.c
 /usr/share/doc/librta-examples/test/apptables.c
 /usr/share/doc/librta-examples/test/librta_client.c
+
+%clean
+cd %{_base}/src; %{__make} clean
+%{__rm} -fr %{buildroot}/* %{_topdir}/SOURCES/* %{_topdir}/BUILD/* 
 
