@@ -14,6 +14,11 @@
 ################################################################
 # We use the default make rules for .c and .l 
 
+# Configurable items: to be commented out or changed as needed.
+# STRINGS_OPT = -DUSE_BUILTIN_STRNDUP
+YACC = yacc
+LEX = flex
+
 # CPU architecture for the build host.
 HOST_ARCH := $(shell uname -m)
 # Normalized CPU architecture for the target.
@@ -21,7 +26,7 @@ PKG_ARCH = $(TGT_ARCH:i%86=i386)
 
 CC    ?= gcc
 DEBUG ?= -DDEBUG -DYYDEBUG
-OPT    = -fPIC -Wall -D_GNU_SOURCE
+OPT    = -fPIC -Wall -D_GNU_SOURCE $(STRINGS_OPT)
 ifdef CFLAGS
   CFLAGS += $(OPT) $(DEBUG)
 else
@@ -60,10 +65,10 @@ librta.a: $(OBJS)
 token.o: parse.tab.c do_sql.h
 
 parse.tab.c: parse.y do_sql.h
-	yacc -dv -bparse -prta_yy parse.y
+	$(YACC) -dv -bparse -prta_yy parse.y
 
 token.c: token.l
-	lex -Prta_yy -t token.l > token.c
+	$(LEX) -Prta_yy -t token.l > token.c
 
 api.o: api.c librta.h do_sql.h
 
