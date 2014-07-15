@@ -28,8 +28,8 @@ extern int yydebug;
 extern struct Sql_Cmd rta_cmd;
 extern char *rta_parsestr[];
 
-#ifndef __USE_GNU
-static char *strndup(const char *, unsigned);
+#ifdef USE_BUILTIN_STRNDUP
+static char *strndup(const char *, size_t);
 #endif
 %}
 
@@ -209,8 +209,8 @@ void rta_SQL_string(char *s, int incnt, char *out, int *nout)
     return;
 }
 
-#ifndef __USE_GNU
-static char *strndup(const char *string, unsigned length)
+#ifdef USE_BUILTIN_STRNDUP
+static char *strndup(const char *string, size_t length)
 {
     char *newstring = malloc(length + 1);
 
