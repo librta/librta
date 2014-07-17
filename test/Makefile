@@ -18,7 +18,10 @@
 # then 'DEV' will be false.
 DEV := $(shell [ -f ../src/librta.h ] || echo false)
 
-PGINC     = -I/usr/include/postgresql -I/usr/include/pgsql
+# System the build is running on.
+SYS := $(shell uname)
+
+PGINC     = -I/usr/include/postgresql -I/usr/include/pgsql -I/usr/local/include
 ifeq ($(DEV), false)
   # variables set if installed with a package.
   OPT       := -c $(PGINC)
@@ -27,11 +30,17 @@ ifeq ($(DEV), false)
 else
   # for library internal development.
   OPT       := -c $(PGINC) -I../src
-  LDOPTS    := -L../src -Wl,-rpath=../src -lrta
   STATICLIB := ../src/librta.a
+  ifeq ($(SYS), Darwin)
+    LDOPTS    := -L../src -Xlinker -rpath ../src -lrta
+  else
+    LDOPTS    := -L../src -Wl,-rpath=../src -lrta
+  endif
 endif
 
-CC        = gcc
+LDCLNTOPTS = -L/usr/local/lib -lpq
+
+CC        ?= gcc
 DEBUG     = -g -DDEBUG -Wall
 CFLAGS    = $(OPT) $(DEBUG)
 APPOBJS   = appmain.o apptables.o
@@ -45,7 +54,7 @@ app-static: $(APPOBJS)
 	$(CC) $(APPOBJS) -g -o $@ $(STATICLIB)
 
 librta_client: librta_client.o
-	$(CC) -g librta_client.o -o $@ -lpq
+	$(CC) -g librta_client.o -o $@ $(LDCLNTOPTS)
 
 appmain.o: appmain.c app.h
 	$(CC) $(CFLAGS) $< -o $@
