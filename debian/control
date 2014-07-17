@@ -52,15 +52,3 @@ Description: Example programs for librta3.
  .
  This package provides examples fo librta3.
 
-Package: librta3-doc
-Architecture: all
-Section: doc
-Depends:
- ${misc:Depends}
-Recommends:
- libpq-dev
-Description: Documentation for librta3.
- Library allowing to expose program internal data structures as database tables.
- .
- This package provides documentation for librta3.
-

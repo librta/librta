@@ -12,7 +12,6 @@ include /usr/share/dpkg/default.mk
 
 PKGS=librta3
 PKGS+=librta3-dev
-PKGS+=librta3-doc
 PKGS+=librta3-dbg
 PKGS+=librta3-examples
 
@@ -101,11 +100,6 @@ install-stamp-librta3-dev:
 	    HOMEPAGE=`grep Homepage: debian/control | cut -f2 -d' '`; \
 	    sed -e "s|PREFIX|$$PREFIX|" -e "s|HOMEPAGE|$$HOMEPAGE|" -e "s|VERSION|$$VERSION|" data/librta.pc  > $(DESTDIR)/librta3-dev/usr/share/pkgconfig/librta.pc; \
 	)
-	touch $@
-
-install-stamp-librta3-doc:
-	@echo "*** Debian *** installing package librta3-doc"
-	install -m 644 doc/* $(DESTDIR)/librta3-doc/usr/share/doc/librta3-doc/html
 	touch $@
 
 install-stamp-librta3-examples:
