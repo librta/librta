@@ -1,3 +1,6 @@
+2014-07-16  Frederic Roussel          Version 1.1.1
+    - delete obsolete doc and util directories.
+
 2014-06-22  Frederic Roussel          Version 1.1.0
     - same functionality as 0.8.2
     - debian packaging in place. it is on a separate branch: rta-debian
