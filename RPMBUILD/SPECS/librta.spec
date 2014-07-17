@@ -38,12 +38,6 @@ Requires:		postgresql-devel
 %description devel
 Run Time Access Library - development files
 
-%package doc
-Summary:                Run Time Access Library
-Group:                  System Environment/Libraries
-%description doc
-Run Time Access Library - documentation files
-
 %package examples
 Summary:                Run Time Access Library
 Group:                  System Environment/Libraries
@@ -68,9 +62,6 @@ cd %{buildroot}/%{prefix}/lib; %{__mkdir} -p debug/%{prefix}/lib; %{__objcopy} -
 %{__cp} %{_base}/COPYING %{_base}/README %{_base}/ChangeLog %{buildroot}/usr/share/doc/librta-examples
 %{__cp} -a %{_base}/test %{buildroot}/usr/share/doc/librta-examples
 %{__cp} -a %{_base}/table_editor %{buildroot}/usr/share/doc/librta-examples
-%{__mkdir} -p %{buildroot}/usr/share/doc/librta-doc/html
-%{__cp} %{_base}/COPYING %{_base}/README %{_base}/ChangeLog %{buildroot}/usr/share/doc/librta-doc
-%{__cp} -a %{_base}/doc/* %{buildroot}/usr/share/doc/librta-doc/html
 %{__mkdir} -p %{buildroot}/usr/share/pkgconfig
 %{__cp} %{_base}/data/librta.pc %{buildroot}/usr/share/pkgconfig
 %{__sed} -i -e "s|PREFIX|%{prefix}|" -e "s|HOMEPAGE|%{homepage}|" -e "s|VERSION|%{version}|" %{buildroot}/usr/share/pkgconfig/librta.pc
@@ -100,24 +91,6 @@ ldconfig
 /usr/share/doc/librta-devel/COPYING
 /usr/share/doc/librta-devel/README
 /usr/share/doc/librta-devel/ChangeLog
-
-%files doc
-/usr/share/doc/librta-doc/html/BadUnixModel.png
-/usr/share/doc/librta-doc/html/FAQ.html
-/usr/share/doc/librta-doc/html/GoodrtaModel.png
-/usr/share/doc/librta-doc/html/apiref.html
-/usr/share/doc/librta-doc/html/contact.html
-/usr/share/doc/librta-doc/html/contact.php
-/usr/share/doc/librta-doc/html/download.html
-/usr/share/doc/librta-doc/html/index.html
-/usr/share/doc/librta-doc/html/librta_client.c
-/usr/share/doc/librta-doc/html/librta_client.txt
-/usr/share/doc/librta-doc/html/livedemo.html
-/usr/share/doc/librta-doc/html/myappdb.c
-/usr/share/doc/librta-doc/html/quickstart.html
-/usr/share/doc/librta-doc/COPYING
-/usr/share/doc/librta-doc/README
-/usr/share/doc/librta-doc/ChangeLog
 
 %files examples
 /usr/share/doc/librta-examples/table_editor/rta_apps.html
