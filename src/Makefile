@@ -24,6 +24,9 @@ HOST_ARCH := $(shell uname -m)
 # Normalized CPU architecture for the target.
 PKG_ARCH = $(TGT_ARCH:i%86=i386)
 
+# System the build is running on.
+SYS := $(shell uname)
+
 CC    ?= gcc
 DEBUG ?= -DDEBUG -DYYDEBUG
 OPT    = -fPIC -Wall -D_GNU_SOURCE $(STRINGS_OPT)
@@ -53,11 +56,19 @@ INSTINCDIR ?= $(INSTDIR)/include
 
 default: librta.so.3 librta.a
 
+ifeq ($(SYS), Darwin)
+# TO FIX
+# of course the ../src rpath is for internal development only.
+librta.so.3: $(OBJS)
+	$(CC) -g -Wall -dynamiclib -install_name @rpath/../src/librta.dynlib \
+		-o librta.dynlib $(OBJS)
+else
 librta.so.3: $(OBJS)
 	$(CC) -g -Wall -shared -Wl,-soname,librta.so.3 \
 		-o librta.so.3.0 $(OBJS)
 	ln -sf librta.so.3.0 librta.so.3
 	ln -sf librta.so.3 librta.so
+endif
 
 librta.a: $(OBJS)
 	ar -rcs librta.a $(OBJS)
