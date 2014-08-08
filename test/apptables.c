@@ -1,5 +1,5 @@
 /***************************************************************
- * Run Time Access Library
+ * librta library
  * Copyright (C) 2003-2014 Robert W Smith (bsmith@linuxtoys.org)
  *
  *  This program is distributed under the terms of the GNU LGPL.
@@ -78,147 +78,6 @@ RTA_COLDEF   mycolumns[] = {
       " is the reverse of the 'notes' field."},
 };
 
-/***************************************************************
- * One of the tables we want to present to the UI is the table
- * of UI connections.  It is defined in app.h as ....
- *  typedef struct {
-    int   fd;          // FD of TCP conn (=-1 if not in use)
-    int   cmdindx;     // Index of next location in cmd buffer
-    char  cmd[MXCMD];  // SQL command from UI program
-    int   rspfree;     // Number of free bytes in rsp buffer
-    char  rsp[MXRSP];  // SQL response to the UI program
-    int   o_port;      // Other-end TCP port number
-    int   o_ip;        // Other-end IP address 
-    long long nbytin;  // number of bytes read in
-    long long nbytout; // number of bytes sent out
-    int   ctm;         // connect time (==time();)
-    int   cdur;        // duration time (== now()-ctm;)
- *  } UI;
- * The following array of RTA_COLDEF describes this structure with
- * one RTA_COLDEF for each element in the UI strucure.
- **************************************************************/
-RTA_COLDEF   ConnCols[] = {
-  {
-      "UIConns",                /* table name */
-      "fd",                     /* column name */
-      RTA_INT,                  /* type of data */
-      sizeof(int),              /* #bytes in col data */
-      offsetof(UI, fd),         /* offset from col start */
-      RTA_READONLY,             /* Flags for read-only/disksave */
-      (int (*)()) 0,            /* called before read */
-      (int (*)()) 0,            /* called after write */
-    "File descriptor for TCP socket to UI program"},
-  {
-      "UIConns",                /* table name */
-      "cmdindx",                /* column name */
-      RTA_INT,                  /* type of data */
-      sizeof(int),              /* #bytes in col data */
-      offsetof(UI, cmdindx),    /* offset from col start */
-      RTA_READONLY,             /* Flags for read-only/disksave */
-      (int (*)()) 0,            /* called before read */
-      (int (*)()) 0,            /* called after write */
-    "Index of the next free byte in the input string, cmd"},
-  {
-      "UIConns",                /* table name */
-      "cmd",                    /* column name */
-      RTA_STR,                  /* type of data */
-      MXCMD,                    /* #bytes in col data */
-      offsetof(UI, cmd),        /* offset from col start */
-      RTA_READONLY,             /* Flags for read-only/disksave */
-      (int (*)()) 0,            /* called before read */
-      (int (*)()) 0,            /* called after write */
-    "Input command from the user interface program.  This"
-      " is an SQL command which is executed against the data"
-      " in the application."},
-  {
-      "UIConns",                /* table name */
-      "rspfree",                /* column name */
-      RTA_INT,                  /* type of data */
-      sizeof(int),              /* #bytes in col data */
-      offsetof(UI, rspfree),    /* offset from col start */
-      RTA_READONLY,             /* Flags for read-only/disksave */
-      (int (*)()) 0,            /* called before read */
-      (int (*)()) 0,            /* called after write */
-    "Index of the next free byte in the response string, rsp"},
-  {
-      "UIConns",                /* table name */
-      "rsp",                    /* column name */
-      RTA_STR,                  /* type of data */
-      50,                       /* first 50 bytes of response field */
-      offsetof(UI, rsp),        /* offset from col start */
-      RTA_READONLY,             /* Flags for read-only/disksave */
-      (int (*)()) 0,            /* called before read */
-      (int (*)()) 0,            /* called after write */
-    "Response back to the calling program.  This is used to"
-      " store the result so that the write() does not need to"
-      " block"},
-  {
-      "UIConns",                /* table name */
-      "o_port",                 /* column name */
-      RTA_INT,                  /* type of data */
-      sizeof(int),              /* #bytes in col data */
-      offsetof(UI, o_port),     /* offset from col start */
-      RTA_READONLY,             /* Flags for read-only/disksave */
-      (int (*)()) 0,            /* called before read */
-      (int (*)()) 0,            /* called after write */
-    "The IP port of the other end of the connection"},
-  {
-      "UIConns",                /* table name */
-      "o_ip",                   /* column name */
-      RTA_INT,                  /* type of data */
-      sizeof(int),              /* #bytes in col data */
-      offsetof(UI, o_ip),       /* offset from col start */
-      RTA_READONLY,             /* Flags for read-only/disksave */
-      (int (*)()) 0,            /* called before read */
-      (int (*)()) 0,            /* called after write */
-    "The IP address of the other end of the connection"
-      " cast to an int."},
-  {
-      "UIConns",                /* table name */
-      "nbytin",                 /* column name */
-      RTA_LONG,                 /* type of data */
-      sizeof(long long),        /* #bytes in col data */
-      offsetof(UI, nbytin),     /* offset from col start */
-      RTA_READONLY,             /* Flags for read-only/disksave */
-      (int (*)()) 0,            /* called before read */
-      (int (*)()) 0,            /* called after write */
-    "Number of bytes received on this connection"},
-  {
-      "UIConns",                /* table name */
-      "nbytout",                /* column name */
-      RTA_LONG,                 /* type of data */
-      sizeof(long long),        /* #bytes in col data */
-      offsetof(UI, nbytout),    /* offset from col start */
-      RTA_READONLY,             /* Flags for read-only/disksave */
-      (int (*)()) 0,            /* called before read */
-      (int (*)()) 0,            /* called after write */
-    "Number of bytes sent out on this connection"},
-  {
-      "UIConns",                /* table name */
-      "ctm",                    /* column name */
-      RTA_INT,                  /* type of data */
-      sizeof(int),              /* #bytes in col data */
-      offsetof(UI, ctm),        /* offset from col start */
-      RTA_READONLY,             /* Flags for read-only/disksave */
-      (int (*)()) 0,            /* called before read */
-      (int (*)()) 0,            /* called after write */
-    "Connect TiMe.  The unix style time() when the connection"
-      " was established.  This is used to decide which connection"
-      " to drop when the connection table is full and a new UI"
-      " connection request arrives."},
-  {
-      "UIConns",                /* table name */
-      "cdur",                   /* column name */
-      RTA_INT,                  /* type of data */
-      sizeof(int),              /* #bytes in col data */
-      offsetof(UI, cdur),       /* offset from col start */
-      RTA_READONLY,             /* Flags for read-only/disksave */
-      compute_cdur,             /* called before read */
-      (int (*)()) 0,            /* called after write */
-    "Connect DURation.  The number of seconds the connection"
-      " has been open.  A read callback computes this each time"
-      " the value is used."},
-};
 
 /***************************************************************
  * The table below helps illustrate how to use insert and delete
@@ -385,19 +244,6 @@ RTA_TBLDEF   UITables[] = {
       /* the number of columns */
       "/tmp/mysavefile",        /* save file name */
     "A sample application table"},
-  {
-      "UIConns",                /* table name */
-      (void *) 0,               /* address of table */
-      sizeof(UI),               /* length of each row */
-      0,                        /* # rows in table */
-      get_next_conn,            /* iterator function */
-      (void *) NULL,            /* iterator callback data */
-      (void *) NULL,            /* INSERT callback */
-      (void *) NULL,            /* DELETE callback */
-      ConnCols,                 /* Column definitions */
-      sizeof(ConnCols) / sizeof(RTA_COLDEF), /* # columns */
-      "",                       /* save file name */
-    "Data about TCP connections from UI frontend programs"},
   {
       "demotbl",                /* table name */
       (void *) 0,               /* address of table */
