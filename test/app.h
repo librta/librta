@@ -1,5 +1,5 @@
 /***************************************************************
- * Run Time Access Library
+ * librta library
  * Copyright (C) 2003-2014 Robert W Smith (bsmith@linuxtoys.org)
  *
  *  This program is distributed under the terms of the GNU LGPL.

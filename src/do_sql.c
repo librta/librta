@@ -1,5 +1,5 @@
 /***************************************************************
- * Run Time Access Library
+ * librta library
  * Copyright (C) 2003-2014 Robert W Smith (bsmith@linuxtoys.org)
  *
  *  This program is distributed under the terms of the GNU LGPL.
@@ -24,8 +24,6 @@ extern RTA_TBLDEF *rta_Tbl[];
 extern int rta_Ntbl;
 extern RTA_COLDEF *rta_Col[];
 extern int rta_Ncol;
-extern struct RtaStat rta_stat;
-extern struct RtaDbg rta_dbg;
 
 /* Forward references */
 static void     verify_table_name(char *, int *);
@@ -91,7 +89,6 @@ rta_do_sql(char *buf, int *nbuf)
       if (rta_cmd.err)
         return;
       do_select(buf, nbuf);
-      rta_stat.nselect++;
       break;
 
     case RTA_UPDATE:
@@ -107,7 +104,6 @@ rta_do_sql(char *buf, int *nbuf)
 
       /* The command looks good. Update and do callbacks */
       do_update(buf, nbuf);
-      rta_stat.nupdate++;
       break;
 
     case RTA_INSERT:
@@ -122,7 +118,6 @@ rta_do_sql(char *buf, int *nbuf)
         return;
       /* The command looks good. INSERT the row. */
       do_insert(buf, nbuf);
-      rta_stat.ninsert++;
       break;
 
     case RTA_DELETE:
@@ -137,7 +132,6 @@ rta_do_sql(char *buf, int *nbuf)
         return;
       /* The command looks good.  Delete the rows */
       do_delete(buf, nbuf);
-      rta_stat.ndelete++;
       break;
 
     default:
@@ -216,9 +210,7 @@ verify_select_list(char *buf, int *nbuf)
         free(rta_cmd.cols[i]);
       rta_cmd.cols[i] = malloc(strlen(coldefs[i].name) + 1);
       if (rta_cmd.cols[i] == (void *) 0) {
-        rta_stat.nsyserr++;
-        if (rta_dbg.syserr)
-          rta_log(LOC, Er_No_Mem);
+        rta_log(LOC, Er_No_Mem);
         rta_cmd.err = 1;
         return;
       }
@@ -629,7 +621,6 @@ do_select(char *buf, int *nbuf)
   llong cmp;           /* has actual relation of col and val */
   int      dor;        /* DO Row == 1 if we should print row */
   int      npr = 0;    /* Number of output rows */
-  char     nprstr[30]; /* string to hold ASCII of npr */
   char    *startbuf;   /* used to compute response length */
   char    *lenloc;     /* points to where 'D' pkt length goes */
   int      cx;         /* Column index while building Data pkt */
@@ -853,12 +844,6 @@ do_select(char *buf, int *nbuf)
   *buf++ = 0x00;
 
   *nbuf -= (int) (buf - startbuf);
-
-  /* Log SQL if trace is on */
-  if (rta_dbg.trace) {
-    (void) sprintf(nprstr, "%d", npr);
-    rta_log(LOC, Er_Trace_SQL, rta_cmd.sqlcmd, nprstr);
-  }
 }
 
 /***************************************************************
@@ -981,9 +966,7 @@ rta_send_error(char *filename, int lineno, char *fmt, char *arg)
   char    *lenptr;     /* where to put the length */
 
   rta_cmd.err = 1;
-  rta_stat.nsqlerr++;
-  if (rta_dbg.sqlerr)
-    rta_log(filename, lineno, Er_Bad_SQL, rta_cmd.sqlcmd);
+  rta_log(filename, lineno, Er_Bad_SQL, rta_cmd.sqlcmd);
 
   /* Make sure we have enough space for the output.  Current #defines
      limit the maximum message to less than 100 bytes */
@@ -1250,10 +1233,6 @@ do_update(char *buf, int *nbuf)
   ad_int4(&tmark, (buf - tmark));
 
   *nbuf -= (int) (buf - startbuf);
-
-  /* Log SQL if trace is on.  (+7 skips over 'UPDATE ') */
-  if (rta_dbg.trace)
-    rta_log(LOC, Er_Trace_SQL, rta_cmd.sqlcmd, (tmark + 7));
 }
 
 
@@ -1289,9 +1268,7 @@ do_insert(char *buf, int *nbuf)
   /* Allocate row and then allocate space for each pointer type */
   pr = malloc(rta_cmd.ptbl->rowlen);
   if (pr == (void *) 0) {
-    rta_stat.nsyserr++;
-    if (rta_dbg.syserr)
-      rta_log(LOC, Er_No_Mem);
+    rta_log(LOC, Er_No_Mem);
     rta_cmd.err = 1;
     return;
   }
@@ -1311,9 +1288,7 @@ do_insert(char *buf, int *nbuf)
       case RTA_PSTR:
         *(void **)pd = malloc(rta_cmd.ptbl->cols[cx].length);
         if (*(void **)pd == (void **) 0) {
-          rta_stat.nsyserr++;
-          if (rta_dbg.syserr)
-            rta_log(LOC, Er_No_Mem);
+          rta_log(LOC, Er_No_Mem);
           rta_cmd.err = 1;
           free_row(rta_cmd.ptbl, pr);
           return;
@@ -1326,9 +1301,7 @@ do_insert(char *buf, int *nbuf)
       case RTA_PINT:
         *(void **) pd = malloc(sizeof(int));
         if (*(void **)pd == (void **) 0) {
-          rta_stat.nsyserr++;
-          if (rta_dbg.syserr)
-            rta_log(LOC, Er_No_Mem);
+          rta_log(LOC, Er_No_Mem);
           rta_cmd.err = 1;
           free_row(rta_cmd.ptbl, pr);
           return;
@@ -1341,9 +1314,7 @@ do_insert(char *buf, int *nbuf)
       case RTA_PLONG:
         *(void **) pd = malloc(sizeof(llong));
         if (*(void **)pd == (void **) 0) {
-          rta_stat.nsyserr++;
-          if (rta_dbg.syserr)
-            rta_log(LOC, Er_No_Mem);
+          rta_log(LOC, Er_No_Mem);
           rta_cmd.err = 1;
           free_row(rta_cmd.ptbl, pr);
           return;
@@ -1360,9 +1331,7 @@ do_insert(char *buf, int *nbuf)
       case RTA_PFLOAT:
         *(void **) pd = malloc(sizeof(float));
         if (*(void **)pd == (void **) 0) {
-          rta_stat.nsyserr++;
-          if (rta_dbg.syserr)
-            rta_log(LOC, Er_No_Mem);
+          rta_log(LOC, Er_No_Mem);
           rta_cmd.err = 1;
           free_row(rta_cmd.ptbl, pr);
           return;
@@ -1472,10 +1441,6 @@ do_insert(char *buf, int *nbuf)
   ad_int4(&tmark, (buf - tmark));
 
   *nbuf -= (int) (buf - startbuf);
-
-  /* Log SQL if trace is on.  (+7 skips over 'INSERT ') */
-  if (rta_dbg.trace)
-    rta_log(LOC, Er_Trace_SQL, rta_cmd.sqlcmd, (tmark + 7));
 }
 
 
@@ -1678,10 +1643,6 @@ do_delete(char *buf, int *nbuf)
   ad_int4(&tmark, (buf - tmark));
 
   *nbuf -= (int) (buf - startbuf);
-
-  /* Log SQL if trace is on.  (+7 skips over 'DELETE ') */
-  if (rta_dbg.trace)
-    rta_log(LOC, Er_Trace_SQL, rta_cmd.sqlcmd, (tmark + 7));
 }
 
 /***************************************************************
@@ -1751,7 +1712,6 @@ rta_log(char *fname,    /* error detected in file... */
   int linen,           /* error detected at line # */
   char *format, ...)
 {                               /* printf format string */
-  extern struct RtaDbg rta_dbg;
   va_list  ap;
   char    *s1;         /* first optional argument */
   char    *s2;         /* second optional argument */
@@ -1772,13 +1732,9 @@ rta_log(char *fname,    /* error detected in file... */
   }
   va_end(ap);
 
-  /* Send to syslog() if so configured */
-  if (rta_dbg.target == 1 || rta_dbg.target == 3)
-    syslog(rta_dbg.priority, format, fname, linen, s1, s2);
+  syslog(LOG_WARNING, format, fname, linen, s1, s2);
 
-  /* Send to stderr if so configured */
-  if (rta_dbg.target == 2 || rta_dbg.target == 3) {
-    fprintf(stderr, format, fname, linen, s1, s2);
-    fprintf(stderr, "\n");
-  }
+  /* Uncomment below for output to stderr */
+  // fprintf(stderr, format, fname, linen, s1, s2);
+  // fprintf(stderr, "\n");
 }
