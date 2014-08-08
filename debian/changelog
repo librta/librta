@@ -1,3 +1,9 @@
+librta (1.1.2-1) precise; urgency=low
+
+  * Removal of debug tables.
+
+ -- Frederic Roussel <fr.frasc@gmail.com>  Thu, 07 Aug 2014 19:43:33 -0700
+
 librta (1.1.1-1) precise; urgency=low
 
   * Must bump version number by one.
