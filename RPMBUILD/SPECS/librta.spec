@@ -3,7 +3,7 @@
 %define _base           %(echo "$BASE")
 %define _topdir	 	%{_base}/RPMBUILD
 %define name		librta
-%define version 	1.1.1
+%define version 	1.1.2
 %define release		1
 %define buildroot	%{_topdir}/ROOT
 %define prefix		/usr
