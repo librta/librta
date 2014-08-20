@@ -1,0 +1,58 @@
+# Makefile for Borland C++ bcc32 
+# Creates rta.lib
+
+
+SOURCES = parse.c token.c api.c do_sql.c rtatables.c strndup.c dirname.c mkstemp.c
+OBJECTS =  parse.obj token.obj api.obj do_sql.obj rtatables.obj strndup.obj dirname.obj mkstemp.obj 
+
+CXX = bcc32
+CPPFLAGS = -w-par -w-pro -w-rpt -w-rch -w-ccc -w-aus -w-csu -w-eff
+# -w-par  Parameter x is never used in function y
+# -w-pro  Call to function x with no prototype 
+# -w-rpt  Nonportable pointer conversion in function x
+# -w-rch  Unreachable code
+# -w-ccc  Condition is always true/false
+# -w-aus  x is assigned a value that is never used
+# -w-csu  Comparing signed and unsigned values in function x
+# -w-eff  Code has no effect in function x
+
+INCLUDES = -I. 
+LDFLAGS = 
+LIBS = 
+CXXFLAGS = 
+CXXCOMPILE = $(CXX) $(INCLUDES) $(CPPFLAGS) $(CXXFLAGS)
+
+
+all: rta.lib 
+
+rta.lib: $(OBJECTS)
+        tlib /0 rta.lib +api.obj +do_sql.obj +parse.obj +rtatables.obj +strndup.obj +token.obj +dirname.obj +mkstemp.obj
+
+api.obj: api.c 
+	$(CXXCOMPILE) -c api.c 
+
+do_sql.obj: do_sql.c 
+	$(CXXCOMPILE) -c do_sql.c 
+
+parse.obj: parse.c 
+	$(CXXCOMPILE) -c parse.c 
+
+rtatables.obj: rtatables.c 
+	$(CXXCOMPILE) -c rtatables.c 
+
+strndup.obj: strndup.c 
+	$(CXXCOMPILE) -c strndup.c 
+
+token.obj: token.c 
+	$(CXXCOMPILE) -c token.c 
+
+
+clean:  
+	del $(OBJECTS) rta.lib 
+
+
+.cpp.obj:
+	$(CXXCOMPILE) -c $<
+.c.obj:
+	$(CXXCOMPILE) -c $<
+

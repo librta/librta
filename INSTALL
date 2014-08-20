@@ -1,0 +1,262 @@
+/***************************************************************
+ * Run Time Access
+ * Copyright (C) 2003-2004  Robert W Smith (bsmith@linuxtoys.org)
+ *
+ *  This program is distributed under the terms of the GNU LGPL.
+ *  See the file COPYING file.
+ **************************************************************/
+
+CONTENTS
+  1. [Optional] Fuse Library Installation
+  2. Linux Installation
+  3. Windows Installation
+  4. Test Installation
+
+1. [OPTIONAL] FUSE LIBRARY INSTALLATION
+
+    The installation of the libfuse library is optional and is supported
+    only for Linux applications (and in particular is not supported on 
+    Windows).  The libfuse library allows daemon data structures to be 
+    made available as files, similar to how Linux kernel data structures 
+    are made available through the /proc file-system.   If the libfuse 
+    library is installed, then the RTA install process will build an 
+    additional library, librtafs, and the test program, test/app, will be 
+    linked with this librtafs library to export its internal data structures 
+    to the directory /tmp/app/. 
+
+    Before you build the libfuse library, you must have installed the
+    Linux kernel sources, which are typically found in the directory
+    /usr/src/linux/.  If the kernel sources have not been installed, they
+    are available on the Linux distribution CDs. 
+   
+    The libfuse package, written by Miklos Szeredi, is available 
+    at http://sourceforge.net/projects/avf. 
+    The name of the package is fuse-1.0.tar.gz.
+    Note that you must use the Fuse 1.0 version not any later versions.
+
+    tar xvfz fuse-1.0.tar.gz
+                                                                                
+    cd fuse-1.0
+                                                                                
+    If the kernel sources are installed in /usr/src/linux then:
+    ./configure
+
+    Otherwise, do something like:
+    ./configure --with-kernel=/usr/src/linux-2.4
+                                                                                
+    make
+    The 'make install' command creates a kernel module, the libfuse
+    library and a test program.
+
+    Install the library with:
+    su
+    make install
+    You should now have /usr/local/lib/libfuse.a
+                                                                                
+    Install the kernel module with:
+    /sbin/insmod kernel/fuse.o
+
+    Take a look at the libfuse INSTALL file for a test program
+    to check that the libfuse is working properly.
+
+2. LINUX INSTALLATION 
+
+    tar xvfz rta-1.0.1.tar.gz
+    cd rta-1.0.1
+    ./configure
+    make
+    su 
+    make install  
+
+    The 'make' command will build the rta libraries in the 'src' 
+    directory, and then traverse into the 'test' directory to build 
+    the test program. 
+
+    The 'make install' command installs the following files: 
+    /usr/local/include/rta.h
+    /usr/local/lib/librtadb.a
+    /usr/local/lib/librtadb.la
+    /usr/local/lib/librtadb.so
+    /usr/local/lib/librtadb.so.0
+    /usr/local/lib/librtadb.so.0.0.0
+
+    In addition, the 'make install' command installs the following
+    files if the libfuse library is available.  This library is
+    typically located in /usr/local/lib/libfuse.a.
+    
+    /usr/local/lib/librtafs        
+    /usr/local/lib/librtafs.a
+    /usr/local/lib/librtafs.0      
+    /usr/local/lib/librtafs.la
+    /usr/local/lib/librtafs.0.0.0
+
+
+    You can check if it was found by looking at 
+    and searching for the string "checking for fuse_mount in -lfuse"
+    and then searching downward for the string "result:".  It will
+    either say "result: yes" or "result: no".
+ 
+    Proceed to the TEST INSTALLATION section to verify the 
+    libraries with a test program.
+
+
+3. WINDOWS INSTALLATION 
+
+    The Windows port of rta has been tested with Windows XP.  Please
+    give the authors (see AUTHORS file) feedback if you run into
+    problems with other Windows versions. 
+
+    The Windows port of rta assumes that you have the MSYS and MinGw
+    packages installed. 
+
+    The MSYS package is available from http://www.mingw.org/msys.shtml.
+    Goto the "download area" and select "MSYS-1.0.10.exe".  Once
+    downloaded, run this installation program to install the MSYS
+    package on your system.
+
+    The MinGw package is available from http://www.mingw.org/.  Goto
+    the "download webpage" and select "MinGW-2.0.0-3.exe" or later.  Once
+    downloaded, run this installation program to install the MinGw
+    package.
+
+    Update your PATH environment variable to include the MSYS and MingGW
+    packages.  To update the variable, first follow the links 
+    Start->System->Advanced->Environment Variables.  Select PATH and 
+    then click Edit.  Edit the "Variable Value" to include the MSYS 
+    and MingGW paths, for example, C:\MinGw\bin;C:\msys\1.0\bin.
+
+    The bash shell should now be available for use.  To start the bash 
+    shell, first start the Window Command Prompt by clicking
+    Start->Command Prompt.  Then type 'sh' at the prompt.  You should see
+    a prompt like 'sh-2.04$'.  If the bash shell doesn't start, check
+    that the file C:\msys\1.0\bin\sh.exe exists and that the PATH 
+    environment variable is set correctly. 
+
+    Check that 'make' is installed correctly.  From the bash
+    shell, type 'which make'.   This command should reply with a directory
+    like '/usr/bin/make'.  If no directory is shown then check that the PATH
+    environment variable is set correctly (as described above). 
+ 
+    Similarly, check that the GNU C compiler 'gcc' is installed correctly.  
+    From the bash shell, type 'which gcc'.   This command should reply 
+    with a directory like '/mingw/bin/gcc'.  Again, if no directory is 
+    shown then check that the PATH environment variable is set correctly. 
+ 
+    Unzip the tar distribution file with the command: 
+ 
+    tar xvfz rta-1.0.1.tar.gz
+
+    Warning:  The steps below will not work properly 
+    if the current working directory name has spaces in it.
+    To check the directory name, invoke the command 'pwd' from the bash
+    shell.  As an example, the directory '/c/Document and Settings/Graham'
+    will cause problems.  To overcome this problem, move to a directory 
+    that doesn't have spaces in it before invoking the 'tar' command above. 
+ 
+    The 'tar' command will have created a directory 'rta-1.0.1'.  Invoke the 
+    following commands:
+ 
+    cd rta-1.0.1
+    ./configure
+    make 
+ 
+4. TEST INSTALLATION
+
+   Note 1:  If RTA was built with libfuse support then create
+   the directory /tmp/app before proceeding to TEST #1.
+ 
+
+   TEST #1
+
+   To test the rta libraries, we shall use the postgress SQL client.
+   The psql client is available from http://www.postgresql.org/.
+   Note that version 7.4 is required by this test, whereas an older 
+   release (7.3) is currently distributed by the major Linux 
+   distributions. 
+   
+   psql --version
+   Check that the response is '7.4'.
+   
+   Set the LD_LIBRARY_PATH to point to the librtadb library: 
+   export LD_LIBRARY_PATH=/usr/local/lib
+
+   Test the installation by invoking the commands: 
+   cd test
+   ./app &
+    
+   If app is running on a Linux machine, invoke psql in another 
+   terminal on the same machine:  
+   psql -h localhost -p 8888
+
+   If app is running on a Windows machine <host>, invoke psql on a 
+   remote Linux machine as follows:
+   psql -h <host> -p 8888
+   eg. psql -h 192.168.1.101 -p 8888
+
+   You should see the response:
+
+       Welcome to psql 7.4, the PostgreSQL interactive terminal.
+
+       Type:  \copyright for distribution terms
+              \h for help with SQL commands
+              \? for help on internal slash commands
+              \g or terminate with semicolon to execute query
+              \q to quit
+
+   At the # prompt, type the following command and press Enter
+       select name from rta_tables;
+
+   If you see the following response then the rta libraries are 
+   working correctly:
+          name     
+       -------------
+        rta_tables
+        rta_columns
+        rta_dbg
+        rta_stat
+        mytable
+        UIConns
+       (6 rows)
+
+
+   At the # prompt, type the following command and press Enter
+       SELECT name, help FROM rta_tables;
+
+   If you see the following response then the rta libraries are 
+   working correctly:
+
+    name     |                                                                                                                                            help                                                                                                                                             
+-------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ rta_tables  | The table of all tables in the system.  This is a pseudo table and not an array of structures like other tables.
+ rta_columns | The list of all columns in all tables along with their attributes.
+ rta_dbg     | Configure of debug logging.  A callback on the 'target' field closes and reopens syslog().  None of the values in this table are saved to disk.  If you want non-default values you need to change the rta source or do an SQL_string() to set the values when you initialize your program.
+ rta_stat    | Usage and error counts for the rta package.
+ mytable     | A sample application table
+ UIConns     | Data about TCP connections from UI frontend programs
+(6 rows)
+
+
+   Type \q to quit the psql client.
+
+
+   TEST #2
+
+   This test tests the libfuse functionality.  If the libfuse library
+   was not installed prior to installing RTA, then skip this test. 
+
+   Set the LD_LIBRARY_PATH to point to the librtadb library: 
+   export LD_LIBRARY_PATH=/usr/local/lib
+   
+   Create the mount point where the test app's data-stuctures are to
+   be exported as files:
+   mkdir /tmp/app
+
+   cd test
+   ./app
+
+   Then in another shell:
+   ls /tmp/app
+   You should see the following directories:
+   mytable  rta_columns  rta_dbg  rta_stat  rta_tables  UIConns
+
+
