@@ -1,0 +1,142 @@
+/***************************************************************
+ * Run Time Access
+ * Copyright (C) 2003-2004  Robert W Smith (bsmith@linuxtoys.org)
+ *
+ *  This program is distributed under the terms of the GNU LGPL.
+ *  See the file COPYING file.
+ **************************************************************/
+
+CONTENTS
+  1. Linux Installation
+  2. Windows Installation
+  3. Test Installation
+
+
+1. LINUX INSTALLATION 
+
+    tar xvfz rta-1.0.0.tar.gz
+    cd rta-1.0.0
+    ./configure
+    make
+    make install  (as root)
+
+    The 'make' command will build the rta libraries in the 'src' 
+    directory, and then traverse into the 'test' directory to build 
+    the test program. 
+
+    The 'make install' command installs the following files: 
+    /usr/local/include/rta.h
+    /usr/local/lib/librtadb.a
+    /usr/local/lib/librtadb.la
+    /usr/local/lib/librtadb.so
+    /usr/local/lib/librtadb.so.0
+    /usr/local/lib/librtadb.so.0.0.0
+
+    Proceed to the TEST INSTALLATION section to verify the 
+    libraries with a test program.
+
+2. WINDOWS INSTALLATION 
+
+    The Windows port of rta has been tested with Windows XP.  Please
+    give the authors (see AUTHORS file) feedback if you run into
+    problems with other Windows versions. 
+
+    The Windows port of rta assumes that you have the MSYS and MinGw
+    packages installed. 
+
+    The MSYS package is available from http://www.mingw.org/msys.shtml.
+    Goto the "download area" and select "MSYS-1.0.10.exe".  Once
+    downloaded, run this installation program to install the MSYS
+    package on your system.
+
+    The MinGw package is available from http://www.mingw.org/.  Goto
+    the "download webpage" and select "MinGW-2.0.0-3.exe" or later.  Once
+    downloaded, run this installation program to install the MinGw
+    package.
+
+    Update your PATH environment variable to include the MSYS and MingGW
+    packages.  To update the variable, first follow the links 
+    Start->System->Advanced->Environment Variables.  Select PATH and 
+    then click Edit.  Edit the "Variable Value" to include the MSYS 
+    and MingGW paths, for example, C:\MinGw\bin;C:\msys\1.0\bin.
+
+    The bash shell should now be available for use.  To start the bash 
+    shell, first start the Window Command Prompt by clicking
+    Start->Command Prompt.  Then type 'sh' at the prompt.  You should see
+    a prompt like 'sh-2.04$'.  If the bash shell doesn't start, check
+    that the file C:\msys\1.0\bin\sh.exe exists and that the PATH 
+    environment variable is set correctly. 
+
+    Check that 'make' is installed correctly.  From the bash
+    shell, type 'which make'.   This command should reply with a directory
+    like '/usr/bin/make'.  If no directory is shown then check that the PATH
+    environment variable is set correctly (as described above). 
+ 
+    Similarly, check that the GNU C compiler 'gcc' is installed correctly.  
+    From the bash shell, type 'which gcc'.   This command should reply 
+    with a directory like '/mingw/bin/gcc'.  Again, if no directory is 
+    shown then check that the PATH environment variable is set correctly. 
+ 
+    Unzip the tar distribution file with the command: 
+ 
+    tar xvfz rta-1.0.0.tar.gz
+
+    Warning:  The steps below will not work properly 
+    if the current working directory name has spaces in it.
+    To check the directory name, invoke the command 'pwd' from the bash
+    shell.  As an example, the directory '/c/Document and Settings/Graham'
+    will cause problems.  To overcome this problem, move to a directory 
+    that doesn't have spaces in it before invoking the 'tar' command above. 
+ 
+    The 'tar' command will have created a directory 'rta-1.0.0'.  Invoke the 
+    following commands:
+ 
+    cd rta-1.0.0
+    ./configure
+    make 
+ 
+3. TEST INSTALLATION
+ 
+   To test the rta libraries, we shall use the postgress SQL client.
+   The psql client is available from http://www.postgresql.org/.
+   Note that version 7.4 is required by this test, whereas an older 
+   release (7.3) is currently distributed by the major Linux 
+   distributions. 
+   
+   psql --version
+   Check that the response is '7.4'.
+   
+   Test the installation by invoking the commands: 
+   cd test
+   ./app &
+    
+   In another terminal, run the psql client: 
+   psql -h localhost -p 8888
+
+   You should see the response:
+
+       Welcome to psql 7.4, the PostgreSQL interactive terminal.
+
+       Type:  \copyright for distribution terms
+              \h for help with SQL commands
+              \? for help on internal slash commands
+              \g or terminate with semicolon to execute query
+              \q to quit
+
+   At the prompt, type the following command and press Enter
+       select name from rta_tables;
+
+   If you see the following response then the rta libraries are 
+   working correctly:
+          name     
+       -------------
+        rta_tables
+        rta_columns
+        rta_dbg
+        rta_stat
+        mytable
+        UIConns
+       (6 rows)
+
+   Type \q to quit the psql client.
+
