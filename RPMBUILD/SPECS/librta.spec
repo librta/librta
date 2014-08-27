@@ -3,7 +3,7 @@
 %define _base           %(echo "$BASE")
 %define _topdir	 	%{_base}/RPMBUILD
 %define name		librta
-%define version 	1.1.2
+%define version 	1.1.3
 %define release		1
 %define buildroot	%{_topdir}/ROOT
 %define prefix		/usr
@@ -11,10 +11,10 @@
 
 BuildRoot:		%{buildroot}
 Summary: 		Run Time Access Library
-Vendor:                 Demand Peripherals
+Vendor:                 Robert W Smith <bsmith@linuxtoys.org>
 URL:			%{homepage}
 Packager:		Frederic Roussel <fr.frasc@gmail.com>
-License: 		LGPL-2.1+
+License: 		MIT
 Name: 			%{name}
 Version: 		%{version}
 Release: 		%{release}
