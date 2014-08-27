@@ -18,32 +18,27 @@ mkdir ../librta-$V
 cp -a * ../librta-$V
 rm -fr ../librta-$V/{RPMBUILD,SH}
 cd ..
-tar zcvf librta-$V.tar.gz librta-$V
+tar zcvf $TOPDIR/SOURCES/librta-$V.tar.gz librta-$V
 rm -fr librta-$V
-mv librta-$V.tar.gz $TOPDIR/SOURCES
 cd librta
 
-# binary only.
-# rpmbuild -v -bb --buildroot $TOPDIR/ROOT $TOPDIR/SPECS/librta.spec
-# rpmbuild -v -bb --noclean --buildroot $TOPDIR/ROOT $TOPDIR/SPECS/librta.spec
-# source only.
-# rpmbuild -v -bs --buildroot $TOPDIR/ROOT $TOPDIR/SPECS/librta.spec
-# binary and source.
+# build binary and source.
 rpmbuild -v -ba --buildroot $TOPDIR/ROOT $TOPDIR/SPECS/librta.spec
 
 # binary only for a given PLATFORM:
 # with PLATFORM: arch-vendor-os
-# rpmbuild -v -bb --target i386-redhat-linux --buildroot $TOPDIR/ROOT $TOPDIR/SPECS/librta.spec
+rpmbuild -v -bb --target i386-redhat-linux --buildroot $TOPDIR/ROOT $TOPDIR/SPECS/librta.spec
+
+# Move RPMS to a know place
+mkdir -p ~/RPMS/SRPMS ~/RPMS/i386 ~/RPMS/x86_64
+mv RPMBUILD/SRPMS/* ~/RPMS/SRPMS/
+mv RPMBUILD/RPMS/i386/* ~/RPMS/i386/
+mv RPMBUILD/RPMS/x86_64/* ~/RPMS/x86_64/
 
 #--- wipe everything out ---
-# rm -fr $ROOTDIR/* $TOPDIR/{BUILD,RPMS,SOURCES,SRPMS}/*
-# rm -fr ~/rpmbuild/
-#
-# cd src
-# make clean
-# cd ..
-#
-# cd test
-# make clean
-# cd ..
+rm -fr $ROOTDIR/* $TOPDIR/{BUILD,RPMS,SOURCES,SRPMS}/*
+rm -fr ~/rpmbuild/
+
+#--- Show paths of RPMs ---
+find ~/RPMS/ -type f | grep $V
 
