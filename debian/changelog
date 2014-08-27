@@ -1,3 +1,9 @@
+librta (1.1.3-1) precise; urgency=low
+
+  * Re-licensed under the MIT license.
+
+ -- Frederic Roussel <fr.frasc@gmail.com>  Wed, 27 Aug 2014 13:51:29 -0700
+
 librta (1.1.2-1) precise; urgency=low
 
   * Removal of debug tables.
