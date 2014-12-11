@@ -1,6 +1,4 @@
 # ignore files build by rpmbuild.
-RPMBUILD/BUILD
-RPMBUILD/ROOT
-RPMBUILD/RPMS
-RPMBUILD/SOURCES
-RPMBUILD/SRPMS
+RPMBUILD
+debian
+scripts
