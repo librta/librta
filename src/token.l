@@ -11,6 +11,7 @@
  **************************************************************/
 %option noyywrap
 %option never-interactive
+%option noinput
 
 %{
 #include <string.h>

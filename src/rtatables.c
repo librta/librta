@@ -1,10 +1,10 @@
-/******************************************************************
- * librta library
+/***************************************************************
+ * librta Library
  * Copyright (C) 2003-2014 Robert W Smith (bsmith@linuxtoys.org)
  *
- *  This program is distributed under the terms of the MIT License.
+ *  This program is distributed under the terms of the MIT license.
  *  See the file COPYING file.
- *****************************************************************/
+ **************************************************************/
 
 /***************************************************************
  * Overview:
@@ -28,6 +28,7 @@
 int          rta_restart_syslog();
 static void *get_next_sysrow(void *, void *, int);
 
+
 /***************************************************************
  * We define a table which contains the column definitions of
  * all columns in the system.  This is a pseudo table in that
@@ -37,7 +38,6 @@ static void *get_next_sysrow(void *, void *, int);
  * The table definition for "rta_columns" must appear as the
  * second entry in the array of table definition pointers.
  **************************************************************/
-
 /* Define the table columns */
 RTA_COLDEF   rta_columnsCols[] = {
   {
@@ -176,13 +176,13 @@ RTA_TBLDEF   rta_columnsTable = {
     "attributes."
 };
 
+
 /***************************************************************
  * We define a table which contains the table definition of all
  * tables in the system.  This is a pseudo table in that there
  * is not an array of structures like other tables.  Use of this
  * table requires special handling in do_sql.
  **************************************************************/
-
 /* Define the table columns */
 RTA_COLDEF   rta_tablesCols[] = {
   {
@@ -347,6 +347,7 @@ RTA_TBLDEF   rta_tablesTable = {
     "table and not an array of structures like other tables."
 };
 
+
 /***************************************************************
  * get_next_sysrow(): - Routine to the get the next row pointer
  * given the current row pointer or row number.
@@ -380,3 +381,296 @@ get_next_sysrow(void *pui, void *it_info, int rowid)
   return ((void *) NULL);
 }
 
+
+/***************************************************************
+ * rta_restart_syslog(): - Routine to restart or reconfigure the
+ * logging facility.  Syslog is always closed and (if enabled)
+ * reopened with the priority and facility specified in the
+ * rta_dbg structure.
+ *
+ * Input:        Name of the table 
+ *               Name of the column
+ *               Text of the SQL command itself
+ *               Pointer to row of data
+ *               Pointer to copy of old row
+ *               Index of row used (zero indexed)
+ * Output:       Success (a zero)
+ * Effects:      No side effects.
+ **************************************************************/
+int
+rta_restart_syslog(char *tblname, char *colname, char *sqlcmd,
+               void *prow, int rowid, void *poldrow)
+{
+  extern struct RtaDbg rta_dbg;
+
+  closelog();
+
+  if (rta_dbg.target == 1 || rta_dbg.target == 3) {
+    openlog(rta_dbg.ident, LOG_ODELAY | LOG_PID, rta_dbg.facility);
+  }
+
+  return(0);
+}
+
+
+/***************************************************************
+ *     The rta_dbg table controls which errors generate
+ * debug log messages, the priority, and the facility of the
+ * syslog() messages sent.  The librta package generates no user
+ * level log * messages, only debug messages.  All of the fields
+ * in this table are volatile.  You will need to set the values
+ * in your main program to make them seem persistent.
+ * (Try something like
+ *    "rta_SQL_string("UPDATE rta_dbgconfig SET dbg ....").)
+ * A callback attached to dbg_facility causes a close/reopen of
+ * syslog().
+ **************************************************************/
+/* Allocate and initialize the table */
+struct RtaDbg rta_dbg = {
+  1,                            /* log system errors */
+  1,                            /* log librta errors */
+  1,                            /* log SQL errors */
+  0,                            /* no log of SQL cmds */
+  1,                            /* log to syslog() only */
+  LOG_ERR,                      /* see sys/syslog.h */
+  LOG_USER,                     /* see sys/syslog.h */
+  "librta"                      /* see 'man openlog' */
+};
+
+/***************************************************************
+ *     The rta_stats table contains usage and error statistics
+ * which might be of interest to developers.  All fields are
+ * of type long, are read-only, and are set to zero by
+ * rta_init(). 
+ **************************************************************/
+/* Allocate and initialize the table */
+struct RtaStat rta_stat = {
+  (llong) 0,                    /* count of failed OS calls. */
+  (llong) 0,                    /* count of internal librta failures. */
+  (llong) 0,                    /* count of SQL failures. */
+  (llong) 0,                    /* count of authorizations. */
+  (llong) 0,                    /* count of UPDATE requests */
+  (llong) 0,                    /* count of SELECT requests */
+};
+
+#ifdef DEBUG
+/* Define the table columns */
+RTA_COLDEF   rta_dbgCols[] = {
+  {
+      "rta_dbg",                /* table name */
+      "syserr",                 /* column name */
+      RTA_INT,                  /* type of data */
+      sizeof(int),              /* #bytes in col data */
+      offsetof(struct RtaDbg, syserr), /* offset 2 col strt */
+      0,               /* Flags for read-only/disksave */
+      (int (*)()) 0,  /* called before read */
+      (int (*)()) 0,  /* called after write */
+      "A non-zero value causes a call to syslog() for all system "
+      "errors such as failed malloc() or save file read failures."},
+  {
+      "rta_dbg",                /* table name */
+      "rtaerr",                 /* column name */
+      RTA_INT,                  /* type of data */
+      sizeof(int),              /* #bytes in col data */
+      offsetof(struct RtaDbg, rtaerr), /* offset 2 col strt */
+      0,               /* Flags for read-only/disksave */
+      (int (*)()) 0,  /* called before read */
+      (int (*)()) 0,  /* called after write */
+      "A non-zero value causes a call to syslog() for all errors "
+      "internal to the librta package."},
+  {
+      "rta_dbg",                /* table name */
+      "sqlerr",                 /* column name */
+      RTA_INT,                  /* type of data */
+      sizeof(int),              /* #bytes in col data */
+      offsetof(struct RtaDbg, sqlerr), /* offset 2 col strt */
+      0,               /* Flags for read-only/disksave */
+      (int (*)()) 0,  /* called before read */
+      (int (*)()) 0,  /* called after write */
+      "A non-zero value causes a call to syslog() for all SQL "
+      "errors.  Such errors usually indicate a programming error "
+      "in one of the user interface programs."},
+  {
+      "rta_dbg",                /* table name */
+      "trace",                  /* column name */
+      RTA_INT,                  /* type of data */
+      sizeof(int),              /* #bytes in col data */
+      offsetof(struct RtaDbg, trace), /* offset 2 col strt */
+      0,               /* Flags for read-only/disksave */
+      (int (*)()) 0,  /* called before read */
+      (int (*)()) 0,  /* called after write */
+      "A non-zero value causes all SQL commands to be logged.  "
+      "If the command is UPDATE, the number of rows affected is "
+      "also logged."},
+  {
+      "rta_dbg",                /* table name */
+      "target",                 /* column name */
+      RTA_INT,                  /* type of data */
+      sizeof(int),              /* #bytes in col data */
+      offsetof(struct RtaDbg, target), /* offset 2 col strt */
+      0,               /* Flags for read-only/disksave */
+      (int (*)()) 0,  /* called before read */
+      rta_restart_syslog,  /* called after write */
+      "Sets destination of log messages.  Zero turns off all "
+      "logging of errors.  One sends log messages to syslog()."
+      "  Two sends log messages to stderr.  Three sends error "
+      "messages to both syslog() and to stderr.  Default is one."},
+  {
+      "rta_dbg",                /* table name */
+      "priority",               /* column name */
+      RTA_INT,                  /* type of data */
+      sizeof(int),              /* #bytes in col data */
+      offsetof(struct RtaDbg, priority), /* offset 2 col strt */
+      0,               /* Flags for read-only/disksave */
+      (int (*)()) 0,  /* called before read */
+      (int (*)()) 0,  /* called after write */
+      "The syslog() priority.  Please see .../sys/syslog.h for "
+      "the possible values.  Default is LOG_ERR."},
+  {
+      "rta_dbg",                /* table name */
+      "facility",               /* column name */
+      RTA_INT,                  /* type of data */
+      sizeof(int),              /* #bytes in col data */
+      offsetof(struct RtaDbg, facility), /* offset 2 col strt */
+      0,               /* Flags for read-only/disksave */
+      (int (*)()) 0,  /* called before read */
+      (int (*)()) 0,  /* called after write */
+      "The syslog() facility.  Please see .../sys/syslog.h for "
+      "the possible values.  Default is LOG_USER."},
+  {
+      "rta_dbg",                /* table name */
+      "ident",                  /* column name */
+      RTA_STR,                  /* type of data */
+      RTA_MXDBGIDENT,           /* #bytes in col data */
+      offsetof(struct RtaDbg, ident), /* offset 2 col strt */
+      0,               /* Flags for read-only/disksave */
+      (int (*)()) 0,  /* called before read */
+      (int (*)()) 0,  /* called after write */
+      "The syslog() 'ident'.  Please see 'man openlog' for "
+      "details.  Default is 'librta'.  An update of the target "
+      "field is required for this to take effect."},
+};
+
+/* Define the table */
+RTA_TBLDEF   rta_dbgTable = {
+  "rta_dbg",                    /* table name */
+  (void *) &rta_dbg,             /* address of table */
+  sizeof(struct RtaDbg),        /* length of each row */
+  1,                            /* # rows in table */
+  (void *) NULL,                /* iterator function */
+  (void *) NULL,                /* iterator callback data */
+  (void *) NULL,                /* INSERT callback function */
+  (void *) NULL,                /* DELETE callback function */
+  rta_dbgCols,                  /* Column definitions */
+  sizeof(rta_dbgCols) / sizeof(RTA_COLDEF), /* # columns */
+  "",                           /* save file name */
+  "Configure of debug logging.  A callback on the 'target' "
+    "field closes and reopens syslog().  None of the values "
+    "in this table are saved to disk.  If you want non-default "
+    "values you need to change the librta source or do an "
+    "rta_SQL_string() to set the values when you initialize your "
+    "program."
+};
+
+
+/* Define the table columns */
+RTA_COLDEF   rta_statCols[] = {
+  {
+      "rta_stat",               /* table name */
+      "nsyserr",                /* column name */
+      RTA_LONG,                 /* type of data */
+      sizeof(llong),            /* #bytes in col data */
+      offsetof(struct RtaStat, nsyserr), /* offset 2 col strt */
+      RTA_READONLY,    /* Flags for read-only/disksave */
+      (int (*)()) 0,  /* called before read */
+      (int (*)()) 0,  /* called after write */
+      "Count of failed OS calls."},
+  {
+      "rta_stat",               /* table name */
+      "nrtaerr",                /* column name */
+      RTA_LONG,                 /* type of data */
+      sizeof(llong),            /* #bytes in col data */
+      offsetof(struct RtaStat, nrtaerr), /* offset 2 col strt */
+      RTA_READONLY,    /* Flags for read-only/disksave */
+      (int (*)()) 0,  /* called before read */
+      (int (*)()) 0,  /* called after write */
+      "Count of internal librta failures."},
+  {
+      "rta_stat",               /* table name */
+      "nsqlerr",                /* column name */
+      RTA_LONG,                 /* type of data */
+      sizeof(llong),            /* #bytes in col data */
+      offsetof(struct RtaStat, nsqlerr), /* offset 2 col strt */
+      RTA_READONLY,    /* Flags for read-only/disksave */
+      (int (*)()) 0,  /* called before read */
+      (int (*)()) 0,  /* called after write */
+      "Count of SQL failures."},
+  {
+      "rta_stat",               /* table name */
+      "nauth",                  /* column name */
+      RTA_LONG,                 /* type of data */
+      sizeof(llong),            /* #bytes in col data */
+      offsetof(struct RtaStat, nauth), /* offset 2 col strt */
+      RTA_READONLY,    /* Flags for read-only/disksave */
+      (int (*)()) 0,  /* called before read */
+      (int (*)()) 0,  /* called after write */
+      "Count of DB authorizations.  This is a good estimate "
+      "to the total number of connections."},
+  {
+      "rta_stat",               /* table name */
+      "nselect",                /* column name */
+      RTA_LONG,                 /* type of data */
+      sizeof(llong),            /* #bytes in col data */
+      offsetof(struct RtaStat, nselect), /* offset 2 col strt */
+      RTA_READONLY,    /* Flags for read-only/disksave */
+      (int (*)()) 0,  /* called before read */
+      (int (*)()) 0,  /* called after write */
+      "Count of SELECT commands."},
+  {
+      "rta_stat",               /* table name */
+      "nupdate",                /* column name */
+      RTA_LONG,                 /* type of data */
+      sizeof(llong),            /* #bytes in col data */
+      offsetof(struct RtaStat, nupdate), /* offset 2 col strt */
+      RTA_READONLY,    /* Flags for read-only/disksave */
+      (int (*)()) 0,  /* called before read */
+      (int (*)()) 0,  /* called after write */
+      "Count of UPDATE commands."},
+  {
+      "rta_stat",               /* table name */
+      "ninsert",                /* column name */
+      RTA_LONG,                 /* type of data */
+      sizeof(llong),            /* #bytes in col data */
+      offsetof(struct RtaStat, ninsert), /* offset 2 col strt */
+      RTA_READONLY,    /* Flags for read-only/disksave */
+      (int (*)()) 0,  /* called before read */
+      (int (*)()) 0,  /* called after write */
+      "Count of INSERT commands."},
+  {
+      "rta_stat",               /* table name */
+      "ndelete",                /* column name */
+      RTA_LONG,                 /* type of data */
+      sizeof(llong),            /* #bytes in col data */
+      offsetof(struct RtaStat, ndelete), /* offset 2 col strt */
+      RTA_READONLY,    /* Flags for read-only/disksave */
+      (int (*)()) 0,  /* called before read */
+      (int (*)()) 0,  /* called after write */
+      "Count of DELETE commands."},
+};
+
+/* Define the table */
+RTA_TBLDEF   rta_statTable = {
+  "rta_stat",                   /* table name */
+  (void *) &rta_stat,           /* address of table */
+  sizeof(struct RtaStat),       /* length of each row */
+  1,                            /* # rows in table */
+  (void *) NULL,                /* iterator function */
+  (void *) NULL,                /* iterator callback data */
+  (void *) NULL,                /* INSERT callback function */
+  (void *) NULL,                /* DELETE callback function */
+  rta_statCols,                 /* Column definitions */
+  sizeof(rta_statCols) / sizeof(RTA_COLDEF), /* # columns */
+  "",                           /* save file name */
+  "Usage and error counts for the librta package."
+};
+#endif
