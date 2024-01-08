@@ -33,6 +33,7 @@
 #include <fcntl.h>
 #include <time.h>               /* for time() function */
 #include <errno.h>
+#include <ctype.h>
 #include "app.h"
 
 #define  DB_PORT    8888
@@ -405,6 +406,7 @@ listen_on_port(int port)
   adrlen = sizeof(struct sockaddr_in);
   (void) memset((void *) &srvskt, 0, (size_t) adrlen);
   srvskt.sin_family = AF_INET;
+  //  srvskt.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
   srvskt.sin_addr.s_addr = INADDR_ANY;
   srvskt.sin_port = htons(port);
   if ((srvfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
