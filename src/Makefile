@@ -28,7 +28,7 @@ PKG_ARCH = $(TGT_ARCH:i%86=i386)
 SYS := $(shell uname)
 
 CC    ?= gcc
-#DEBUG ?= -DDEBUG -DYYDEBUG
+DEBUG ?= -DDEBUG -DYYDEBUG
 OPT    = -fPIC -Wall -D_GNU_SOURCE $(STRINGS_OPT)
 ifdef CFLAGS
   CFLAGS += $(OPT) $(DEBUG)

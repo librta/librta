@@ -11,7 +11,9 @@
  *
  * Overview:
  *     This is a sample application which illustrates the use of
- * the librta package.
+ * the librta package.  It uses select() for I/O multiplexing and
+ * offers the tables of UI connections (uiconns) to the user
+ * interface as a DB table (UIConns).
  **************************************************************/
 
 /* Layout of this file:
