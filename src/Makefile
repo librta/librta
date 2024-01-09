@@ -1,10 +1,10 @@
-################################################################
- # Run Time Access Library
+###################################################################
+ # librta library
  # Copyright (C) 2003-2014 Robert W Smith (bsmith@linuxtoys.org)
  #
- #  This program is distributed under the terms of the GNU LGPL.
+ #  This program is distributed under the terms of the MIT License.
  #  See the file COPYING file.
-################################################################
+###################################################################
 
 ################################################################
 # Makefile -- to make the librta library.
@@ -28,7 +28,7 @@ PKG_ARCH = $(TGT_ARCH:i%86=i386)
 SYS := $(shell uname)
 
 CC    ?= gcc
-DEBUG ?= -DDEBUG -DYYDEBUG
+#DEBUG ?= -DDEBUG -DYYDEBUG
 OPT    = -fPIC -Wall -D_GNU_SOURCE $(STRINGS_OPT)
 ifdef CFLAGS
   CFLAGS += $(OPT) $(DEBUG)

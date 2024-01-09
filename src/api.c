@@ -1,8 +1,8 @@
 /***************************************************************
- * Run Time Access Library
+ * librta Library
  * Copyright (C) 2003-2014 Robert W Smith (bsmith@linuxtoys.org)
  *
- *  This program is distributed under the terms of the GNU LGPL.
+ *  This program is distributed under the terms of the MIT license.
  *  See the file COPYING file.
  **************************************************************/
 
@@ -53,8 +53,12 @@ rta_init()
   int      i;          /* loop index */
   extern RTA_TBLDEF rta_tablesTable;
   extern RTA_TBLDEF rta_columnsTable;
+  /* The stats and debug tables exist but we only expose them to
+   * the user when DEBUG is enabled in the Makefile */
+#ifdef DEBUG
   extern RTA_TBLDEF rta_dbgTable;
   extern RTA_TBLDEF rta_statTable;
+#endif
   extern void rta_restart_syslog();
 
   for (i = 0; i < RTA_MX_TBL; i++) {
@@ -65,8 +69,10 @@ rta_init()
   /* add system and internal tables here */
   (void) rta_add_table(&rta_tablesTable);
   (void) rta_add_table(&rta_columnsTable);
+#ifdef DEBUG
   (void) rta_add_table(&rta_dbgTable);
   (void) rta_add_table(&rta_statTable);
+#endif
 
   rta_restart_syslog((char *) 0, (char *) 0, (char *) 0, (void *) 0,
 		     (void *) 0, 0);

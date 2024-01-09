@@ -1,16 +1,17 @@
-/***************************************************************
- * Run Time Access Library
+/******************************************************************
+ * librta library
  * Copyright (C) 2003-2014 Robert W Smith (bsmith@linuxtoys.org)
  *
- *  This program is distributed under the terms of the GNU LGPL.
+ *  This program is distributed under the terms of the MIT License.
  *  See the file COPYING file.
- **************************************************************/
+ *****************************************************************/
 
 /***************************************************************
  * token.l  -- Lex tokenizer for SQL commands.  
  **************************************************************/
 %option noyywrap
 %option never-interactive
+%option noinput
 
 %{
 #include <string.h>

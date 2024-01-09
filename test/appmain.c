@@ -1,19 +1,17 @@
-/***************************************************************
- * Run Time Access Library
+/******************************************************************
+ * librta library
  * Copyright (C) 2003-2014 Robert W Smith (bsmith@linuxtoys.org)
  *
- *  This program is distributed under the terms of the GNU LGPL.
+ *  This program is distributed under the terms of the MIT License.
  *  See the file COPYING file.
- **************************************************************/
+ *****************************************************************/
 
 /***************************************************************
  * appmain.c --
  *
  * Overview:
  *     This is a sample application which illustrates the use of
- * the librta package.  It uses select() for I/O multiplexing and
- * offers the tables of UI connections (uiconns) to the user
- * interface as a DB table (UIConns).
+ * the librta package.
  **************************************************************/
 
 /* Layout of this file:
@@ -35,6 +33,7 @@
 #include <fcntl.h>
 #include <time.h>               /* for time() function */
 #include <errno.h>
+#include <ctype.h>
 #include "app.h"
 
 #define  DB_PORT    8888
@@ -318,9 +317,9 @@ handle_ui_request(UI *pui)
 
   /* The commands are in the buffer. Call the DB to parse and execute
      them */
+  t = pui->cmdindx;                        /* packet in length */
   do
   {
-    t = pui->cmdindx;                        /* packet in length */
     dbstat = rta_dbcommand(pui->cmd,         /* packet in */
       &(pui->cmdindx),                       /* packet in length */
       &(pui->rsp[MXRSP - pui->rspfree]),     /* ptr to out buf */
@@ -407,6 +406,7 @@ listen_on_port(int port)
   adrlen = sizeof(struct sockaddr_in);
   (void) memset((void *) &srvskt, 0, (size_t) adrlen);
   srvskt.sin_family = AF_INET;
+  //  srvskt.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
   srvskt.sin_addr.s_addr = INADDR_ANY;
   srvskt.sin_port = htons(port);
   if ((srvfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)

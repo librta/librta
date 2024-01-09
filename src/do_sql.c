@@ -1,8 +1,8 @@
 /***************************************************************
- * Run Time Access Library
+ * librta Library
  * Copyright (C) 2003-2014 Robert W Smith (bsmith@linuxtoys.org)
  *
- *  This program is distributed under the terms of the GNU LGPL.
+ *  This program is distributed under the terms of the MIT license.
  *  See the file COPYING file.
  **************************************************************/
 
@@ -42,7 +42,7 @@ static void     do_delete(char *, int *);
 static void     do_select(char *, int *);
 static int      send_row_description(char *, int *);
 static void     do_delete(char *, int *);
-static void     ad_str(char **, char *, int);
+static void     ad_str(char **, int, char *, int);
 static void     ad_int2(char **, int);
 static void     ad_int4(char **, int);
 
@@ -626,11 +626,12 @@ do_select(char *buf, int *nbuf)
   int      wx;         /* Where clause indeX in for loop */
   void    *pr;         /* Pointer to the row in the table/column */
   void    *pd;         /* Pointer to the Data in the table/column */
-  llong cmp;           /* has actual relation of col and val */
+  llong    cmp;        /* has actual relation of col and val */
   int      dor;        /* DO Row == 1 if we should print row */
   int      npr = 0;    /* Number of output rows */
   char     nprstr[30]; /* string to hold ASCII of npr */
   char    *startbuf;   /* used to compute response length */
+  int      nfree;      /* #bytes available in buf =nbuf -(buf-startbuf) */
   char    *lenloc;     /* points to where 'D' pkt length goes */
   int      cx;         /* Column index while building Data pkt */
   int      n;          /* number of chars printed in sprintf() */
@@ -769,7 +770,8 @@ do_select(char *buf, int *nbuf)
               count = rta_cmd.pcol[cx]->length -1;
             }
             ad_int4(&buf, count);
-            ad_str(&buf, pd, count);   /* send the response */
+            nfree = *nbuf - (int)(buf - startbuf);
+            ad_str(&buf, nfree, pd, count);   /* send the response */
             break;
           case RTA_PSTR:
             count = strlen(*(char **) pd);  /* shorter of field length or strlen */
@@ -778,7 +780,8 @@ do_select(char *buf, int *nbuf)
             }
             ad_int4(&buf, count);
             /* send the response */
-            ad_str(&buf, *(char **) pd, count);
+            nfree = *nbuf - (int)(buf - startbuf);
+            ad_str(&buf, nfree, *(char **) pd, count);
             break;
           case RTA_INT:
             n = sprintf((buf + 4), "%d", *((int *) pd));
@@ -849,7 +852,8 @@ do_select(char *buf, int *nbuf)
   /* Add 'C', length(11), 'SELECT', NULL to output */
   *buf++ = 'C';
   ad_int4(&buf, 11);            /* 11= 4+strlen(SELECT)+1 */
-  ad_str(&buf, "SELECT", 6);
+  nfree = *nbuf - (int)(buf - startbuf);
+  ad_str(&buf, nfree, "SELECT", 6);
   *buf++ = 0x00;
 
   *nbuf -= (int) (buf - startbuf);
@@ -876,6 +880,7 @@ static int
 send_row_description(char *buf, int *nbuf)
 {
   char    *startbuf;   /* used to compute response length */
+  int      nfree;      /* #bytes available in buf =nbuf -(buf-startbuf) */
   int      i;          /* loop index */
   int      size;       /* estimated/actual size of response */
 
@@ -898,7 +903,8 @@ send_row_description(char *buf, int *nbuf)
   ad_int2(&buf, rta_cmd.ncols);     /* num fields */
 
   for (i = 0; i < rta_cmd.ncols; i++) {
-    ad_str(&buf, rta_cmd.cols[i], strlen(rta_cmd.cols[i]));  /* column name */
+    nfree = *nbuf - (int)(buf - startbuf);
+    ad_str(&buf, nfree, rta_cmd.cols[i], strlen(rta_cmd.cols[i]));  /* column name */
     *buf++ = (char) 0;          /* send the NULL */
 
     /* Add table index */
@@ -1004,9 +1010,9 @@ rta_send_error(char *filename, int lineno, char *fmt, char *arg)
   *rta_cmd.out++ = 'E';
   lenptr = rta_cmd.out;             /* msg length goes here */
   rta_cmd.out += 4;                 /* skip over length for now */
-  ad_str(&(rta_cmd.out), "SERROR", 6); /* severity code */
+  ad_str(&(rta_cmd.out), *rta_cmd.nout, "SERROR", 6); /* severity code */
   *rta_cmd.out++ = (char) 0;
-  ad_str(&(rta_cmd.out), "C42601", 6); /* error code (syntax error) */
+  ad_str(&(rta_cmd.out), *rta_cmd.nout, "C42601", 6); /* error code (syntax error) */
   *rta_cmd.out++ = (char) 0;
   *rta_cmd.out++ = 'M';
   cnt = snprintf(rta_cmd.out, *(rta_cmd.nout), fmt, arg);
@@ -1042,6 +1048,7 @@ do_update(char *buf, int *nbuf)
   llong cmp;           /* has actual relation of col and val */
   int      dor;        /* DO Row == 1 if we should update row */
   char    *startbuf;   /* used to compute response length */
+  int      nfree;      /* #bytes available in buf =nbuf -(buf-startbuf) */
   int      cx;         /* Column index while building Data pkt */
   int      n;          /* number of chars printed in sprintf() */
   int      nru = 0;    /* =# rows updated */
@@ -1162,10 +1169,12 @@ do_update(char *buf, int *nbuf)
           case RTA_STR:
             strncpy((char *) pd, rta_cmd.updvals[cx],
 		    rta_cmd.pcol[cx]->length);
+            *(char *)(pd + rta_cmd.pcol[cx]->length -1) = (char) 0;
             break;
           case RTA_PSTR:
             strncpy(*(char **) pd, rta_cmd.updvals[cx],
 		    rta_cmd.pcol[cx]->length);
+            *((*(char **) pd) + rta_cmd.pcol[cx]->length -1) = (char) 0;
             break;
           case RTA_INT:
             *((int *) pd) = rta_cmd.updints[cx];
@@ -1243,7 +1252,8 @@ do_update(char *buf, int *nbuf)
   *buf++ = 'C';
   tmark = buf;                  /* Save length location */
   buf += 4;
-  ad_str(&buf, "UPDATE", 6);
+  nfree = *nbuf - (int)(buf - startbuf);
+  ad_str(&buf, nfree, "UPDATE", 6);
   n = sprintf(buf, " %d", nru); /* # rows affected */
   buf += n;
   *buf++ = 0x00;
@@ -1273,6 +1283,7 @@ do_insert(char *buf, int *nbuf)
   void    *pr;         /* Pointer to the row in the table/column */
   void    *pd;         /* Pointer to the Data in the table/column */
   char    *startbuf;   /* used to compute response length */
+  int      nfree;      /* #bytes available in buf =nbuf -(buf-startbuf) */
   int      cx;         /* Column index while building Data pkt */
   int      n;          /* number of chars printed in sprintf() */
   int      svt = 0;    /* Save table if == 1 */
@@ -1392,9 +1403,11 @@ do_insert(char *buf, int *nbuf)
     switch ((rta_cmd.pcol[cx])->type) {
       case RTA_STR:
         strncpy((char *) pd, rta_cmd.updvals[cx], rta_cmd.pcol[cx]->length);
+        *(char *)(pd + rta_cmd.pcol[cx]->length -1) = (char) 0;
         break;
       case RTA_PSTR:
         strncpy(*(char **) pd, rta_cmd.updvals[cx], rta_cmd.pcol[cx]->length);
+        *((*(char **) pd) + rta_cmd.pcol[cx]->length -1) = (char) 0;
         break;
       case RTA_INT:
         *((int *) pd) = rta_cmd.updints[cx];
@@ -1465,7 +1478,8 @@ do_insert(char *buf, int *nbuf)
   *buf++ = 'C';
   tmark = buf;                  /* Save length location */
   buf += 4;
-  ad_str(&buf, "INSERT", 6);
+  nfree = *nbuf - (int)(buf - startbuf);
+  ad_str(&buf, nfree, "INSERT", 6);
   n = sprintf(buf, " %d 1", rx);
   buf += n;
   *buf++ = 0x00;
@@ -1538,6 +1552,7 @@ do_delete(char *buf, int *nbuf)
   llong cmp;           /* has actual relation of col and val */
   int      dor;        /* DO Row == 1 if we should delete row */
   char    *startbuf;   /* used to compute response length */
+  int      nfree;      /* #bytes available in buf =nbuf -(buf-startbuf) */
   int      n;          /* number of chars printed in sprintf() */
   int      nrd = 0;    /* =# rows deleted */
   int      svt = 0;    /* Save table if == 1 */
@@ -1671,7 +1686,8 @@ do_delete(char *buf, int *nbuf)
   *buf++ = 'C';
   tmark = buf;                  /* Save length location */
   buf += 4;
-  ad_str(&buf, "DELETE", 6);
+  nfree = *nbuf - (int)(buf - startbuf);
+  ad_str(&buf, nfree, "DELETE", 6);
   n = sprintf(buf, " %d", nrd); /* # rows affected */
   buf += n;
   *buf++ = 0x00;
@@ -1688,17 +1704,27 @@ do_delete(char *buf, int *nbuf)
  * ad_str(): - Add a string to the output buffer.  Includes a
  *             NULL to terminate the string.
  *
- * Input:        A **char to the buffer and the string and a length
+ * Input:        A **char to the target buffer, the free space
+ *               available in the target, the source string, and
+ *               the maximum length of the source string
  * Output:       void
  * Effects:      Increments the **char to point to the next
  *               available space in the buffer.
  ***************************************************************/
 static void
-ad_str(char **pbuf, char *instr, int count)
+ad_str(char **pbuf, int outcnt, char *instr, int incnt)
 {
-  strncpy(*pbuf, instr, count);
-  *pbuf += count;
+  // sanity check
+  if ((outcnt <= 0) || (incnt <= 0))
+      return;     // error, no space, or input is empty
+
+  while((--outcnt > 0) && (incnt > 0) && (*instr)) {
+    **pbuf = *instr++;
+    *pbuf += 1;
+    incnt -= 1;
+  }
   **pbuf = (char) 0;
+  return;
 }
 
 /***************************************************************

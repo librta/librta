@@ -1,11 +1,11 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2//EN">
 <html>
 <!-- ----------------------------------------------------------------- -->
-<!--  Run Time Access                                                  -->
+<!--  librta library                                                   -->
 <!--  Copyright (C) 2003-2014 Robert W Smith (bsmith@linuxtoys.org)    -->
 <!--                                                                   -->
-<!--   This program is distributed under the terms of the GNU          -->
-<!--   LGPL.  See the file COPYING file.                               -->
+<!--   This program is distributed under the terms of the MIT          -->
+<!--   License.  See the file COPYING file.                            -->
 <!-- ----------------------------------------------------------------- -->
 <head>
 <title>Edit Row</title>

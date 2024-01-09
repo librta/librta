@@ -1,8 +1,8 @@
 /***************************************************************
- * Run Time Access Library
+ * librta Library
  * Copyright (C) 2003-2014 Robert W Smith (bsmith@linuxtoys.org)
  *
- *  This program is distributed under the terms of the GNU LGPL.
+ *  This program is distributed under the terms of the MIT license.
  *  See the file COPYING file.
  **************************************************************/
 
@@ -28,6 +28,7 @@
 int          rta_restart_syslog();
 static void *get_next_sysrow(void *, void *, int);
 
+
 /***************************************************************
  * We define a table which contains the column definitions of
  * all columns in the system.  This is a pseudo table in that
@@ -37,7 +38,6 @@ static void *get_next_sysrow(void *, void *, int);
  * The table definition for "rta_columns" must appear as the
  * second entry in the array of table definition pointers.
  **************************************************************/
-
 /* Define the table columns */
 RTA_COLDEF   rta_columnsCols[] = {
   {
@@ -176,13 +176,13 @@ RTA_TBLDEF   rta_columnsTable = {
     "attributes."
 };
 
+
 /***************************************************************
  * We define a table which contains the table definition of all
  * tables in the system.  This is a pseudo table in that there
  * is not an array of structures like other tables.  Use of this
  * table requires special handling in do_sql.
  **************************************************************/
-
 /* Define the table columns */
 RTA_COLDEF   rta_tablesCols[] = {
   {
@@ -347,6 +347,7 @@ RTA_TBLDEF   rta_tablesTable = {
     "table and not an array of structures like other tables."
 };
 
+
 /***************************************************************
  * get_next_sysrow(): - Routine to the get the next row pointer
  * given the current row pointer or row number.
@@ -380,6 +381,38 @@ get_next_sysrow(void *pui, void *it_info, int rowid)
   return ((void *) NULL);
 }
 
+
+/***************************************************************
+ * rta_restart_syslog(): - Routine to restart or reconfigure the
+ * logging facility.  Syslog is always closed and (if enabled)
+ * reopened with the priority and facility specified in the
+ * rta_dbg structure.
+ *
+ * Input:        Name of the table 
+ *               Name of the column
+ *               Text of the SQL command itself
+ *               Pointer to row of data
+ *               Pointer to copy of old row
+ *               Index of row used (zero indexed)
+ * Output:       Success (a zero)
+ * Effects:      No side effects.
+ **************************************************************/
+int
+rta_restart_syslog(char *tblname, char *colname, char *sqlcmd,
+               void *prow, int rowid, void *poldrow)
+{
+  extern struct RtaDbg rta_dbg;
+
+  closelog();
+
+  if (rta_dbg.target == 1 || rta_dbg.target == 3) {
+    openlog(rta_dbg.ident, LOG_ODELAY | LOG_PID, rta_dbg.facility);
+  }
+
+  return(0);
+}
+
+
 /***************************************************************
  *     The rta_dbg table controls which errors generate
  * debug log messages, the priority, and the facility of the
@@ -392,7 +425,6 @@ get_next_sysrow(void *pui, void *it_info, int rowid)
  * A callback attached to dbg_facility causes a close/reopen of
  * syslog().
  **************************************************************/
-
 /* Allocate and initialize the table */
 struct RtaDbg rta_dbg = {
   1,                            /* log system errors */
@@ -405,6 +437,23 @@ struct RtaDbg rta_dbg = {
   "librta"                      /* see 'man openlog' */
 };
 
+/***************************************************************
+ *     The rta_stats table contains usage and error statistics
+ * which might be of interest to developers.  All fields are
+ * of type long, are read-only, and are set to zero by
+ * rta_init(). 
+ **************************************************************/
+/* Allocate and initialize the table */
+struct RtaStat rta_stat = {
+  (llong) 0,                    /* count of failed OS calls. */
+  (llong) 0,                    /* count of internal librta failures. */
+  (llong) 0,                    /* count of SQL failures. */
+  (llong) 0,                    /* count of authorizations. */
+  (llong) 0,                    /* count of UPDATE requests */
+  (llong) 0,                    /* count of SELECT requests */
+};
+
+#ifdef DEBUG
 /* Define the table columns */
 RTA_COLDEF   rta_dbgCols[] = {
   {
@@ -502,36 +551,6 @@ RTA_COLDEF   rta_dbgCols[] = {
       "field is required for this to take effect."},
 };
 
-/***************************************************************
- * rta_restart_syslog(): - Routine to restart or reconfigure the
- * logging facility.  Syslog is always closed and (if enabled)
- * reopened with the priority and facility specified in the
- * rta_dbg structure.
- *
- * Input:        Name of the table 
- *               Name of the column
- *               Text of the SQL command itself
- *               Pointer to row of data
- *               Pointer to copy of old row
- *               Index of row used (zero indexed)
- * Output:       Success (a zero)
- * Effects:      No side effects.
- **************************************************************/
-int
-rta_restart_syslog(char *tblname, char *colname, char *sqlcmd,
-               void *prow, void *poldrow,  int rowid)
-{
-  extern struct RtaDbg rta_dbg;
-
-  closelog();
-
-  if (rta_dbg.target == 1 || rta_dbg.target == 3) {
-    openlog(rta_dbg.ident, LOG_ODELAY | LOG_PID, rta_dbg.facility);
-  }
-
-  return(0);
-}
-
 /* Define the table */
 RTA_TBLDEF   rta_dbgTable = {
   "rta_dbg",                    /* table name */
@@ -553,22 +572,6 @@ RTA_TBLDEF   rta_dbgTable = {
     "program."
 };
 
-/***************************************************************
- *     The rta_stats table contains usage and error statistics
- * which might be of interest to developers.  All fields are
- * of type long, are read-only, and are set to zero by
- * rta_init(). 
- **************************************************************/
-
-/* Allocate and initialize the table */
-struct RtaStat rta_stat = {
-  (llong) 0,                    /* count of failed OS calls. */
-  (llong) 0,                    /* count of internal librta failures. */
-  (llong) 0,                    /* count of SQL failures. */
-  (llong) 0,                    /* count of authorizations. */
-  (llong) 0,                    /* count of UPDATE requests */
-  (llong) 0,                    /* count of SELECT requests */
-};
 
 /* Define the table columns */
 RTA_COLDEF   rta_statCols[] = {
@@ -670,3 +673,4 @@ RTA_TBLDEF   rta_statTable = {
   "",                           /* save file name */
   "Usage and error counts for the librta package."
 };
+#endif
